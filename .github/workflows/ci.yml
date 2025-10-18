@@ -45,7 +45,7 @@ jobs:
         run: pnpm run lint
 
       - name: Unit tests
-        run: pnpm run test -- --ci
+        run: pnpm run test
         env:
           CI: true
 
