@@ -25,16 +25,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: pnpm
-
+      # ติดตั้ง pnpm ก่อน เพื่อให้ setup-node ใช้ cache: pnpm ได้
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 10.18.3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm       # ตอนนี้มี pnpm แล้ว จึงไม่ error
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies (frozen lockfile)
         run: pnpm install --frozen-lockfile
