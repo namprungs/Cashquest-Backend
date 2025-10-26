@@ -6,6 +6,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
 
 COPY package.json pnpm-lock.yaml ./
+COPY prisma ./prisma
 COPY tsconfig*.json ./
 COPY src ./src
 
@@ -22,6 +23,7 @@ ENV PORT=3000
 # install only prod deps
 RUN corepack enable && corepack prepare pnpm@10.18.3 --activate
 COPY package.json pnpm-lock.yaml ./
+COPY prisma ./prisma
 RUN pnpm install --prod --frozen-lockfile
 
 # copy built files

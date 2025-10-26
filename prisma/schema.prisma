@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String         @id @default(uuid()) @db.Uuid
+  email     String         @unique
+  username  String
+  password  String
+  tokens    RefreshToken[] // 1:N
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model RefreshToken {
+  id String @id @default(uuid()) @db.Uuid
+
+  // FK -> User(id: uuid)
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // เก็บแฮชของ RT (ไม่ใช่ plaintext)
+  tokenHash String @unique
+
+  // อายุ/สถานะ
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  // self FK -> RefreshToken(id: uuid) สำหรับ rotation
+  replacedById String?        @db.Uuid
+  replacedBy   RefreshToken?  @relation("TokenReplacements", fields: [replacedById], references: [id])
+  previous     RefreshToken[] @relation("TokenReplacements")
+
+  // เมทาดาท้า
+  createdAt   DateTime  @default(now())
+  createdByIp String?
+  lastUsedAt  DateTime?
+  lastUsedIp  String?
+  userAgent   String?
+  deviceId    String?
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
