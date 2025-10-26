@@ -11,11 +11,13 @@ export class UserService {
   async create(createUserDto: CreateUserDto) {
     const salt = await bcrypt.genSalt();
     createUserDto.password = await bcrypt.hash(createUserDto.password, salt);
-    const newUser = await this.prisma.user.create({
+    const newUser: User = await this.prisma.user.create({
       data: createUserDto,
     });
 
-    return { data: newUser, message: 'User created successfully' };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _password, ...result } = newUser;
+    return { data: result, message: 'User created successfully' };
   }
 
   async getUser(params: Partial<User>): Promise<User> {
@@ -39,17 +41,18 @@ export class UserService {
     return user;
   }
 
-  async getUsers(): Promise<User> {
-    const user = await this.prisma.user.findMany();
+  async getUsers(): Promise<Omit<User, 'password'>> {
+    const users = await this.prisma.user.findMany();
 
-    if (!user) {
+    if (!users) {
       throw new NotFoundException();
     }
-    return user[0];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    return users.map(({ password, ...user }) => user)[0];
   }
 
   async updateUser(query: Partial<User>, data: Partial<User>) {
-    return this.prisma.user.updateMany({
+    return await this.prisma.user.updateMany({
       where: query,
       data: data,
     });

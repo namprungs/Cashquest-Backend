@@ -10,22 +10,4 @@ export class AppService {
       refreshToken: 'exampleRefreshToken',
     };
   }
-
-  login(authDto: { username: string; password: string }) {
-    const { username, password } = authDto;
-    if (password) {
-      return {
-        id: '1',
-        username: username,
-        accessToken: 'exampleAccessToken',
-        refreshToken: 'exampleRefreshToken',
-      };
-    }
-    return {
-      id: '1',
-      username: username,
-      accessToken: 'exampleAccessToken',
-      refreshToken: 'exampleRefreshToken',
-    };
-  }
 }
