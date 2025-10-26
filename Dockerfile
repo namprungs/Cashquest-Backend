@@ -11,6 +11,7 @@ COPY tsconfig*.json ./
 COPY src ./src
 
 RUN pnpm install --frozen-lockfile
+RUN pnpm prisma generate
 RUN pnpm run build
 
 # ---- Runtime stage ----
