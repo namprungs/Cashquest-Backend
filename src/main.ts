@@ -11,8 +11,8 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
-  app.use(cookieParser())
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  app.use(cookieParser());
+
   app.use(morgan('dev'));
   await app.listen(process.env.PORT ?? 3000);
 }
