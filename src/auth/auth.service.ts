@@ -76,6 +76,11 @@ export class AuthService {
     }
   }
 
+  async logout(oldRefreshToken: string) {
+    const res = await this.refreshTokenService.revokeByPlain(oldRefreshToken);
+    return { success: res };
+  }
+
   async refresh(oldrefreshToken: string, meta: TokenMeta) {
     const { refreshToken, record } = await this.refreshTokenService.rotate(
       oldrefreshToken,
