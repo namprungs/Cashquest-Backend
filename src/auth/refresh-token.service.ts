@@ -118,6 +118,7 @@ export class RefreshTokenService {
       where: { tokenHash: hash, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+    return true;
   }
 
   /**

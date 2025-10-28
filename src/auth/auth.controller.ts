@@ -49,4 +49,15 @@ export class AuthController {
 
     return this.authService.refresh(refreshToken, meta);
   }
+
+  @Post('logout')
+  async logout(@Req() request: Request) {
+    const raw = request.headers['x-refresh-key'];
+    const refreshToken = Array.isArray(raw) ? raw[0] : raw;
+    if (!refreshToken) {
+      throw new UnauthorizedException('Missing refresh token');
+    }
+
+    return this.authService.logout(refreshToken);
+  }
 }
