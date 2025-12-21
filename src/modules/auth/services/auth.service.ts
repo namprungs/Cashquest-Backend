@@ -6,13 +6,13 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt'; // ✅ เปลี่ยนเป็น namespace import
-import { UserService } from 'src/user/user.service';
+import { UserService } from 'src/modules/user/user.service';
 import { User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { TokenPayload } from './token.interface';
 import { Response } from 'express';
 import { RefreshTokenService, TokenMeta } from './refresh-token.service';
+import { TokenPayload } from '../interfaces/token.interface';
 
 @Injectable()
 export class AuthService {
@@ -63,7 +63,6 @@ export class AuthService {
         user.id,
       );
       const refreshToken = await this.refreshTokenService.issue(user.id, meta);
-
       response.cookie('Authentication', accessToken, {
         httpOnly: true,
         secure: true,
