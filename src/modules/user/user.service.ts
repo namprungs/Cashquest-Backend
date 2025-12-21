@@ -24,7 +24,6 @@ export class UserService {
     const user = await this.prisma.user.findFirst({
       where: params,
     });
-
     if (!user) {
       throw new NotFoundException();
     }
