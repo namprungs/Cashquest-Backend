@@ -35,7 +35,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: pnpm       # ตอนนี้มี pnpm แล้ว จึงไม่ error
+          cache: pnpm # ตอนนี้มี pnpm แล้ว จึงไม่ error
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies (frozen lockfile)
@@ -54,6 +54,9 @@ jobs:
 
       - name: Generate Prisma Client
         run: pnpm prisma generate
+        env:
+          # ใส่ URL หลอกๆ เข้าไปเพื่อให้ Prisma รันผ่าน (ไม่ต้องเป็น DB จริง)
+          DATABASE_URL: 'postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public'
 
       - name: Build
         run: pnpm run build
