@@ -1,49 +1,233 @@
 generator client {
   provider = "prisma-client-js"
 }
-
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
+// ---------------------------------------------------------
+// 1. IDENTITY & ACCESS MANAGEMENT (IAM)
+// ---------------------------------------------------------
+
 model User {
-  id        String         @id @default(uuid()) @db.Uuid
-  email     String         @unique
-  username  String
-  password  String
-  tokens    RefreshToken[] // 1:N
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id       String   @id @default(uuid()) @db.Uuid
+  email    String   @unique
+  username String   @unique
+  password String
+  role     UserRole @default(STUDENT)
+  isActive Boolean  @default(true)
+
+  // Relations
+  schoolId          String?            @db.Uuid
+  school            School?            @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  tokens            RefreshToken[]
+  classroomStudents ClassroomStudent[]
+  classrooms        Classroom[] // For Teachers
+  studentProfiles   StudentProfile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users") // Mapping to lowercase table name in DB
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
 }
 
 model RefreshToken {
-  id String @id @default(uuid()) @db.Uuid
-
-  // FK -> User(id: uuid)
-  userId String @db.Uuid
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // เก็บแฮชของ RT (ไม่ใช่ plaintext)
+  id        String @id @default(uuid()) @db.Uuid
   tokenHash String @unique
+  userId    String @db.Uuid
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // อายุ/สถานะ
-  expiresAt DateTime
-  revokedAt DateTime?
-
-  // self FK -> RefreshToken(id: uuid) สำหรับ rotation
+  // Token Rotation Logic
   replacedById String?        @db.Uuid
   replacedBy   RefreshToken?  @relation("TokenReplacements", fields: [replacedById], references: [id])
   previous     RefreshToken[] @relation("TokenReplacements")
 
-  // เมทาดาท้า
-  createdAt   DateTime  @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+
+  // Metadata
   createdByIp String?
+  userAgent   String?
   lastUsedAt  DateTime?
   lastUsedIp  String?
-  userAgent   String?
   deviceId    String?
+
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// ---------------------------------------------------------
+// 2. EDUCATIONAL STRUCTURE
+// ---------------------------------------------------------
+
+model School {
+  id   String @id @default(uuid()) @db.Uuid
+  name String
+  plan String @default("FREE")
+
+  // Relations
+  users User[]
+  terms Term[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("schools")
+}
+
+model Term {
+  id       String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name       String // e.g., "Term 1/2025"
+  startDate  DateTime
+  endDate    DateTime
+  totalWeeks Int
+  status     TermStatus @default(DRAFT)
+
+  // Relations
+  termWeeks       TermWeek[]
+  termStageRules  TermStageRule[]
+  classrooms      Classroom[]
+  studentProfiles StudentProfile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("terms")
+}
+
+enum TermStatus {
+  DRAFT
+  ONGOING
+  COMPLETED
+}
+
+model TermWeek {
+  id     String @id @default(uuid()) @db.Uuid
+  termId String @db.Uuid
+  term   Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  weekNo    Int // 1, 2, 3...
+  startDate DateTime
+  endDate   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("term_weeks")
+}
+
+model Classroom {
+  id   String @id @default(uuid()) @db.Uuid
+  name String
+
+  // Links
+  teacherId String @db.Uuid
+  teacher   User   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  termId    String @db.Uuid
+  term      Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  // Relations
+  students ClassroomStudent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("classrooms")
+}
+
+model ClassroomStudent {
+  id          String @id @default(uuid()) @db.Uuid
+  classroomId String @db.Uuid
+  studentId   String @db.Uuid
+
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  joinedAt DateTime @default(now())
+
+  @@unique([classroomId, studentId])
+  @@map("classroom_students")
+}
+
+// ---------------------------------------------------------
+// 3. SIMULATION LOGIC & RULES
+// ---------------------------------------------------------
+
+model LifeStage {
+  id      String @id @default(uuid()) @db.Uuid
+  name    String // e.g., "HIGH_SCHOOL"
+  orderNo Int // For sorting logic
+
+  unlockInvestment    Boolean @default(false)
+  enableRandomExpense Boolean @default(false)
+
+  // Relations
+  termStageRules TermStageRule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("life_stages")
+}
+
+model TermStageRule {
+  id          String @id @default(uuid()) @db.Uuid
+  termId      String @db.Uuid
+  lifeStageId String @db.Uuid
+
+  startWeek Int @default(1)
+  endWeek   Int
+
+  term      Term      @relation(fields: [termId], references: [id], onDelete: Cascade)
+  lifeStage LifeStage @relation(fields: [lifeStageId], references: [id], onDelete: Cascade)
+
+  @@map("term_stage_rules")
+}
+
+// ---------------------------------------------------------
+// 4. STUDENT PROGRESSION (GAMEPLAY)
+// ---------------------------------------------------------
+
+model StudentProfile {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  termId String @db.Uuid
+  term   Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  // Relations
+  retirementGoals RetirementGoal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, termId])
+  @@map("student_profiles")
+}
+
+model RetirementGoal {
+  id               String         @id @default(uuid()) @db.Uuid
+  studentProfileId String         @db.Uuid
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  targetAmount  Float
+  currentAmount Float    @default(0)
+  targetDate    DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("retirement_goals")
 }
