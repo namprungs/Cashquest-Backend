@@ -21,6 +21,6 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
   validate(tokenpayload: TokenPayload) {
-    return this.userService.getUser({ id: tokenpayload.userId });
+    return this.userService.getUserWithRolePermissionById(tokenpayload.userId);
   }
 }
