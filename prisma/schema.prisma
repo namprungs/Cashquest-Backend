@@ -1,6 +1,7 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "postgresql"
 }
@@ -10,12 +11,13 @@ datasource db {
 // ---------------------------------------------------------
 
 model User {
-  id       String   @id @default(uuid()) @db.Uuid
-  email    String   @unique
-  username String   @unique
+  id       String  @id @default(uuid()) @db.Uuid
+  email    String  @unique
+  username String  @unique
   password String
-  role     UserRole @default(STUDENT)
-  isActive Boolean  @default(true)
+  roleId   String? @db.Uuid
+  role     Role?   @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  isActive Boolean @default(true)
 
   // Relations
   schoolId          String?            @db.Uuid
@@ -31,10 +33,41 @@ model User {
   @@map("users") // Mapping to lowercase table name in DB
 }
 
-enum UserRole {
-  ADMIN
-  TEACHER
-  STUDENT
+model Role {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  users           User[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String @id @default(uuid()) @db.Uuid
+  roleId       String @db.Uuid
+  permissionId String @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
 }
 
 model RefreshToken {

@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Prisma, User } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UserService {
@@ -37,6 +37,40 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    return user;
+  }
+
+  async getUserWithRolePermissionById(id: string) {
+    // ลบ : Promise<User> ออก หรือเปลี่ยนเป็น Promise<any> ชั่วคราว ถ้า Type มันฟ้องเรื่อง Relation
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        // 👇 เพิ่ม 3 ตัวนี้เข้าไปครับ
+        roleId: true,
+        isActive: true,
+        schoolId: true,
+
+        // role query เหมือนเดิม
+        role: {
+          select: {
+            name: true,
+            rolePermissions: {
+              select: {
+                permission: { select: { name: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException();
+    }
+
     return user;
   }
 
