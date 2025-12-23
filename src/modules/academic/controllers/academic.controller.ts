@@ -5,14 +5,13 @@ import {
   Patch,
   Param,
   Delete,
-  Req,
   Body,
 } from '@nestjs/common';
-import { NeededPermissions } from '../auth/decorators/needed-permissions.decorator';
 import { PERMISSIONS } from 'src/common/constants/permissions.constant';
-import { CreateSchoolDto } from './dto/create-school.dto';
-import { SchoolService } from './services/school.service';
-import { UpdateSchoolDto } from './dto/update-school.dto';
+import { NeededPermissions } from 'src/modules/auth/decorators/needed-permissions.decorator';
+import { CreateSchoolDto } from '../dto/create-school.dto';
+import { UpdateSchoolDto } from '../dto/update-school.dto';
+import { SchoolService } from '../services/school.service';
 
 @Controller('academic')
 export class AcademicController {

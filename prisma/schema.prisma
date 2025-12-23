@@ -133,6 +133,7 @@ model Term {
   termStageRules  TermStageRule[]
   classrooms      Classroom[]
   studentProfiles StudentProfile[]
+  banks     Bank[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -242,6 +243,9 @@ model StudentProfile {
 
   // Relations
   retirementGoals RetirementGoal[]
+  wallet          Wallet? // 1-to-1
+  savingsAccounts SavingsAccount[]
+  fixedDeposits   FixedDeposit[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -255,12 +259,153 @@ model RetirementGoal {
   studentProfileId String         @db.Uuid
   studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
 
-  targetAmount  Float
-  currentAmount Float    @default(0)
+  targetAmount  Decimal @db.Decimal(12, 2)
+  currentAmount Decimal @default(0) @db.Decimal(12, 2)
   targetDate    DateTime
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("retirement_goals")
+}
+
+// ---------------------------------------------------------
+// 5. FINANCIAL SYSTEM (WALLET & BANKING)
+// ---------------------------------------------------------
+
+model Wallet {
+  id               String         @id @default(uuid()) @db.Uuid
+  // ✅ เชื่อมกับ StudentProfile แทน User+Term
+  studentProfileId String         @unique @db.Uuid
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  balance Decimal @default(0) @db.Decimal(12, 2) // รองรับพันล้าน และทศนิยม 2 ตำแหน่ง
+
+  transactions WalletTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id       String @id @default(uuid()) @db.Uuid
+  walletId String @db.Uuid
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  type          TransactionType // ENUM: INCOME, EXPENSE, TRANSFER
+  amount        Decimal         @db.Decimal(12, 2)
+  balanceBefore Decimal         @db.Decimal(12, 2)
+  balanceAfter  Decimal         @db.Decimal(12, 2)
+
+  // ✅ ใช้ JSON เก็บ Reference แทนการแยก column table/id (Prisma จัดการง่ายกว่า)
+  // ตัวอย่าง: { "source": "QUEST", "refId": "uuid-123" }
+  metadata    Json?
+  description String?
+
+  createdAt DateTime @default(now())
+
+  @@map("wallet_transactions")
+}
+
+enum TransactionType {
+  QUEST_REWARD
+  BANK_DEPOSIT
+  BANK_WITHDRAW
+  FINE_PAYMENT
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+// --- BANKING SYSTEM ---
+
+model Bank {
+  id     String @id @default(uuid()) @db.Uuid
+  termId String @db.Uuid
+  term   Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  name String
+
+  // Rules
+  interestRate         Decimal @db.Decimal(5, 4) // เช่น 0.0150 (1.5%)
+  withdrawLimitPerTerm Int? // null = unlimited
+  feePerTransaction    Decimal @default(0) @db.Decimal(10, 2)
+
+  savingsAccounts SavingsAccount[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("banks")
+}
+
+model SavingsAccount {
+  id               String         @id @default(uuid()) @db.Uuid
+  // ✅ เชื่อมกับ StudentProfile
+  studentProfileId String         @db.Uuid
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  bankId String @db.Uuid
+  bank   Bank   @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  balance       Decimal @default(0) @db.Decimal(12, 2)
+  withdrawCount Int     @default(0)
+  status        String  @default("ACTIVE") // ACTIVE, CLOSED
+
+  interestLogs SavingsInterestLog[]
+  // ✅ เพิ่ม Transaction ของธนาคารด้วย
+  transactions SavingsTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentProfileId, bankId]) // 1 คนมีได้ 1 บัญชีต่อ 1 ธนาคาร
+  @@map("savings_accounts")
+}
+
+model SavingsTransaction {
+  id               String         @id @default(uuid()) @db.Uuid
+  savingsAccountId String         @db.Uuid
+  savingsAccount   SavingsAccount @relation(fields: [savingsAccountId], references: [id], onDelete: Cascade)
+
+  type         String // DEPOSIT, WITHDRAW, INTEREST, FEE
+  amount       Decimal @db.Decimal(12, 2)
+  balanceAfter Decimal @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+
+  @@map("savings_transactions")
+}
+
+model SavingsInterestLog {
+  id               String         @id @default(uuid()) @db.Uuid
+  savingsAccountId String         @db.Uuid
+  savingsAccount   SavingsAccount @relation(fields: [savingsAccountId], references: [id], onDelete: Cascade)
+
+  weekNo         Int
+  rateUsed       Decimal @db.Decimal(5, 4)
+  interestAmount Decimal @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+
+  @@map("savings_interest_logs")
+}
+
+model FixedDeposit {
+  id               String         @id @default(uuid()) @db.Uuid
+  studentProfileId String         @db.Uuid
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  principal      Decimal @db.Decimal(12, 2) // เงินต้น
+  interestRate   Decimal @db.Decimal(5, 4) // ดอกเบี้ยตามตกลง
+  startWeekNo    Int
+  maturityWeekNo Int // สัปดาห์ที่ครบกำหนด
+
+  status String @default("ACTIVE") // ACTIVE, MATURED, WITHDRAWN_EARLY
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("fixed_deposits")
 }

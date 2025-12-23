@@ -9,7 +9,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { UpdateSchoolDto } from '../dto/update-school.dto';
 
 @Injectable()
-export class SchoolService {
+export class ClassroomService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createSchoolDto: CreateSchoolDto) {

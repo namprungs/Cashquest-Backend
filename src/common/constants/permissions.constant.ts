@@ -16,8 +16,10 @@ export const PERMISSIONS = {
     SCHOOL_CREATE: 'ACADEMIC_SCHOOL_CREATE', // สร้างโรงเรียน
     SCHOOL_EDIT: 'ACADEMIC_SCHOOL_EDIT', // แก้ข้อมูลโรงเรียน
     SCHOOL_VIEW: 'ACADEMIC_SCHOOL_VIEW', // ดูข้อมูลโรงเรียน
+    TERM_CREATE: 'ACADEMIC_TERM_CREATE',
     TERM_MANAGE: 'ACADEMIC_TERM_MANAGE', // จัดการเทอม/ปีการศึกษา
     CLASS_MANAGE: 'ACADEMIC_CLASS_MANAGE', // จัดการห้องเรียน/ตารางสอน
+    CLASS_CREATE: 'ACADEMIC_CLASS_CREATE', // จัดการห้องเรียน/ตารางสอน
   },
 
   // --- กลุ่มระบบจำลอง (Simulation) ---
