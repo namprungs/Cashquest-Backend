@@ -1,0 +1,222 @@
+{
+  "info": {
+    "name": "CashQuest - Academic Module",
+    "_postman_id": "b9e7e8c4-3d4f-4e62-9e9a-7fdd9d0c1234",
+    "description": "Academic / School / Term / LifeStage / TermStageRule APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "schoolId", "value": "" },
+    { "key": "termId", "value": "" },
+    { "key": "lifeStageId", "value": "" },
+    { "key": "termStageRuleId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "School",
+      "item": [
+        {
+          "name": "Create School",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/academic/schools", "host": ["{{baseUrl}}"], "path": ["academic", "schools"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chulalongkorn University\",\n  \"plan\": \"PREMIUM\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Schools",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/academic/schools", "host": ["{{baseUrl}}"], "path": ["academic", "schools"] }
+          }
+        },
+        {
+          "name": "Get School By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools/{{schoolId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "schools", "{{schoolId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update School",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools/{{schoolId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "schools", "{{schoolId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chula Updated\",\n  \"plan\": \"ENTERPRISE\"\n}"
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Term",
+      "item": [
+        {
+          "name": "Create Term (by School)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools/{{schoolId}}/terms",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "schools", "{{schoolId}}", "terms"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Term 1/2025\",\n  \"startDate\": \"2025-01-01\",\n  \"endDate\": \"2025-03-31\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Terms by School",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools/{{schoolId}}/terms?status=DRAFT",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "schools", "{{schoolId}}", "terms"],
+              "query": [{ "key": "status", "value": "DRAFT" }]
+            }
+          }
+        },
+        {
+          "name": "Get Term Detail",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "terms", "{{termId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Term (DRAFT only)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "terms", "{{termId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Term 1/2025 (Updated)\",\n  \"endDate\": \"2025-04-15\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Publish Term",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/publish",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "terms", "{{termId}}", "publish"]
+            }
+          }
+        },
+        {
+          "name": "Regenerate Term Weeks (week2 = 10 days)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/weeks/regenerate",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "terms", "{{termId}}", "weeks", "regenerate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"defaultWeekLengthDays\": 7,\n  \"overrides\": {\n    \"2\": 10\n  }\n}"
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "LifeStage",
+      "item": [
+        {
+          "name": "Create LifeStage",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/academic/life-stages",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "life-stages"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"HIGH_SCHOOL\",\n  \"orderNo\": 1,\n  \"unlockInvestment\": false,\n  \"enableRandomExpense\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Get LifeStages",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/academic/life-stages",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "life-stages"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "TermStageRule",
+      "item": [
+        {
+          "name": "Create TermStageRule",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/stage-rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "terms", "{{termId}}", "stage-rules"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lifeStageId\": \"{{lifeStageId}}\",\n  \"startWeek\": 1,\n  \"endWeek\": 4\n}"
+            }
+          }
+        },
+        {
+          "name": "Get TermStageRules by Term",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/stage-rules",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "terms", "{{termId}}", "stage-rules"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
