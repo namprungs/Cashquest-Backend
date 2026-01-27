@@ -70,8 +70,9 @@ export class AuthService {
       });
 
       return { accessToken, refreshToken: refreshToken.refreshToken };
-    } catch {
-      throw new BadRequestException();
+    } catch (e) {
+      console.error(e.message);
+      throw new BadRequestException('Login failed');
     }
   }
 

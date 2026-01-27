@@ -31,7 +31,7 @@ export class SchoolController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.schoolService.findOne(+id);
+    return this.schoolService.findOne(id);
   }
 
   @Patch(':id')
@@ -42,6 +42,6 @@ export class SchoolController {
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.schoolService.remove(+id);
+    return this.schoolService.remove(id);
   }
 }

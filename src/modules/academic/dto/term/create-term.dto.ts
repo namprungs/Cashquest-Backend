@@ -1,15 +1,10 @@
-import { IsDate, IsEnum, IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import { IsDate, IsNotEmpty, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-import { TermStatus } from '@prisma/client';
 
 export class CreateTermDto {
   @IsNotEmpty()
   @IsString()
   name: string;
-
-  @IsNotEmpty()
-  @IsUUID()
-  schoolId: string;
 
   @Type(() => Date)
   @IsNotEmpty()
@@ -21,9 +16,7 @@ export class CreateTermDto {
   @IsDate()
   endDate: Date;
 
-  totalWeek?: number;
+  schoolId: string;
 
-  @IsNotEmpty()
-  @IsEnum(TermStatus)
-  status: TermStatus;
+  totalWeek?: number;
 }

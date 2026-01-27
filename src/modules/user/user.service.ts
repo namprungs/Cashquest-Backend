@@ -11,6 +11,15 @@ export class UserService {
   async create(createUserDto: CreateUserDto) {
     const salt = await bcrypt.genSalt();
     createUserDto.password = await bcrypt.hash(createUserDto.password, salt);
+
+    const userExists = await this.prisma.user.findUnique({
+      where: { email: createUserDto.email },
+    });
+
+    if (userExists) {
+      throw new NotFoundException('User already exists');
+    }
+
     const newUser: User = await this.prisma.user.create({
       data: createUserDto,
     });
