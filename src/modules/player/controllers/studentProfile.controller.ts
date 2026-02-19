@@ -1,31 +1,30 @@
-import { Controller, Get, Post, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
+import { NeededPermissions } from 'src/modules/auth/decorators/needed-permissions.decorator';
+import { PERMISSIONS } from 'src/common/constants/permissions.constant';
+// ถ้ายังไม่มี GetUserID ให้ใช้ Req ชั่วคราว หรือสร้าง decorator ตามที่คุย
+import { PlayerService } from '../services/studentProfile.service';
+import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
+import type { User } from '@prisma/client';
 
-@Controller('players')
+@Controller('player')
 export class PlayerController {
-  constructor(private readonly playerController: PlayerController) {}
+  constructor(private readonly bootstrapService: PlayerService) {}
 
-  @Post()
-  create() {
-    return this.playerController.create();
+  @Post('terms/:termId/bootstrap')
+  @NeededPermissions([PERMISSIONS.PLAYER.BOOTSTRAP]) // หรือ USER
+  bootstrap(@Param('termId') termId: string, @CurrentUser() user: User) {
+    return this.bootstrapService.bootstrap(termId, user.id);
   }
 
-  @Get()
-  findAll() {
-    return this.playerController.findAll();
+  @Get('terms/:termId/students')
+  @NeededPermissions([PERMISSIONS.SIMULATION.REPORT_VIEW])
+  listStudents(@Param('termId') termId: string) {
+    return this.bootstrapService.getAllByTerm(termId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.playerController.findOne(id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string) {
-    return this.playerController.update(id);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.playerController.remove(id);
+  @Get('students/:id')
+  @NeededPermissions([PERMISSIONS.SIMULATION.REPORT_VIEW])
+  getStudentProfile(@Param('id') id: string) {
+    return this.bootstrapService.getById(id);
   }
 }

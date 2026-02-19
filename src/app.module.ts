@@ -7,6 +7,8 @@ import { AppService } from './app.service';
 import { HealthService } from './health.service';
 import { AcademicModule } from './modules/academic/academic.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ClassroomModule } from './modules/classroom/classroom.module';
+import { RoleModule } from './modules/role/role.module';
 
 @Module({
   imports: [
@@ -15,6 +17,8 @@ import { AuthModule } from './modules/auth/auth.module';
     UserModule,
     AuthModule,
     AcademicModule,
+    ClassroomModule,
+    RoleModule,
   ],
   controllers: [AppController],
   providers: [AppService, HealthService],

@@ -1,32 +1,68 @@
-import { Controller, Get, Post, Patch, Param, Delete } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Delete } from '@nestjs/common';
 import { ClassroomService } from './classroom.service';
+import { CreateClassroomDto } from './dto/create-classroom.dto';
+import { AddStudentDto } from './dto/add-student.dto';
+import { NeededPermissions } from 'src/modules/auth/decorators/needed-permissions.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { User } from '@prisma/client';
+import { PERMISSIONS } from 'src/common/constants/permissions.constant';
 
-@Controller('classroom')
+@Controller('academic')
 export class ClassroomController {
   constructor(private readonly classroomService: ClassroomService) {}
 
-  @Post()
-  create() {
-    return this.classroomService.create();
+  // -----------------------------
+  // Create classroom
+  // -----------------------------
+  @Post('terms/:termId/classrooms')
+  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_CREATE])
+  create(
+    @Param('termId') termId: string,
+    @CurrentUser() teacher: User,
+    @Body() dto: CreateClassroomDto,
+  ) {
+    return this.classroomService.createClassroom(termId, teacher.id, dto.name);
   }
 
-  @Get()
-  findAll() {
-    return this.classroomService.findAll();
+  // -----------------------------
+  // List classrooms in term
+  // -----------------------------
+  @Get('terms/:termId/classrooms')
+  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  findByTerm(@Param('termId') termId: string) {
+    return this.classroomService.findByTerm(termId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.classroomService.findOne(+id);
+  // -----------------------------
+  // Add student
+  // -----------------------------
+  @Post('classrooms/:classroomId/students')
+  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_EDIT])
+  addStudent(
+    @Param('classroomId') classroomId: string,
+    @Body() dto: AddStudentDto,
+  ) {
+    return this.classroomService.addStudent(classroomId, dto.studentId);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string) {
-    return this.classroomService.update(+id);
+  // -----------------------------
+  // Remove student
+  // -----------------------------
+  @Delete('classrooms/:classroomId/students/:studentId')
+  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_EDIT])
+  removeStudent(
+    @Param('classroomId') classroomId: string,
+    @Param('studentId') studentId: string,
+  ) {
+    return this.classroomService.removeStudent(classroomId, studentId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.classroomService.remove(+id);
+  // -----------------------------
+  // List students
+  // -----------------------------
+  @Get('classrooms/:classroomId/students')
+  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  listStudents(@Param('classroomId') classroomId: string) {
+    return this.classroomService.listStudents(classroomId);
   }
 }
