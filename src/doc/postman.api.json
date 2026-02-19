@@ -2,15 +2,24 @@
   "info": {
     "name": "CashQuest - Academic Module",
     "_postman_id": "b9e7e8c4-3d4f-4e62-9e9a-7fdd9d0c1234",
-    "description": "Academic / School / Term / LifeStage / TermStageRule APIs",
+    "description": "Academic / School / Term / LifeStage / TermStageRule / Classroom APIs",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "email", "value": "admin@school.com" },
+    { "key": "password", "value": "Admin@1234" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshKey", "value": "" },
     { "key": "schoolId", "value": "" },
     { "key": "termId", "value": "" },
     { "key": "lifeStageId", "value": "" },
-    { "key": "termStageRuleId", "value": "" }
+    { "key": "termStageRuleId", "value": "" },
+    { "key": "classroomId", "value": "" },
+    { "key": "studentId", "value": "" },
+    { "key": "roleId", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "studentProfileId", "value": "" }
   ],
   "item": [
     {
@@ -21,7 +30,11 @@
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/academic/schools", "host": ["{{baseUrl}}"], "path": ["academic", "schools"] },
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "schools"]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Chulalongkorn University\",\n  \"plan\": \"PREMIUM\"\n}"
@@ -32,7 +45,11 @@
           "name": "Get All Schools",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/academic/schools", "host": ["{{baseUrl}}"], "path": ["academic", "schools"] }
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "schools"]
+            }
           }
         },
         {
@@ -213,6 +230,279 @@
               "raw": "{{baseUrl}}/academic/terms/{{termId}}/stage-rules",
               "host": ["{{baseUrl}}"],
               "path": ["academic", "terms", "{{termId}}", "stage-rules"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Classroom",
+      "item": [
+        {
+          "name": "Create Classroom (by Term)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/classrooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "terms", "{{termId}}", "classrooms"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Classroom A\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Classrooms by Term",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/classrooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "terms", "{{termId}}", "classrooms"]
+            }
+          }
+        },
+        {
+          "name": "Add Student to Classroom",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/academic/classrooms/{{classroomId}}/students",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "classrooms", "{{classroomId}}", "students"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Students in Classroom",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/academic/classrooms/{{classroomId}}/students",
+              "host": ["{{baseUrl}}"],
+              "path": ["academic", "classrooms", "{{classroomId}}", "students"]
+            }
+          }
+        },
+        {
+          "name": "Remove Student from Classroom",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/academic/classrooms/{{classroomId}}/students/{{studentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "academic",
+                "classrooms",
+                "{{classroomId}}",
+                "students",
+                "{{studentId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-refresh-key", "value": "{{refreshKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "x-refresh-key", "value": "{{refreshKey}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Role",
+      "item": [
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles"]
+            }
+          }
+        },
+        {
+          "name": "Create/Update Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"TEACHER_PLUS\",\n  \"permissions\": [\n    \"USER_VIEW_SELF\",\n    \"ACADEMIC_CLASS_MANAGE\"\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "List Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/permissions",
+              "host": ["{{baseUrl}}"],
+              "path": ["roles", "permissions"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Register with Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john\",\n  \"email\": \"john@example.com\",\n  \"password\": \"Strong@1234\",\n  \"roleId\": \"{{roleId}}\",\n  \"schoolId\": \"{{schoolId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Assign User School",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/school",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "school"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schoolId\": \"{{schoolId}}\"\n}"
+            }
+          }
+        }
+      ]
+    }
+    ,
+    {
+      "name": "Player",
+      "item": [
+        {
+          "name": "Bootstrap StudentProfile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/player/terms/{{termId}}/bootstrap",
+              "host": ["{{baseUrl}}"],
+              "path": ["player", "terms", "{{termId}}", "bootstrap"]
+            }
+          }
+        },
+        {
+          "name": "List Student Profiles by Term",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/player/terms/{{termId}}/students",
+              "host": ["{{baseUrl}}"],
+              "path": ["player", "terms", "{{termId}}", "students"]
+            }
+          }
+        },
+        {
+          "name": "Get Student Profile by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/player/students/{{studentProfileId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["player", "students", "{{studentProfileId}}"]
             }
           }
         }

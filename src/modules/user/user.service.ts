@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { RegisterUserDto } from './dto/register-user.dto';
 
 @Injectable()
 export class UserService {
@@ -27,6 +28,87 @@ export class UserService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _password, ...result } = newUser;
     return { data: result, message: 'User created successfully' };
+  }
+
+  async registerWithRole(dto: RegisterUserDto) {
+    const salt = await bcrypt.genSalt();
+    const hashed = await bcrypt.hash(dto.password, salt);
+
+    const userExists = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (userExists) {
+      throw new NotFoundException('User already exists');
+    }
+
+    const role = await this.prisma.role.findUnique({
+      where: { id: dto.roleId },
+    });
+    if (!role) {
+      throw new NotFoundException('Role not found');
+    }
+
+    if (dto.schoolId) {
+      const school = await this.prisma.school.findUnique({
+        where: { id: dto.schoolId },
+      });
+      if (!school) {
+        throw new NotFoundException('School not found');
+      }
+    }
+    console.log('schoolId', dto?.schoolId);
+    const newUser = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        username: dto.username,
+        password: hashed,
+        roleId: dto.roleId,
+        schoolId: dto.schoolId,
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        roleId: true,
+        schoolId: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return { data: newUser, message: 'User registered with role successfully' };
+  }
+
+  async assignSchool(userId: string, schoolId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const school = await this.prisma.school.findUnique({
+      where: { id: schoolId },
+    });
+    if (!school) {
+      throw new NotFoundException('School not found');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { schoolId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        roleId: true,
+        schoolId: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return { data: updated, message: 'User school assigned successfully' };
   }
 
   async getUser(params: Partial<User>): Promise<User> {

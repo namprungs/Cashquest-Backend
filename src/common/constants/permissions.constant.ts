@@ -34,8 +34,14 @@ export const PERMISSIONS = {
     TERM_STAGE_RULE_EDIT: 'ACADEMIC_TERM_STAGE_RULE_EDIT', // แก้ไขกฎช่วงวัยเทอม
     TERM_STAGE_RULE_VIEW: 'ACADEMIC_TERM_STAGE_RULE_VIEW', // ดูกฎช่วงวัยเทอม
     TERM_STAGE_RULE_DELETE: 'ACADEMIC_TERM_STAGE_RULE_DELETE', // ลบกฎช่วงวัยเทอม
+    CLASSROOM_CREATE: 'ACADEMIC_CLASSROOM_CREATE', // สร้างห้องเรียน
+    CLASSROOM_VIEW: 'ACADEMIC_CLASSROOM_VIEW', // ดูห้องเรียน
+    CLASSROOM_EDIT: 'ACADEMIC_CLASSROOM_EDIT', // แก้ไขห้องเรียน
+    CLASSROOM_DELETE: 'ACADEMIC_CLASSROOM_DELETE', // ลบห้องเรียน
   },
-
+  PLAYER: {
+    BOOTSTRAP: 'PLAYER_BOOTSTRAP', // สิทธิ์เริ่มต้นเล่นเกม (Student)
+  },
   // --- กลุ่มระบบจำลอง (Simulation) ---
   SIMULATION: {
     PLAY: 'SIM_PLAY', // สิทธิ์ในการเล่น (Student)
