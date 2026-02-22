@@ -9,6 +9,8 @@ import { AcademicModule } from './modules/academic/academic.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ClassroomModule } from './modules/classroom/classroom.module';
 import { RoleModule } from './modules/role/role.module';
+import { QuizModule } from './modules/quiz/quiz.module';
+import { QuestModule } from './modules/quest/quest.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { RoleModule } from './modules/role/role.module';
     AcademicModule,
     ClassroomModule,
     RoleModule,
+    QuizModule,
+    QuestModule,
   ],
   controllers: [AppController],
   providers: [AppService, HealthService],

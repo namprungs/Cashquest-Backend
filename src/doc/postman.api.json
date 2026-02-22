@@ -19,7 +19,11 @@
     { "key": "studentId", "value": "" },
     { "key": "roleId", "value": "" },
     { "key": "userId", "value": "" },
-    { "key": "studentProfileId", "value": "" }
+    { "key": "studentProfileId", "value": "" },
+    { "key": "moduleId", "value": "" },
+    { "key": "quizId", "value": "" },
+    { "key": "attemptId", "value": "" },
+    { "key": "questId", "value": "" }
   ],
   "item": [
     {
@@ -503,6 +507,262 @@
               "raw": "{{baseUrl}}/player/students/{{studentProfileId}}",
               "host": ["{{baseUrl}}"],
               "path": ["player", "students", "{{studentProfileId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Quiz",
+      "item": [
+        {
+          "name": "Create Quiz Snapshot",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quizzes",
+              "host": ["{{baseUrl}}"],
+              "path": ["quizzes"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleId\": \"{{moduleId}}\",\n  \"timeLimitSec\": 1200,\n  \"passAllRequired\": false,\n  \"questions\": [\n    {\n      \"orderNo\": 1,\n      \"questionText\": \"2 + 2 = ?\",\n      \"questionType\": \"SINGLE_CHOICE\",\n      \"points\": 1,\n      \"gradingType\": \"AUTO\",\n      \"choices\": [\n        { \"orderNo\": 1, \"choiceText\": \"3\", \"isCorrect\": false },\n        { \"orderNo\": 2, \"choiceText\": \"4\", \"isCorrect\": true }\n      ]\n    },\n    {\n      \"orderNo\": 2,\n      \"questionText\": \"Capital of Thailand\",\n      \"questionType\": \"SHORT_TEXT\",\n      \"points\": 1,\n      \"gradingType\": \"AUTO\",\n      \"answerKey\": {\n        \"acceptedAnswers\": [\"Bangkok\", \"Krung Thep\"],\n        \"ignoreCase\": true,\n        \"trim\": true\n      },\n      \"choices\": []\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Quiz Snapshot",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quizzes/{{quizId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["quizzes", "{{quizId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleId\": \"{{moduleId}}\",\n  \"timeLimitSec\": 1500,\n  \"passAllRequired\": false,\n  \"questions\": [\n    {\n      \"id\": \"<existing-question-id>\",\n      \"orderNo\": 1,\n      \"questionText\": \"2 + 2 = ? (updated)\",\n      \"questionType\": \"SINGLE_CHOICE\",\n      \"points\": 1,\n      \"gradingType\": \"AUTO\",\n      \"choices\": [\n        { \"id\": \"<existing-choice-id-1>\", \"orderNo\": 1, \"choiceText\": \"3\", \"isCorrect\": false },\n        { \"id\": \"<existing-choice-id-2>\", \"orderNo\": 2, \"choiceText\": \"4\", \"isCorrect\": true }\n      ]\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "List Quizzes",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quizzes?termId={{termId}}&moduleId={{moduleId}}&search=math",
+              "host": ["{{baseUrl}}"],
+              "path": ["quizzes"],
+              "query": [
+                { "key": "termId", "value": "{{termId}}" },
+                { "key": "moduleId", "value": "{{moduleId}}" },
+                { "key": "search", "value": "math" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Quiz By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quizzes/{{quizId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["quizzes", "{{quizId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Quiz",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quizzes/{{quizId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["quizzes", "{{quizId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Attempt (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quizzes/{{quizId}}/attempts",
+              "host": ["{{baseUrl}}"],
+              "path": ["quizzes", "{{quizId}}", "attempts"]
+            }
+          }
+        },
+        {
+          "name": "Submit Attempt (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/attempts/{{attemptId}}/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["attempts", "{{attemptId}}", "submit"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"<question-single-choice-id>\",\n      \"selectedChoiceIds\": [\"<choice-correct-id>\"]\n    },\n    {\n      \"questionId\": \"<question-short-text-id>\",\n      \"answerText\": \"Bangkok\"\n    }\n  ]\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Quest",
+      "item": [
+        {
+          "name": "Create Quest Snapshot",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests",
+              "host": ["{{baseUrl}}"],
+              "path": ["quests"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"termId\": \"{{termId}}\",\n  \"type\": \"QUIZ\",\n  \"quizId\": \"{{quizId}}\",\n  \"title\": \"Weekly Quiz Quest\",\n  \"description\": \"Do quiz and submit before deadline\",\n  \"rewardCoins\": 50,\n  \"status\": \"DRAFT\",\n  \"startAt\": \"2026-02-23T00:00:00.000Z\",\n  \"deadlineAt\": \"2026-03-01T23:59:59.000Z\",\n  \"classroomIds\": [\"{{classroomId}}\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Quest Snapshot",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["quests", "{{questId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Weekly Quiz Quest (Updated)\",\n  \"rewardCoins\": 80,\n  \"classroomIds\": [\"{{classroomId}}\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "List Quests",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests?termId={{termId}}&status=PUBLISHED&type=QUIZ&search=weekly",
+              "host": ["{{baseUrl}}"],
+              "path": ["quests"],
+              "query": [
+                { "key": "termId", "value": "{{termId}}" },
+                { "key": "status", "value": "PUBLISHED" },
+                { "key": "type", "value": "QUIZ" },
+                { "key": "search", "value": "weekly" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Quest By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["quests", "{{questId}}"]
+            }
+          }
+        },
+        {
+          "name": "Publish Quest",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}/publish",
+              "host": ["{{baseUrl}}"],
+              "path": ["quests", "{{questId}}", "publish"]
+            }
+          }
+        },
+        {
+          "name": "Close Quest",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}/close",
+              "host": ["{{baseUrl}}"],
+              "path": ["quests", "{{questId}}", "close"]
+            }
+          }
+        },
+        {
+          "name": "Get My Quests (Student)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["quests", "me"]
+            }
+          }
+        },
+        {
+          "name": "Get My Quest Detail (Student)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["quests", "{{questId}}", "me"]
             }
           }
         }
