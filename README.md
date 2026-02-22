@@ -1,98 +1,101 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# CashQuest Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend API ของโปรเจกต์ CashQuest (NestJS + Prisma + PostgreSQL)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## สิ่งที่ต้องมีในเครื่อง
 
-## Description
+- Node.js 20+
+- pnpm (โปรเจกต์ล็อกไว้ที่ pnpm 10)
+- Docker Desktop (หรือ Docker Engine + Docker Compose)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Quick Start (สำหรับคนเพิ่ง clone)
 
-## Project setup
+1) ติดตั้ง dependencies
 
 ```bash
-$ pnpm install
+pnpm install
 ```
 
-## Compile and run the project
+2) สร้างไฟล์ environment
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+cp .env.example .env
 ```
 
-## Run tests
+> ค่า `DATABASE_URL` ใน `.env.example` ถูกตั้งให้ใช้กับ PostgreSQL ใน `docker-compose.yml` แล้ว
+
+3) เปิด PostgreSQL ด้วย Docker
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+docker compose up -d postgres
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+4) รัน migration และ seed ข้อมูลเริ่มต้น
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+pnpm prisma migrate deploy
+pnpm prisma db seed
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+5) รัน backend
 
-## Resources
+```bash
+pnpm run start:dev
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+API จะรันที่ `http://localhost:3000`
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+---
 
-## Support
+## คำสั่ง Docker ที่ใช้บ่อย
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+# เปิด DB
+docker compose up -d postgres
 
-## Stay in touch
+# ดู log ของ DB
+docker compose logs -f postgres
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# ปิด DB
+docker compose down
+```
 
-## License
+## คำสั่ง Prisma ที่ใช้บ่อย
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```bash
+# สร้าง Prisma Client ใหม่ (หลังแก้ schema)
+pnpm prisma generate
+
+# ใช้ migration ที่มีอยู่แล้ว (เหมาะกับเครื่องใหม่ / CI)
+pnpm prisma migrate deploy
+
+# สร้าง migration ใหม่จากการแก้ schema แล้ว apply ทันที (dev)
+pnpm prisma migrate dev --name your_migration_name
+
+# Seed ข้อมูล
+pnpm prisma db seed
+
+# ดูสถานะ migration
+pnpm prisma migrate status
+
+# เปิด Prisma Studio
+pnpm prisma studio
+
+# รีเซ็ตฐานข้อมูลและรัน migration+seed ใหม่ (ใช้เฉพาะ dev)
+pnpm prisma migrate reset
+```
+
+## Test
+
+```bash
+pnpm run test
+pnpm run test:e2e
+pnpm run test:cov
+```
+
+## หมายเหตุ
+
+- หากเปลี่ยนค่าใน `.env` ให้ restart server ใหม่
+- ไฟล์ seed จะสร้างบัญชีเริ่มต้น:
+  - email: `admin@school.com`
+  - password: `Admin@1234`
