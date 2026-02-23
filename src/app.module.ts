@@ -11,6 +11,7 @@ import { ClassroomModule } from './modules/classroom/classroom.module';
 import { RoleModule } from './modules/role/role.module';
 import { QuizModule } from './modules/quiz/quiz.module';
 import { QuestModule } from './modules/quest/quest.module';
+import { LearningModuleModule } from './modules/learning-module/learning-module.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { QuestModule } from './modules/quest/quest.module';
     RoleModule,
     QuizModule,
     QuestModule,
+    LearningModuleModule,
   ],
   controllers: [AppController],
   providers: [AppService, HealthService],
