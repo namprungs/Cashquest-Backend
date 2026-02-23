@@ -6,7 +6,7 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "baseUrl", "value": "http://localhost:3000" },
     { "key": "email", "value": "admin@school.com" },
     { "key": "password", "value": "Admin@1234" },
     { "key": "accessToken", "value": "" },
@@ -23,7 +23,9 @@
     { "key": "moduleId", "value": "" },
     { "key": "quizId", "value": "" },
     { "key": "attemptId", "value": "" },
-    { "key": "questId", "value": "" }
+    { "key": "questId", "value": "" },
+    { "key": "submissionId", "value": "" },
+    { "key": "expectedUpdatedAt", "value": "" }
   ],
   "item": [
     {
@@ -763,6 +765,181 @@
               "raw": "{{baseUrl}}/quests/{{questId}}/me",
               "host": ["{{baseUrl}}"],
               "path": ["quests", "{{questId}}", "me"]
+            }
+          }
+        },
+        {
+          "name": "Submit My Quest (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}/submissions/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["quests", "{{questId}}", "submissions", "me"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payloadJson\": {\n    \"text\": \"my assignment answer\"\n  },\n  \"attachmentUrl\": \"https://example.com/file.pdf\",\n  \"expectedLatestVersionNo\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Approve Submission (Teacher)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/submissions/{{submissionId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["quests", "submissions", "{{submissionId}}", "approve"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expectedUpdatedAt\": \"{{expectedUpdatedAt}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reject Submission (Teacher)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/submissions/{{submissionId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["quests", "submissions", "{{submissionId}}", "reject"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectReason\": \"Please improve details\",\n  \"expectedUpdatedAt\": \"{{expectedUpdatedAt}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Learning Module",
+      "item": [
+        {
+          "name": "Create Learning Module",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules",
+              "host": ["{{baseUrl}}"],
+              "path": ["learning-modules"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"termId\": \"{{termId}}\",\n  \"title\": \"Module 1\",\n  \"description\": \"Intro to finance\",\n  \"contentUrl\": \"https://example.com/module-1\",\n  \"orderNo\": 1,\n  \"isActive\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Learning Module",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules/{{moduleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["learning-modules", "{{moduleId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Module 1 Updated\",\n  \"orderNo\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "List Learning Modules",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules?termId={{termId}}&isActive=true&search=intro",
+              "host": ["{{baseUrl}}"],
+              "path": ["learning-modules"],
+              "query": [
+                { "key": "termId", "value": "{{termId}}" },
+                { "key": "isActive", "value": "true" },
+                { "key": "search", "value": "intro" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Learning Module By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules/{{moduleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["learning-modules", "{{moduleId}}"]
+            }
+          }
+        },
+        {
+          "name": "Activate Learning Module",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules/{{moduleId}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["learning-modules", "{{moduleId}}", "activate"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Learning Module",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules/{{moduleId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["learning-modules", "{{moduleId}}", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "Delete Learning Module",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules/{{moduleId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["learning-modules", "{{moduleId}}"]
             }
           }
         }

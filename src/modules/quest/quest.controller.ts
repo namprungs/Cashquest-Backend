@@ -7,6 +7,11 @@ import type { User } from '@prisma/client';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
 import { ListQuestsQueryDto } from './dto/list-quests-query.dto';
+import { SubmitQuestDto } from './dto/submit-quest.dto';
+import {
+  ApproveSubmissionDto,
+  RejectSubmissionDto,
+} from './dto/review-submission.dto';
 
 @Controller('quests')
 export class QuestController {
@@ -62,5 +67,35 @@ export class QuestController {
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
   close(@Param('questId') questId: string, @CurrentUser() user: User) {
     return this.questService.closeQuest(questId, user);
+  }
+
+  @Post(':questId/submissions/me')
+  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  submitMe(
+    @Param('questId') questId: string,
+    @CurrentUser() user: User,
+    @Body() dto: SubmitQuestDto,
+  ) {
+    return this.questService.submitMyQuest(questId, user, dto);
+  }
+
+  @Post('submissions/:submissionId/approve')
+  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  approve(
+    @Param('submissionId') submissionId: string,
+    @CurrentUser() user: User,
+    @Body() dto: ApproveSubmissionDto,
+  ) {
+    return this.questService.approveSubmission(submissionId, user, dto);
+  }
+
+  @Post('submissions/:submissionId/reject')
+  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  reject(
+    @Param('submissionId') submissionId: string,
+    @CurrentUser() user: User,
+    @Body() dto: RejectSubmissionDto,
+  ) {
+    return this.questService.rejectSubmission(submissionId, user, dto);
   }
 }

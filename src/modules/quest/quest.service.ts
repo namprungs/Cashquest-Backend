@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   Prisma,
+  QuestSubmissionStatus,
   QuestStatus,
   QuestType,
   type User,
@@ -15,6 +16,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
 import { ListQuestsQueryDto } from './dto/list-quests-query.dto';
+import { SubmitQuestDto } from './dto/submit-quest.dto';
+import {
+  ApproveSubmissionDto,
+  RejectSubmissionDto,
+} from './dto/review-submission.dto';
 
 type CurrentUser = User & { role?: { name?: string } | null };
 
@@ -428,6 +434,276 @@ export class QuestService {
     return quest;
   }
 
+  private ensureExpectedUpdatedAt(
+    currentUpdatedAt: Date,
+    expectedUpdatedAt?: string,
+  ) {
+    if (!expectedUpdatedAt) {
+      return;
+    }
+
+    const parsed = new Date(expectedUpdatedAt);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException('expectedUpdatedAt must be valid ISO date');
+    }
+
+    if (parsed.getTime() !== currentUpdatedAt.getTime()) {
+      throw new BadRequestException(
+        'Submission state conflict: record was updated by another action',
+      );
+    }
+  }
+
+  private async getStudentProfileInQuestTerm(quest: Quest, userId: string) {
+    const profile = await this.prisma.studentProfile.findUnique({
+      where: {
+        userId_termId: {
+          userId,
+          termId: quest.termId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!profile) {
+      throw new ForbiddenException(
+        'Student profile for this term is not found',
+      );
+    }
+
+    return profile;
+  }
+
+  async submitMyQuest(questId: string, user: CurrentUser, dto: SubmitQuestDto) {
+    this.assertStudent(user);
+
+    const quest = await this.ensureQuestMembership(questId, user.id);
+    if (quest.type === QuestType.QUIZ) {
+      throw new BadRequestException(
+        'QUIZ quest submission must be done via quiz attempts',
+      );
+    }
+    if (quest.status !== QuestStatus.PUBLISHED) {
+      throw new BadRequestException('Quest is not open for submission');
+    }
+
+    const studentProfile = await this.getStudentProfileInQuestTerm(
+      quest,
+      user.id,
+    );
+
+    try {
+      const result = await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.questSubmission.findUnique({
+          where: {
+            questId_studentProfileId: {
+              questId,
+              studentProfileId: studentProfile.id,
+            },
+          },
+          select: {
+            id: true,
+            status: true,
+            latestVersionNo: true,
+            updatedAt: true,
+          },
+        });
+
+        if (!existing) {
+          if (dto.expectedLatestVersionNo !== undefined) {
+            throw new BadRequestException(
+              'Submission state conflict: expectedLatestVersionNo does not match current state',
+            );
+          }
+
+          const created = await tx.questSubmission.create({
+            data: {
+              questId,
+              studentProfileId: studentProfile.id,
+              status: QuestSubmissionStatus.PENDING,
+              latestVersionNo: 1,
+            },
+            select: { id: true },
+          });
+
+          await tx.questSubmissionVersion.create({
+            data: {
+              submissionId: created.id,
+              versionNo: 1,
+              payloadJson:
+                (dto.payloadJson as Prisma.InputJsonValue) ?? Prisma.JsonNull,
+              attachmentUrl: dto.attachmentUrl,
+            },
+          });
+
+          return tx.questSubmission.findUnique({
+            where: { id: created.id },
+            include: {
+              versions: {
+                orderBy: { versionNo: 'desc' },
+              },
+            },
+          });
+        }
+
+        if (existing.status === QuestSubmissionStatus.APPROVED) {
+          throw new BadRequestException(
+            'Submission already approved and cannot be edited',
+          );
+        }
+
+        if (
+          dto.expectedLatestVersionNo !== undefined &&
+          dto.expectedLatestVersionNo !== existing.latestVersionNo
+        ) {
+          throw new BadRequestException(
+            'Submission state conflict: expectedLatestVersionNo does not match current state',
+          );
+        }
+
+        const lock = await tx.questSubmission.updateMany({
+          where: {
+            id: existing.id,
+            latestVersionNo: existing.latestVersionNo,
+          },
+          data: {
+            latestVersionNo: { increment: 1 },
+            status: QuestSubmissionStatus.PENDING,
+            rejectReason: null,
+          },
+        });
+
+        if (lock.count !== 1) {
+          throw new BadRequestException(
+            'Submission state conflict: please refresh and try again',
+          );
+        }
+
+        const nextVersionNo = existing.latestVersionNo + 1;
+        await tx.questSubmissionVersion.create({
+          data: {
+            submissionId: existing.id,
+            versionNo: nextVersionNo,
+            payloadJson:
+              (dto.payloadJson as Prisma.InputJsonValue) ?? Prisma.JsonNull,
+            attachmentUrl: dto.attachmentUrl,
+          },
+        });
+
+        return tx.questSubmission.findUnique({
+          where: { id: existing.id },
+          include: {
+            versions: {
+              orderBy: { versionNo: 'desc' },
+            },
+          },
+        });
+      });
+
+      return { success: true, data: result };
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message.toLowerCase() : String(error);
+      if (
+        message.includes('unique constraint') ||
+        message.includes('quest_submission_versions_submissionid_versionno_key')
+      ) {
+        throw new BadRequestException(
+          'Submission state conflict: please refresh and try again',
+        );
+      }
+      throw error;
+    }
+  }
+
+  async approveSubmission(
+    submissionId: string,
+    user: CurrentUser,
+    dto: ApproveSubmissionDto,
+  ) {
+    this.assertTeacherOrAdmin(user);
+
+    const submission = await this.prisma.questSubmission.findUnique({
+      where: { id: submissionId },
+      select: {
+        id: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    this.ensureExpectedUpdatedAt(submission.updatedAt, dto.expectedUpdatedAt);
+
+    if (submission.status === QuestSubmissionStatus.APPROVED) {
+      throw new BadRequestException('Submission is already approved');
+    }
+
+    const updated = await this.prisma.questSubmission.update({
+      where: { id: submissionId },
+      data: {
+        status: QuestSubmissionStatus.APPROVED,
+        reviewedById: user.id,
+        rejectReason: null,
+      },
+      include: {
+        versions: {
+          orderBy: { versionNo: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    return { success: true, data: updated };
+  }
+
+  async rejectSubmission(
+    submissionId: string,
+    user: CurrentUser,
+    dto: RejectSubmissionDto,
+  ) {
+    this.assertTeacherOrAdmin(user);
+
+    const submission = await this.prisma.questSubmission.findUnique({
+      where: { id: submissionId },
+      select: {
+        id: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    this.ensureExpectedUpdatedAt(submission.updatedAt, dto.expectedUpdatedAt);
+
+    if (submission.status === QuestSubmissionStatus.REJECTED) {
+      throw new BadRequestException('Submission is already rejected');
+    }
+
+    const updated = await this.prisma.questSubmission.update({
+      where: { id: submissionId },
+      data: {
+        status: QuestSubmissionStatus.REJECTED,
+        reviewedById: user.id,
+        rejectReason: dto.rejectReason,
+      },
+      include: {
+        versions: {
+          orderBy: { versionNo: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    return { success: true, data: updated };
+  }
+
   async getMyQuestDetail(questId: string, user: CurrentUser) {
     this.assertStudent(user);
 
@@ -502,11 +778,11 @@ export class QuestService {
           studentProfileId: profile.id,
         },
       },
-      select: {
-        id: true,
-        status: true,
-        latestVersionNo: true,
-        updatedAt: true,
+      include: {
+        versions: {
+          orderBy: { versionNo: 'desc' },
+          take: 5,
+        },
       },
     });
 
