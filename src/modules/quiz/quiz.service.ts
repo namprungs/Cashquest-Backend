@@ -384,6 +384,14 @@ export class QuizService {
         module: {
           select: { id: true, title: true, termId: true },
         },
+        questions: {
+          orderBy: { orderNo: 'asc' },
+          include: {
+            choices: {
+              orderBy: { orderNo: 'asc' },
+            },
+          },
+        },
         _count: {
           select: {
             questions: true,

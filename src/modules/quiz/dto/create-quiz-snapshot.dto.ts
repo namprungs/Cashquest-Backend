@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
@@ -76,6 +76,9 @@ export class QuizQuestionSnapshotDto {
 }
 
 export class CreateQuizSnapshotDto {
+  @Transform(({ value }) =>
+    value === '' || value === null ? undefined : value,
+  )
   @IsOptional()
   @IsUUID()
   moduleId?: string;
