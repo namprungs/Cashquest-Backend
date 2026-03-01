@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './modules/user/user.module';
 import { AppController } from './app.controller';
@@ -12,10 +13,12 @@ import { RoleModule } from './modules/role/role.module';
 import { QuizModule } from './modules/quiz/quiz.module';
 import { QuestModule } from './modules/quest/quest.module';
 import { LearningModuleModule } from './modules/learning-module/learning-module.module';
+import { InvestmentModule } from './modules/investment/investment.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     UserModule,
     AuthModule,
@@ -25,6 +28,7 @@ import { LearningModuleModule } from './modules/learning-module/learning-module.
     QuizModule,
     QuestModule,
     LearningModuleModule,
+    InvestmentModule,
   ],
   controllers: [AppController],
   providers: [AppService, HealthService],
