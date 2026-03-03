@@ -1,10 +1,21 @@
 import { Module } from '@nestjs/common';
-import { InvestmentController } from './investment.controller';
-import { InvestmentService } from './investment.service';
+import { InvestmentController } from './controllers/investment.controller';
+import { InvestmentService } from './services/investment.service';
+import { InvestmentCoreService } from './services/investment/investment-core.service';
+import { InvestmentManagementService } from './services/investment/investment-management.service';
+import { InvestmentMarketService } from './services/investment/investment-market.service';
+import { InvestmentPortfolioService } from './services/investment/investment-portfolio.service';
 import { LivePriceTickScheduler } from './tasks/live-price-tick.scheduler';
 
 @Module({
   controllers: [InvestmentController],
-  providers: [InvestmentService, LivePriceTickScheduler],
+  providers: [
+    InvestmentCoreService,
+    InvestmentMarketService,
+    InvestmentManagementService,
+    InvestmentPortfolioService,
+    InvestmentService,
+    LivePriceTickScheduler,
+  ],
 })
 export class InvestmentModule {}

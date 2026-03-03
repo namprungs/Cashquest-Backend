@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TermStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { InvestmentService } from '../investment.service';
+import { InvestmentService } from '../services/investment.service';
 
 @Injectable()
 export class LivePriceTickScheduler {
