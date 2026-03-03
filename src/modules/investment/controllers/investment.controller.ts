@@ -8,31 +8,31 @@ import {
   Query,
 } from '@nestjs/common';
 import type { User } from '@prisma/client';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { NeededPermissions } from '../auth/decorators/needed-permissions.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { NeededPermissions } from '../../auth/decorators/needed-permissions.decorator';
 import { PERMISSIONS } from 'src/common/constants/permissions.constant';
-import { InvestmentService } from './investment.service';
-import { ListProductPricesQueryDto } from './dto/list-product-prices-query.dto';
-import { CreateOrderDto } from './dto/create-order.dto';
-import { ListMyOrdersQueryDto } from './dto/list-my-orders-query.dto';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-import { UpsertProductSimulationsDto } from './dto/upsert-product-simulations.dto';
-import { UpsertTermSimulationDto } from './dto/upsert-term-simulation.dto';
-import { GenerateWeekPriceDto } from './dto/generate-week-price.dto';
-import { GenerateRangePriceDto } from './dto/generate-range-price.dto';
-import { ManualProductPricesDto } from './dto/manual-product-prices.dto';
-import { CreateEconomicEventDto } from './dto/create-economic-event.dto';
-import { UpdateEconomicEventDto } from './dto/update-economic-event.dto';
-import { CreateTermEventDto } from './dto/create-term-event.dto';
-import { UpdateTermEventDto } from './dto/update-term-event.dto';
-import { CreateMarketRegimeDto } from './dto/create-market-regime.dto';
-import { UpdateMarketRegimeDto } from './dto/update-market-regime.dto';
-import { ProcessOrdersDto } from './dto/process-orders.dto';
-import { ProcessPayoutsDto } from './dto/process-payouts.dto';
-import { ListLivePriceTicksQueryDto } from './dto/list-live-price-ticks-query.dto';
-import { GenerateLiveTicksDto } from './dto/generate-live-ticks.dto';
-import { FinalizeLiveWeekDto } from './dto/finalize-live-week.dto';
+import { InvestmentService } from '../services/investment.service';
+import { ListProductPricesQueryDto } from '../dto/list-product-prices-query.dto';
+import { CreateOrderDto } from '../dto/create-order.dto';
+import { ListMyOrdersQueryDto } from '../dto/list-my-orders-query.dto';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
+import { UpsertProductSimulationsDto } from '../dto/upsert-product-simulations.dto';
+import { UpsertTermSimulationDto } from '../dto/upsert-term-simulation.dto';
+import { GenerateWeekPriceDto } from '../dto/generate-week-price.dto';
+import { GenerateRangePriceDto } from '../dto/generate-range-price.dto';
+import { ManualProductPricesDto } from '../dto/manual-product-prices.dto';
+import { CreateEconomicEventDto } from '../dto/create-economic-event.dto';
+import { UpdateEconomicEventDto } from '../dto/update-economic-event.dto';
+import { CreateTermEventDto } from '../dto/create-term-event.dto';
+import { UpdateTermEventDto } from '../dto/update-term-event.dto';
+import { CreateMarketRegimeDto } from '../dto/create-market-regime.dto';
+import { UpdateMarketRegimeDto } from '../dto/update-market-regime.dto';
+import { ProcessOrdersDto } from '../dto/process-orders.dto';
+import { ProcessPayoutsDto } from '../dto/process-payouts.dto';
+import { ListLivePriceTicksQueryDto } from '../dto/list-live-price-ticks-query.dto';
+import { GenerateLiveTicksDto } from '../dto/generate-live-ticks.dto';
+import { FinalizeLiveWeekDto } from '../dto/finalize-live-week.dto';
 
 @Controller('market')
 export class InvestmentController {
