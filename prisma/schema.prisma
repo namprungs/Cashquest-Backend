@@ -460,9 +460,9 @@ model Quiz {
   timeLimitSec    Int?    @map("time_limit_sec")
   passAllRequired Boolean @default(false) @map("pass_all_required")
 
-  questions     QuizQuestion[]
-  attempts      QuizAttempt[]
-  quests        Quest[]
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+  quests    Quest[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
