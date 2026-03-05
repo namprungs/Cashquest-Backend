@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { Prisma, User } from '@prisma/client';
+import { Prisma, TermStatus, User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -199,6 +199,11 @@ export class UserService {
       select: {
         id: true,
         termId: true,
+        wallet: {
+          select: {
+            balance: true,
+          },
+        },
       },
     });
 
@@ -210,7 +215,52 @@ export class UserService {
         studentCode: user.username,
         email: user.email,
         studentProfileId: studentProfile?.id ?? null,
+        walletBalance: studentProfile?.wallet?.balance ?? 0,
         termId,
+      },
+    };
+  }
+
+  async getMyCurrentTermId(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        schoolId: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!user.schoolId) {
+      throw new NotFoundException('User is not assigned to a school');
+    }
+
+    const term = await this.prisma.term.findFirst({
+      where: {
+        schoolId: user.schoolId,
+        status: TermStatus.ONGOING,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    if (!term) {
+      throw new NotFoundException('Active term not found');
+    }
+
+    return {
+      success: true,
+      data: {
+        termId: term.id,
+        termName: term.name,
       },
     };
   }

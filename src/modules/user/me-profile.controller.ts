@@ -10,6 +10,12 @@ import { UserService } from './user.service';
 export class MeProfileController {
   constructor(private readonly userService: UserService) {}
 
+  @Get('term-id')
+  @NeededPermissions([PERMISSIONS.USER.VIEW_SELF])
+  getMyTermId(@CurrentUser() user: User) {
+    return this.userService.getMyCurrentTermId(user.id);
+  }
+
   @Get('profile')
   @NeededPermissions([PERMISSIONS.USER.VIEW_SELF])
   getMyProfile(@CurrentUser() user: User, @Query() query: MeProfileQueryDto) {
