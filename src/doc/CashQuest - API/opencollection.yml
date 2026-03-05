@@ -2,15 +2,26 @@ opencollection: 1.0.0
 
 info:
   name: CashQuest - API
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
 
 request:
   variables:
     - name: baseUrl
       value: http://localhost:3000
     - name: email
-      value: admin@school.com
+      value: student@school.com
     - name: password
-      value: Admin@1234
+      value: Student@1234
     - name: accessToken
       value: ""
     - name: refreshKey
@@ -18,7 +29,7 @@ request:
     - name: schoolId
       value: ""
     - name: termId
-      value: ""
+      value: df1c384e-b05c-459c-beff-3162422c854a
     - name: lifeStageId
       value: ""
     - name: termStageRuleId
@@ -32,7 +43,7 @@ request:
     - name: userId
       value: ""
     - name: studentProfileId
-      value: ""
+      value: 7b156613-7757-4203-a944-85c5904e35f6
     - name: moduleId
       value: ""
     - name: quizId
@@ -58,7 +69,7 @@ request:
     - name: regimeId
       value: ""
     - name: bankId
-      value: ""
+      value: a1f92123-d6d9-4913-a567-fa00e9c21d36
     - name: walletId
       value: ""
     - name: savingsAccountId

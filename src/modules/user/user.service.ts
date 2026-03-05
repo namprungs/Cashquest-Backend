@@ -175,6 +175,46 @@ export class UserService {
     return users.map(({ password, ...user }) => user)[0];
   }
 
+  async getMeProfile(userId: string, termId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const studentProfile = await this.prisma.studentProfile.findUnique({
+      where: {
+        userId_termId: {
+          userId,
+          termId,
+        },
+      },
+      select: {
+        id: true,
+        termId: true,
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        userId: user.id,
+        displayName: user.username,
+        studentCode: user.username,
+        email: user.email,
+        studentProfileId: studentProfile?.id ?? null,
+        termId,
+      },
+    };
+  }
+
   async updateUser(query: Partial<User>, data: Partial<User>) {
     return await this.prisma.user.updateMany({
       where: query,
