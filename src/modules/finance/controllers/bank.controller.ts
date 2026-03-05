@@ -22,7 +22,7 @@ export class BankController {
   }
 
   @Get('term/:termId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  // @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
   listBanksByTerm(@Param('termId') termId: string) {
     return this.bankService.listBanksByTerm(termId);
   }

@@ -17,7 +17,7 @@ http:
       {
         "studentProfileId": "{{studentProfileId}}",
         "bankId": "{{bankId}}",
-        "initialDeposit": 100
+        "initialDeposit": 1000
       }
   auth: inherit
 

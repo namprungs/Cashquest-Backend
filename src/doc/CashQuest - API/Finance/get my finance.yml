@@ -5,13 +5,10 @@ info:
 
 http:
   method: GET
-  url: '"{{baseUrl}}/me/finance?termId={{termId}}&limit={{limit}}"'
+  url: "{{baseUrl}}/me/finance?termId={{termId}}"
   params:
     - name: termId
       value: "{{termId}}"
-      type: query
-    - name: limit
-      value: '{{limit}}"'
       type: query
   auth: inherit
 

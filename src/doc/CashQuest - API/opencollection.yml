@@ -71,9 +71,9 @@ request:
     - name: bankId
       value: a1f92123-d6d9-4913-a567-fa00e9c21d36
     - name: walletId
-      value: ""
+      value: 87dd51fb-3e46-4836-978a-2a386c785a18
     - name: savingsAccountId
-      value: ""
+      value: 890e0f59-2034-4a8d-a81c-9eb37d89931e
     - name: transactionType
       value: ""
     - name: page
