@@ -1,0 +1,27 @@
+info:
+  name: Deposit to Savings
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/savings-accounts/deposit"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "savingsAccountId": "{{savingsAccountId}}",
+        "amount": 50
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

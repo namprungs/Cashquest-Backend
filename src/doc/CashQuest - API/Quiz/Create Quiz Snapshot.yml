@@ -1,0 +1,54 @@
+info:
+  name: Create Quiz Snapshot
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/quizzes"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "moduleId": "{{moduleId}}",
+        "timeLimitSec": 1200,
+        "passAllRequired": false,
+        "questions": [
+          {
+            "orderNo": 1,
+            "questionText": "2 + 2 = ?",
+            "questionType": "SINGLE_CHOICE",
+            "points": 1,
+            "gradingType": "AUTO",
+            "choices": [
+              { "orderNo": 1, "choiceText": "3", "isCorrect": false },
+              { "orderNo": 2, "choiceText": "4", "isCorrect": true }
+            ]
+          },
+          {
+            "orderNo": 2,
+            "questionText": "Capital of Thailand",
+            "questionType": "SHORT_TEXT",
+            "points": 1,
+            "gradingType": "AUTO",
+            "answerKey": {
+              "acceptedAnswers": ["Bangkok", "Krung Thep"],
+              "ignoreCase": true,
+              "trim": true
+            },
+            "choices": []
+          }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,30 @@
+info:
+  name: Register with Role
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/users/register"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "username": "john",
+        "email": "john@example.com",
+        "password": "Strong@1234",
+        "roleId": "{{roleId}}",
+        "schoolId": "{{schoolId}}"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

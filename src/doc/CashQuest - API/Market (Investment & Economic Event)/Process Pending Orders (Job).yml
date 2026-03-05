@@ -1,0 +1,26 @@
+info:
+  name: Process Pending Orders (Job)
+  type: http
+  seq: 33
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/jobs/process-orders"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "weekNo": 180
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

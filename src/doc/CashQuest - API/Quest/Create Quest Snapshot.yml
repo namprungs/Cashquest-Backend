@@ -1,0 +1,35 @@
+info:
+  name: Create Quest Snapshot
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/quests"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "termId": "{{termId}}",
+        "type": "QUIZ",
+        "quizId": "{{quizId}}",
+        "title": "Weekly Quiz Quest",
+        "description": "Do quiz and submit before deadline",
+        "rewardCoins": 50,
+        "status": "DRAFT",
+        "startAt": "2026-02-23T00:00:00.000Z",
+        "deadlineAt": "2026-03-01T23:59:59.000Z",
+        "classroomIds": ["{{classroomId}}"]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

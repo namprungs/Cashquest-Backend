@@ -1,0 +1,30 @@
+info:
+  name: Create Order (Student)
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/orders"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "productId": "{{productId}}",
+        "side": "BUY",
+        "orderType": "MARKET",
+        "quantity": 5,
+        "fee": 0
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

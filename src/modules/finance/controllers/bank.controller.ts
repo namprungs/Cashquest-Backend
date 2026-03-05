@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Put,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { BankService } from '../services/bank.service';
 import { CreateBankDto } from '../dto/create-bank.dto';
 import { UpdateBankDto } from '../dto/update-bank.dto';
@@ -24,10 +17,7 @@ export class BankController {
 
   @Put(':bankId')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
-  updateBank(
-    @Param('bankId') bankId: string,
-    @Body() dto: UpdateBankDto,
-  ) {
+  updateBank(@Param('bankId') bankId: string, @Body() dto: UpdateBankDto) {
     return this.bankService.updateBank(bankId, dto);
   }
 

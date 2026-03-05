@@ -1,0 +1,2735 @@
+{
+  "info": {
+    "_postman_id": "ac51e7fe-bce0-4ba4-b96f-112f3611f64a",
+    "name": "CashQuest - API",
+    "description": "Academic / School / Term / LifeStage / TermStageRule / Classroom APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "29690076"
+  },
+  "item": [
+    {
+      "name": "School",
+      "item": [
+        {
+          "name": "Create School",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chulalongkorn University\",\n  \"plan\": \"PREMIUM\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "schools"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Schools",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "schools"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get School By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools/{{schoolId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "schools",
+                "{{schoolId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update School",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chula Updated\",\n  \"plan\": \"ENTERPRISE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools/{{schoolId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "schools",
+                "{{schoolId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Term",
+      "item": [
+        {
+          "name": "Create Term (by School)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Term 1/2025\",\n  \"startDate\": \"2025-01-01\",\n  \"endDate\": \"2025-03-31\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools/{{schoolId}}/terms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "schools",
+                "{{schoolId}}",
+                "terms"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Terms by School",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/academic/schools/{{schoolId}}/terms?status=DRAFT",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "schools",
+                "{{schoolId}}",
+                "terms"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "DRAFT"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Term Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "terms",
+                "{{termId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Term (DRAFT only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Term 1/2025 (Updated)\",\n  \"endDate\": \"2025-04-15\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "terms",
+                "{{termId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publish Term",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "terms",
+                "{{termId}}",
+                "publish"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Regenerate Term Weeks (week2 = 10 days)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"defaultWeekLengthDays\": 7,\n  \"overrides\": {\n    \"2\": 10\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/weeks/regenerate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "terms",
+                "{{termId}}",
+                "weeks",
+                "regenerate"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "LifeStage",
+      "item": [
+        {
+          "name": "Create LifeStage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"HIGH_SCHOOL\",\n  \"orderNo\": 1,\n  \"unlockInvestment\": false,\n  \"enableRandomExpense\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/academic/life-stages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "life-stages"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get LifeStages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/academic/life-stages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "life-stages"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "TermStageRule",
+      "item": [
+        {
+          "name": "Create TermStageRule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lifeStageId\": \"{{lifeStageId}}\",\n  \"startWeek\": 1,\n  \"endWeek\": 4\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/stage-rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "terms",
+                "{{termId}}",
+                "stage-rules"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get TermStageRules by Term",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/stage-rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "terms",
+                "{{termId}}",
+                "stage-rules"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Classroom",
+      "item": [
+        {
+          "name": "Create Classroom (by Term)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Classroom A\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/classrooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "terms",
+                "{{termId}}",
+                "classrooms"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Classrooms by Term",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/academic/terms/{{termId}}/classrooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "terms",
+                "{{termId}}",
+                "classrooms"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Student to Classroom",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{studentId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/academic/classrooms/{{classroomId}}/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "classrooms",
+                "{{classroomId}}",
+                "students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Students in Classroom",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/academic/classrooms/{{classroomId}}/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "classrooms",
+                "{{classroomId}}",
+                "students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Student from Classroom",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/academic/classrooms/{{classroomId}}/students/{{studentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "academic",
+                "classrooms",
+                "{{classroomId}}",
+                "students",
+                "{{studentId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-refresh-key",
+                "value": "{{refreshKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-refresh-key",
+                "value": "{{refreshKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Role",
+      "item": [
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create/Update Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"TEACHER_PLUS\",\n  \"permissions\": [\n    \"USER_VIEW_SELF\",\n    \"ACADEMIC_CLASS_MANAGE\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "permissions"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Register with Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"john\",\n  \"email\": \"john@example.com\",\n  \"password\": \"Strong@1234\",\n  \"roleId\": \"{{roleId}}\",\n  \"schoolId\": \"{{schoolId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign User School",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schoolId\": \"{{schoolId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/school",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "school"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Player",
+      "item": [
+        {
+          "name": "Bootstrap StudentProfile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/player/terms/{{termId}}/bootstrap",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "player",
+                "terms",
+                "{{termId}}",
+                "bootstrap"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Student Profiles by Term",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/player/terms/{{termId}}/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "player",
+                "terms",
+                "{{termId}}",
+                "students"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Student Profile by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/player/students/{{studentProfileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "player",
+                "students",
+                "{{studentProfileId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Quiz",
+      "item": [
+        {
+          "name": "Create Quiz Snapshot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleId\": \"{{moduleId}}\",\n  \"timeLimitSec\": 1200,\n  \"passAllRequired\": false,\n  \"questions\": [\n    {\n      \"orderNo\": 1,\n      \"questionText\": \"2 + 2 = ?\",\n      \"questionType\": \"SINGLE_CHOICE\",\n      \"points\": 1,\n      \"gradingType\": \"AUTO\",\n      \"choices\": [\n        { \"orderNo\": 1, \"choiceText\": \"3\", \"isCorrect\": false },\n        { \"orderNo\": 2, \"choiceText\": \"4\", \"isCorrect\": true }\n      ]\n    },\n    {\n      \"orderNo\": 2,\n      \"questionText\": \"Capital of Thailand\",\n      \"questionType\": \"SHORT_TEXT\",\n      \"points\": 1,\n      \"gradingType\": \"AUTO\",\n      \"answerKey\": {\n        \"acceptedAnswers\": [\"Bangkok\", \"Krung Thep\"],\n        \"ignoreCase\": true,\n        \"trim\": true\n      },\n      \"choices\": []\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quizzes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quizzes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Quiz Snapshot",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moduleId\": \"{{moduleId}}\",\n  \"timeLimitSec\": 1500,\n  \"passAllRequired\": false,\n  \"questions\": [\n    {\n      \"id\": \"<existing-question-id>\",\n      \"orderNo\": 1,\n      \"questionText\": \"2 + 2 = ? (updated)\",\n      \"questionType\": \"SINGLE_CHOICE\",\n      \"points\": 1,\n      \"gradingType\": \"AUTO\",\n      \"choices\": [\n        { \"id\": \"<existing-choice-id-1>\", \"orderNo\": 1, \"choiceText\": \"3\", \"isCorrect\": false },\n        { \"id\": \"<existing-choice-id-2>\", \"orderNo\": 2, \"choiceText\": \"4\", \"isCorrect\": true }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quizzes/{{quizId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quizzes",
+                "{{quizId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Quizzes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quizzes?termId={{termId}}&moduleId={{moduleId}}&search=math",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quizzes"
+              ],
+              "query": [
+                {
+                  "key": "termId",
+                  "value": "{{termId}}"
+                },
+                {
+                  "key": "moduleId",
+                  "value": "{{moduleId}}"
+                },
+                {
+                  "key": "search",
+                  "value": "math"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Quiz By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quizzes/{{quizId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quizzes",
+                "{{quizId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Quiz",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quizzes/{{quizId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quizzes",
+                "{{quizId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Attempt (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quizzes/{{quizId}}/attempts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quizzes",
+                "{{quizId}}",
+                "attempts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Attempt (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"<question-single-choice-id>\",\n      \"selectedChoiceIds\": [\"<choice-correct-id>\"]\n    },\n    {\n      \"questionId\": \"<question-short-text-id>\",\n      \"answerText\": \"Bangkok\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/attempts/{{attemptId}}/submit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "attempts",
+                "{{attemptId}}",
+                "submit"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Quest",
+      "item": [
+        {
+          "name": "Create Quest Snapshot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"termId\": \"{{termId}}\",\n  \"type\": \"QUIZ\",\n  \"quizId\": \"{{quizId}}\",\n  \"title\": \"Weekly Quiz Quest\",\n  \"description\": \"Do quiz and submit before deadline\",\n  \"rewardCoins\": 50,\n  \"status\": \"DRAFT\",\n  \"startAt\": \"2026-02-23T00:00:00.000Z\",\n  \"deadlineAt\": \"2026-03-01T23:59:59.000Z\",\n  \"classroomIds\": [\"{{classroomId}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quests"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Quest Snapshot",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Weekly Quiz Quest (Updated)\",\n  \"rewardCoins\": 80,\n  \"classroomIds\": [\"{{classroomId}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quests",
+                "{{questId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Quests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests?termId={{termId}}&status=PUBLISHED&type=QUIZ&search=weekly",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quests"
+              ],
+              "query": [
+                {
+                  "key": "termId",
+                  "value": "{{termId}}"
+                },
+                {
+                  "key": "status",
+                  "value": "PUBLISHED"
+                },
+                {
+                  "key": "type",
+                  "value": "QUIZ"
+                },
+                {
+                  "key": "search",
+                  "value": "weekly"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Quest By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quests",
+                "{{questId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publish Quest",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quests",
+                "{{questId}}",
+                "publish"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Close Quest",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}/close",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quests",
+                "{{questId}}",
+                "close"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Quests (Student)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quests",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Quest Detail (Student)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quests",
+                "{{questId}}",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit My Quest (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payloadJson\": {\n    \"text\": \"my assignment answer\"\n  },\n  \"attachmentUrl\": \"https://example.com/file.pdf\",\n  \"expectedLatestVersionNo\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quests/{{questId}}/submissions/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quests",
+                "{{questId}}",
+                "submissions",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Submission (Teacher)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expectedUpdatedAt\": \"{{expectedUpdatedAt}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quests/submissions/{{submissionId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quests",
+                "submissions",
+                "{{submissionId}}",
+                "approve"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Submission (Teacher)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectReason\": \"Please improve details\",\n  \"expectedUpdatedAt\": \"{{expectedUpdatedAt}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/quests/submissions/{{submissionId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "quests",
+                "submissions",
+                "{{submissionId}}",
+                "reject"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Learning Module",
+      "item": [
+        {
+          "name": "Create Learning Module",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"termId\": \"{{termId}}\",\n  \"title\": \"Module 1\",\n  \"description\": \"Intro to finance\",\n  \"contentUrl\": \"https://example.com/module-1\",\n  \"orderNo\": 1,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "learning-modules"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Learning Module",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Module 1 Updated\",\n  \"orderNo\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules/{{moduleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "learning-modules",
+                "{{moduleId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Learning Modules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules?termId={{termId}}&isActive=true&search=intro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "learning-modules"
+              ],
+              "query": [
+                {
+                  "key": "termId",
+                  "value": "{{termId}}"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true"
+                },
+                {
+                  "key": "search",
+                  "value": "intro"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Learning Module By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules/{{moduleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "learning-modules",
+                "{{moduleId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Learning Module",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules/{{moduleId}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "learning-modules",
+                "{{moduleId}}",
+                "activate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Learning Module",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules/{{moduleId}}/deactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "learning-modules",
+                "{{moduleId}}",
+                "deactivate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Learning Module",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/learning-modules/{{moduleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "learning-modules",
+                "{{moduleId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Market (Investment & Economic Event)",
+      "item": [
+        {
+          "name": "List Products by Term",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product Prices (Range)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/products/{{productId}}/prices?range=3m",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "products",
+                "{{productId}}",
+                "prices"
+              ],
+              "query": [
+                {
+                  "key": "range",
+                  "value": "3m"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product Live Prices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/products/{{productId}}/live-prices?minutes=60&limit=500",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "products",
+                "{{productId}}",
+                "live-prices"
+              ],
+              "query": [
+                {
+                  "key": "minutes",
+                  "value": "60"
+                },
+                {
+                  "key": "limit",
+                  "value": "500"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Portfolio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/portfolio/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "portfolio",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Holdings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/holdings/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "holdings",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Order (Student)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"side\": \"BUY\",\n  \"orderType\": \"MARKET\",\n  \"quantity\": 5,\n  \"fee\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List My Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/orders/me?status=PENDING",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "orders",
+                "me"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDING"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/orders/{{orderId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "orders",
+                "{{orderId}}",
+                "cancel"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List My Dividends",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/dividends/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "dividends",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List My Bonds",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/bonds/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "bonds",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Active Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/events/active?weekNo=180",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "events",
+                "active"
+              ],
+              "query": [
+                {
+                  "key": "weekNo",
+                  "value": "180"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Product (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"STOCK\",\n  \"symbol\": \"CQNEW\",\n  \"name\": \"CashQuest New Growth\",\n  \"riskLevel\": \"HIGH\",\n  \"sector\": \"TECH\",\n  \"isActive\": true,\n  \"simulation\": {\n    \"initialPrice\": 75,\n    \"mu\": 0.12,\n    \"sigma\": 0.28,\n    \"dt\": 0.00274\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "products"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"CashQuest Tech Growth Updated\",\n  \"sector\": \"TECH\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "products",
+                "{{productId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set Product Active",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/products/{{productId}}/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "products",
+                "{{productId}}",
+                "active"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upsert Product Simulations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"initialPrice\": 100,\n      \"mu\": 0.1,\n      \"sigma\": 0.2,\n      \"dt\": 0.00274\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/simulations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "simulations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upsert Term Simulation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"randomSeed\": 20260301,\n  \"currentWeek\": 180,\n  \"engineVersion\": \"v1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/term-simulation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "term-simulation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Prices (Week)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weekNo\": 181,\n  \"productIds\": [\"{{productId}}\"],\n  \"moveCurrentWeekToNext\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/prices/generate-week",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "prices",
+                "generate-week"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Prices (Range)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startWeek\": 182,\n  \"endWeek\": 190,\n  \"productIds\": [\"{{productId}}\"],\n  \"moveCurrentWeekToNext\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/prices/generate-range",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "prices",
+                "generate-range"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Live Tick",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ticksPerWeek\": 10080,\n  \"productIds\": [\"{{productId}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/live-prices/generate-tick",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "live-prices",
+                "generate-tick"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Finalize Live Week",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"moveCurrentWeekToNext\": true,\n  \"clearTicksAfterFinalize\": true,\n  \"productIds\": [\"{{productId}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/live-prices/finalize-week",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "live-prices",
+                "finalize-week"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Manual Price Upsert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"weekNo\": 191,\n      \"open\": 120,\n      \"high\": 126,\n      \"low\": 118,\n      \"close\": 124,\n      \"returnPct\": 0.0333\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/prices/manual",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "prices",
+                "manual"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Economic Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Oil Price Spike\",\n  \"description\": \"Energy shock\",\n  \"eventType\": \"VOLATILITY_SHOCK\",\n  \"defaultImpact\": {\n    \"muAdjustment\": -0.03,\n    \"sigmaAdjustment\": 0.07,\n    \"sigmaMultiplier\": 1.2\n  },\n  \"isRepeatable\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/economic-events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "economic-events"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Economic Event",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Energy shock updated\",\n  \"isRepeatable\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/economic-events/{{economicEventId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "economic-events",
+                "{{economicEventId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Term Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"{{economicEventId}}\",\n  \"startWeek\": 200,\n  \"endWeek\": 220,\n  \"status\": \"SCHEDULED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/term-events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "term-events"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Term Event",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/term-events/{{termEventId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "term-events",
+                "{{termEventId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Market Regime",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BULL\",\n  \"muAdjustment\": 0.01,\n  \"sigmaAdjustment\": -0.005,\n  \"startWeek\": 221,\n  \"endWeek\": 260\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/regimes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "regimes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Market Regime",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"muAdjustment\": 0.012\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/regimes/{{regimeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "regimes",
+                "{{regimeId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Scenario] Generate Baseline Week (No Event)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weekNo\": 300,\n  \"productIds\": [\"{{productId}}\"],\n  \"moveCurrentWeekToNext\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/prices/generate-week",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "prices",
+                "generate-week"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Scenario] Create Impact Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?.id) pm.collectionVariables.set('economicEventId', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Scenario: Negative Shock\",\n  \"description\": \"Test event to reduce drift and increase volatility\",\n  \"eventType\": \"VOLATILITY_SHOCK\",\n  \"defaultImpact\": {\n    \"muAdjustment\": -0.05,\n    \"sigmaAdjustment\": 0.1,\n    \"sigmaMultiplier\": 1.5\n  },\n  \"isRepeatable\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/economic-events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "economic-events"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Scenario] Attach Event To Week",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"{{economicEventId}}\",\n  \"startWeek\": 301,\n  \"endWeek\": 301,\n  \"status\": \"ACTIVE\",\n  \"customImpact\": {\n    \"muAdjustment\": -0.08,\n    \"sigmaAdjustment\": 0.12,\n    \"sigmaMultiplier\": 1.8\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/term-events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "term-events"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Scenario] Generate Week With Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weekNo\": 301,\n  \"productIds\": [\"{{productId}}\"],\n  \"moveCurrentWeekToNext\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/prices/generate-week",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "prices",
+                "generate-week"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "[Scenario] Compare Baseline vs Event Weeks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/products/{{productId}}/prices?fromWeek=300&toWeek=301",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "products",
+                "{{productId}}",
+                "prices"
+              ],
+              "query": [
+                {
+                  "key": "fromWeek",
+                  "value": "300"
+                },
+                {
+                  "key": "toWeek",
+                  "value": "301"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Process Pending Orders (Job)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weekNo\": 180\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/jobs/process-orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "jobs",
+                "process-orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Process Payouts (Job)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weekNo\": 180,\n  \"dividendPerUnit\": 0.25\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/market/terms/{{marketTermId}}/jobs/payouts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "market",
+                "terms",
+                "{{marketTermId}}",
+                "jobs",
+                "payouts"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "email",
+      "value": "admin@school.com"
+    },
+    {
+      "key": "password",
+      "value": "Admin@1234"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshKey",
+      "value": ""
+    },
+    {
+      "key": "schoolId",
+      "value": ""
+    },
+    {
+      "key": "termId",
+      "value": ""
+    },
+    {
+      "key": "lifeStageId",
+      "value": ""
+    },
+    {
+      "key": "termStageRuleId",
+      "value": ""
+    },
+    {
+      "key": "classroomId",
+      "value": ""
+    },
+    {
+      "key": "studentId",
+      "value": ""
+    },
+    {
+      "key": "roleId",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "studentProfileId",
+      "value": ""
+    },
+    {
+      "key": "moduleId",
+      "value": ""
+    },
+    {
+      "key": "quizId",
+      "value": ""
+    },
+    {
+      "key": "attemptId",
+      "value": ""
+    },
+    {
+      "key": "questId",
+      "value": ""
+    },
+    {
+      "key": "submissionId",
+      "value": ""
+    },
+    {
+      "key": "expectedUpdatedAt",
+      "value": ""
+    },
+    {
+      "key": "marketTermId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "economicEventId",
+      "value": ""
+    },
+    {
+      "key": "termEventId",
+      "value": ""
+    },
+    {
+      "key": "regimeId",
+      "value": ""
+    }
+  ]
+}

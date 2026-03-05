@@ -1,0 +1,41 @@
+info:
+  name: "[Scenario] Create Impact Event"
+  type: http
+  seq: 29
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/economic-events"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Scenario: Negative Shock",
+        "description": "Test event to reduce drift and increase volatility",
+        "eventType": "VOLATILITY_SHOCK",
+        "defaultImpact": {
+          "muAdjustment": -0.05,
+          "sigmaAdjustment": 0.1,
+          "sigmaMultiplier": 1.5
+        },
+        "isRepeatable": true
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const json = res.getBody();
+        if (json?.data?.id) bru.setVar('economicEventId', json.data.id);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

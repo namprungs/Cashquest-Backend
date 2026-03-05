@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Delete,
-  BadRequestException,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Delete } from '@nestjs/common';
 import { SavingsAccountService } from '../services/savings-account.service';
 import { CreateSavingsAccountDto } from '../dto/create-savings-account.dto';
 import { DepositSavingsDto } from '../dto/deposit-savings.dto';
@@ -59,9 +51,7 @@ export class SavingsAccountController {
    * GET /savings-accounts/student/:studentProfileId
    */
   @Get('student/:studentProfileId')
-  async listByStudent(
-    @Param('studentProfileId') studentProfileId: string,
-  ) {
+  async listByStudent(@Param('studentProfileId') studentProfileId: string) {
     return this.savingsAccountService.listAccountsByStudent(studentProfileId);
   }
 

@@ -1,0 +1,26 @@
+info:
+  name: Update Market Regime
+  type: http
+  seq: 27
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/regimes/{{regimeId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "muAdjustment": 0.012
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

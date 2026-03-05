@@ -1,0 +1,27 @@
+info:
+  name: Update Economic Event
+  type: http
+  seq: 23
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/market/economic-events/{{economicEventId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "description": "Energy shock updated",
+        "isRepeatable": true
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

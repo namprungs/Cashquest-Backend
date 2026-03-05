@@ -1,0 +1,29 @@
+info:
+  name: Update Bank
+  type: http
+  seq: 2
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/banks/{{bankId}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "CashQuest Main Bank",
+        "interestRate": 0.02,
+        "withdrawLimitPerTerm": 5,
+        "feePerTransaction": 10
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

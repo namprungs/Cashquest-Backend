@@ -1,0 +1,26 @@
+info:
+  name: Create Term (by School)
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/academic/schools/{{schoolId}}/terms"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Term 1/2025",
+        "startDate": "2025-01-01",
+        "endDate": "2025-03-31"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

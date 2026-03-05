@@ -1,0 +1,37 @@
+info:
+  name: Create Product (Admin)
+  type: http
+  seq: 12
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/products"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "type": "STOCK",
+        "symbol": "CQNEW",
+        "name": "CashQuest New Growth",
+        "riskLevel": "HIGH",
+        "sector": "TECH",
+        "isActive": true,
+        "simulation": {
+          "initialPrice": 75,
+          "mu": 0.12,
+          "sigma": 0.28,
+          "dt": 0.00274
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

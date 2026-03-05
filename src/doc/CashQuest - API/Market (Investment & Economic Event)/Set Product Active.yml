@@ -1,0 +1,26 @@
+info:
+  name: Set Product Active
+  type: http
+  seq: 14
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/market/products/{{productId}}/active"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "isActive": true
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,26 @@
+info:
+  name: Update Term Event
+  type: http
+  seq: 25
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/term-events/{{termEventId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "status": "ACTIVE"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

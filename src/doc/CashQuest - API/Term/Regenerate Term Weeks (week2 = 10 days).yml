@@ -1,0 +1,27 @@
+info:
+  name: Regenerate Term Weeks (week2 = 10 days)
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/academic/terms/{{termId}}/weeks/regenerate"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "defaultWeekLengthDays": 7,
+        "overrides": {
+          "2": 10
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,18 @@
+info:
+  name: Logout
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/auth/logout"
+  headers:
+    - name: x-refresh-key
+      value: "{{refreshKey}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

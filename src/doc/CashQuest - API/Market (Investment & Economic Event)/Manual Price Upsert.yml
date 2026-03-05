@@ -1,0 +1,36 @@
+info:
+  name: Manual Price Upsert
+  type: http
+  seq: 21
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/prices/manual"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "items": [
+          {
+            "productId": "{{productId}}",
+            "weekNo": 191,
+            "open": 120,
+            "high": 126,
+            "low": 118,
+            "close": 124,
+            "returnPct": 0.0333
+          }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

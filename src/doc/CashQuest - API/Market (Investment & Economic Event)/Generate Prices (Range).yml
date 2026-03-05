@@ -1,0 +1,29 @@
+info:
+  name: Generate Prices (Range)
+  type: http
+  seq: 18
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/prices/generate-range"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "startWeek": 182,
+        "endWeek": 190,
+        "productIds": ["{{productId}}"],
+        "moveCurrentWeekToNext": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

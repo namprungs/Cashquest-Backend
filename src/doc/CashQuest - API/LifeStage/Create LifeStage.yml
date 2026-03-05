@@ -1,0 +1,27 @@
+info:
+  name: Create LifeStage
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/academic/life-stages"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "HIGH_SCHOOL",
+        "orderNo": 1,
+        "unlockInvestment": false,
+        "enableRandomExpense": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
