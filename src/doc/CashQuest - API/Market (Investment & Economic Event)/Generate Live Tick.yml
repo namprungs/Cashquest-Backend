@@ -1,0 +1,27 @@
+info:
+  name: Generate Live Tick
+  type: http
+  seq: 19
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/live-prices/generate-tick"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "ticksPerWeek": 10080,
+        "productIds": ["{{productId}}"]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,42 @@
+info:
+  name: Update Quiz Snapshot
+  type: http
+  seq: 2
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/quizzes/{{quizId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "moduleId": "{{moduleId}}",
+        "timeLimitSec": 1500,
+        "passAllRequired": false,
+        "questions": [
+          {
+            "id": "<existing-question-id>",
+            "orderNo": 1,
+            "questionText": "2 + 2 = ? (updated)",
+            "questionType": "SINGLE_CHOICE",
+            "points": 1,
+            "gradingType": "AUTO",
+            "choices": [
+              { "id": "<existing-choice-id-1>", "orderNo": 1, "choiceText": "3", "isCorrect": false },
+              { "id": "<existing-choice-id-2>", "orderNo": 2, "choiceText": "4", "isCorrect": true }
+            ]
+          }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

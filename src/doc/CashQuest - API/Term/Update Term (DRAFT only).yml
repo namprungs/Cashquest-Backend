@@ -1,0 +1,25 @@
+info:
+  name: Update Term (DRAFT only)
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/academic/terms/{{termId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Term 1/2025 (Updated)",
+        "endDate": "2025-04-15"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

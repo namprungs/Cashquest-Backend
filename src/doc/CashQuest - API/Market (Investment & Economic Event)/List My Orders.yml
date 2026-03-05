@@ -1,0 +1,22 @@
+info:
+  name: List My Orders
+  type: http
+  seq: 7
+
+http:
+  method: GET
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/orders/me?status=PENDING"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: status
+      value: PENDING
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

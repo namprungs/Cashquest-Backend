@@ -1,0 +1,26 @@
+info:
+  name: Assign User School
+  type: http
+  seq: 2
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/users/{{userId}}/school"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "schoolId": "{{schoolId}}"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

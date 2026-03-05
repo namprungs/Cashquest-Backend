@@ -1,0 +1,30 @@
+info:
+  name: Create Bank
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/banks"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "termId": "{{termId}}",
+        "name": "CashQuest School Bank",
+        "interestRate": 0.015,
+        "withdrawLimitPerTerm": 3,
+        "feePerTransaction": 5
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

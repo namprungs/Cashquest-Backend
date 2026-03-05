@@ -1,0 +1,15 @@
+info:
+  name: Remove Student from Classroom
+  type: http
+  seq: 5
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/academic/classrooms/{{classroomId}}/students/{{studentId}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

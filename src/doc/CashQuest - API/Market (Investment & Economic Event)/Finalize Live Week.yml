@@ -1,0 +1,28 @@
+info:
+  name: Finalize Live Week
+  type: http
+  seq: 20
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/live-prices/finalize-week"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "moveCurrentWeekToNext": true,
+        "clearTicksAfterFinalize": true,
+        "productIds": ["{{productId}}"]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

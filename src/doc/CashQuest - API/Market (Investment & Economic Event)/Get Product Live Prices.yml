@@ -1,0 +1,25 @@
+info:
+  name: Get Product Live Prices
+  type: http
+  seq: 3
+
+http:
+  method: GET
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/products/{{productId}}/live-prices?minutes=60&limit=500"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: minutes
+      value: "60"
+      type: query
+    - name: limit
+      value: "500"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,28 @@
+info:
+  name: Open Savings Account
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/savings-accounts/open"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "studentProfileId": "{{studentProfileId}}",
+        "bankId": "{{bankId}}",
+        "initialDeposit": 100
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

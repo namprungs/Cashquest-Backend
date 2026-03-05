@@ -1,0 +1,30 @@
+info:
+  name: Create Market Regime
+  type: http
+  seq: 26
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/regimes"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "name": "BULL",
+        "muAdjustment": 0.01,
+        "sigmaAdjustment": -0.005,
+        "startWeek": 221,
+        "endWeek": 260
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

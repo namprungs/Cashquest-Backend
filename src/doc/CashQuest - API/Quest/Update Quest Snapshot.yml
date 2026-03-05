@@ -1,0 +1,28 @@
+info:
+  name: Update Quest Snapshot
+  type: http
+  seq: 2
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/quests/{{questId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Weekly Quiz Quest (Updated)",
+        "rewardCoins": 80,
+        "classroomIds": ["{{classroomId}}"]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

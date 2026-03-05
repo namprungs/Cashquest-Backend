@@ -1,0 +1,27 @@
+info:
+  name: Reject Submission (Teacher)
+  type: http
+  seq: 11
+
+http:
+  method: POST
+  url: "{{baseUrl}}/quests/submissions/{{submissionId}}/reject"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "rejectReason": "Please improve details",
+        "expectedUpdatedAt": "{{expectedUpdatedAt}}"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

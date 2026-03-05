@@ -1,0 +1,22 @@
+info:
+  name: List Active Events
+  type: http
+  seq: 11
+
+http:
+  method: GET
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/events/active?weekNo=180"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: weekNo
+      value: "180"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

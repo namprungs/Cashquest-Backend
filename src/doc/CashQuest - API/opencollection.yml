@@ -1,0 +1,81 @@
+opencollection: 1.0.0
+
+info:
+  name: CashQuest - API
+
+request:
+  variables:
+    - name: baseUrl
+      value: http://localhost:3000
+    - name: email
+      value: admin@school.com
+    - name: password
+      value: Admin@1234
+    - name: accessToken
+      value: ""
+    - name: refreshKey
+      value: ""
+    - name: schoolId
+      value: ""
+    - name: termId
+      value: ""
+    - name: lifeStageId
+      value: ""
+    - name: termStageRuleId
+      value: ""
+    - name: classroomId
+      value: ""
+    - name: studentId
+      value: ""
+    - name: roleId
+      value: ""
+    - name: userId
+      value: ""
+    - name: studentProfileId
+      value: ""
+    - name: moduleId
+      value: ""
+    - name: quizId
+      value: ""
+    - name: attemptId
+      value: ""
+    - name: questId
+      value: ""
+    - name: submissionId
+      value: ""
+    - name: expectedUpdatedAt
+      value: ""
+    - name: marketTermId
+      value: ""
+    - name: productId
+      value: ""
+    - name: orderId
+      value: ""
+    - name: economicEventId
+      value: ""
+    - name: termEventId
+      value: ""
+    - name: regimeId
+      value: ""
+    - name: bankId
+      value: ""
+    - name: walletId
+      value: ""
+    - name: savingsAccountId
+      value: ""
+    - name: transactionType
+      value: ""
+    - name: page
+      value: "1"
+    - name: limit
+      value: "20"
+
+docs:
+  content: Academic / School / Term / LifeStage / TermStageRule / Classroom / Finance APIs
+  type: text/markdown
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git

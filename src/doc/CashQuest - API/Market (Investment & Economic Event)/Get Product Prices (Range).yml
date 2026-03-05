@@ -1,0 +1,22 @@
+info:
+  name: Get Product Prices (Range)
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/products/{{productId}}/prices?range=3m"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: range
+      value: 3m
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

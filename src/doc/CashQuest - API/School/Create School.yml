@@ -1,0 +1,25 @@
+info:
+  name: Create School
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/academic/schools"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Chulalongkorn University",
+        "plan": "PREMIUM"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

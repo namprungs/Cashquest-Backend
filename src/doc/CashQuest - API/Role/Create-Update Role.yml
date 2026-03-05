@@ -1,0 +1,30 @@
+info:
+  name: Create/Update Role
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/roles"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "name": "TEACHER_PLUS",
+        "permissions": [
+          "USER_VIEW_SELF",
+          "ACADEMIC_CLASS_MANAGE"
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
