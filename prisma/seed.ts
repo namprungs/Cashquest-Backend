@@ -239,8 +239,16 @@ async function main() {
   });
 
   const termName = 'Demo Term 1/2026';
+<<<<<<< HEAD
   const termStartDate = new Date('2026-03-01T00:00:00.000Z');
   const termEndDate = new Date('2026-07-01T00:00:00.000Z');
+||||||| parent of 1badf28 (feat/saving-interest-cron-job)
+  const termStartDate = new Date('2026-01-06T00:00:00.000Z');
+  const termEndDate = new Date('2026-03-15T00:00:00.000Z');
+=======
+  const termStartDate = new Date('2026-03-09T00:00:00.000Z');
+  const termEndDate = new Date('2026-06-28T00:00:00.000Z');
+>>>>>>> 1badf28 (feat/saving-interest-cron-job)
   const totalWeeks = calculateTotalWeeks(termStartDate, termEndDate);
 
   const existingTerm = await prisma.term.findFirst({
