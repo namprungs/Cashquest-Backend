@@ -281,9 +281,13 @@ model RetirementGoal {
   studentProfileId String         @db.Uuid
   studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
 
+  retirementAge  Int      @default(60) // เช่น 65
+  monthlyExpense Decimal  @db.Decimal(12, 2)
+  lifeExpectancy Int     // optional เช่น 85
+
   targetAmount  Decimal  @db.Decimal(12, 2)
   currentAmount Decimal  @default(0) @db.Decimal(12, 2)
-  targetDate    DateTime
+  targetDate    DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
