@@ -5,10 +5,17 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/wallets/{{walletId}}/transactions?type={{transactionType}}&page={{page}}&limit={{limit}}"
+  url: "{{baseUrl}}/wallets/{{walletId}}/transactions?page={{page}}&limit={{limit}}"
   headers:
     - name: Authorization
       value: Bearer {{accessToken}}
+  params:
+    - name: page
+      value: "{{page}}"
+      type: query
+    - name: limit
+      value: "{{limit}}"
+      type: query
   auth: inherit
 
 settings:
