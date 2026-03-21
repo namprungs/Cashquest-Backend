@@ -16,7 +16,7 @@ http:
     data: |-
       {
         "savingsAccountId": "{{savingsAccountId}}",
-        "amount": 25
+        "amount": 10000
       }
   auth: inherit
 
