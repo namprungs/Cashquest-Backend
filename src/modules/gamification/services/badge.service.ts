@@ -77,7 +77,6 @@ export class BadgeService {
     const badges = await this.prisma.badge.findMany({
       where: { termId },
       orderBy: { code: 'asc' },
-      take: limit,
       include: {
         studentBadges: {
           where: { studentProfileId: studentProfile.id },
@@ -87,9 +86,22 @@ export class BadgeService {
       },
     });
 
+    const sortedBadges = [...badges].sort((a, b) => {
+      const aEarned = a.studentBadges.length > 0;
+      const bEarned = b.studentBadges.length > 0;
+
+      if (aEarned !== bEarned) {
+        return aEarned ? -1 : 1;
+      }
+
+      return a.code.localeCompare(b.code);
+    });
+
+    const limitedBadges = sortedBadges.slice(0, limit);
+
     return {
       success: true,
-      data: badges.map((badge) => {
+      data: limitedBadges.map((badge) => {
         const earnedRecord = badge.studentBadges[0];
 
         return {
@@ -105,7 +117,7 @@ export class BadgeService {
       }),
       meta: {
         limit,
-        count: badges.length,
+        count: limitedBadges.length,
       },
     };
   }
