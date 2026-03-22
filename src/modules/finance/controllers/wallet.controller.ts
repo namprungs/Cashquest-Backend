@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  ParseUUIDPipe,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, ParseUUIDPipe } from '@nestjs/common';
 import { WalletService } from '../services/wallet.service';
 import { WalletTransactionHistoryDto } from '../dto/wallet-transaction-history.dto';
 
