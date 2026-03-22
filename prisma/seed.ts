@@ -239,8 +239,8 @@ async function main() {
   });
 
   const termName = 'Demo Term 1/2026';
-  const termStartDate = new Date('2026-01-06T00:00:00.000Z');
-  const termEndDate = new Date('2026-03-15T00:00:00.000Z');
+  const termStartDate = new Date('2026-03-01T00:00:00.000Z');
+  const termEndDate = new Date('2026-07-01T00:00:00.000Z');
   const totalWeeks = calculateTotalWeeks(termStartDate, termEndDate);
 
   const existingTerm = await prisma.term.findFirst({

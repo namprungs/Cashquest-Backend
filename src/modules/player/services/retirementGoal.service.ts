@@ -14,6 +14,29 @@ import { UpdateRetirementGoalDto } from '../dto/update-retirement-goal.dto';
 export class RetirementGoalService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private toNumber(value: unknown): number {
+    if (value === null || value === undefined) return 0;
+
+    if (typeof value === 'number') return value;
+
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      'toNumber' in value &&
+      typeof (value as { toNumber: unknown }).toNumber === 'function'
+    ) {
+      const parsed = (value as { toNumber: () => number }).toNumber();
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    return 0;
+  }
+
   private handleError(error: unknown): never {
     if (error instanceof HttpException) throw error;
 
@@ -49,9 +72,35 @@ export class RetirementGoalService {
     return profile;
   }
 
+  private async calculateCurrentAmountFromAssets(studentProfileId: string) {
+    const [wallet, savingsAggregate] = await Promise.all([
+      this.prisma.wallet.findUnique({
+        where: { studentProfileId },
+        select: { balance: true },
+      }),
+      this.prisma.savingsAccount.aggregate({
+        where: {
+          studentProfileId,
+          status: 'ACTIVE',
+        },
+        _sum: {
+          balance: true,
+        },
+      }),
+    ]);
+
+    const walletBalance = this.toNumber(wallet?.balance);
+    const savingsBalance = this.toNumber(savingsAggregate._sum.balance);
+
+    return walletBalance + savingsBalance;
+  }
+
   async create(termId: string, userId: string, dto: CreateRetirementGoalDto) {
     try {
       const profile = await this.getStudentProfileOrThrow(termId, userId);
+      const currentAmount = await this.calculateCurrentAmountFromAssets(
+        profile.id,
+      );
 
       const created = await this.prisma.retirementGoal.create({
         data: {
@@ -60,13 +109,14 @@ export class RetirementGoalService {
           monthlyExpense: new Prisma.Decimal(dto.monthlyExpense),
           lifeExpectancy: dto.lifeExpectancy,
           targetAmount: new Prisma.Decimal(dto.targetAmount),
-          currentAmount: new Prisma.Decimal(dto.currentAmount ?? 0),
+          currentAmount: new Prisma.Decimal(currentAmount),
           ...(dto.targetDate ? { targetDate: new Date(dto.targetDate) } : {}),
         },
       });
 
       return { success: true, data: created };
     } catch (e) {
+      console.log(e);
       this.handleError(e);
     }
   }
@@ -136,6 +186,26 @@ export class RetirementGoalService {
         });
       }
 
+      const profile = await this.getStudentProfileOrThrow(termId, userId);
+      const currentAmount = await this.calculateCurrentAmountFromAssets(
+        profile.id,
+      );
+
+      const hasUpdateField =
+        dto.retirementAge !== undefined ||
+        dto.monthlyExpense !== undefined ||
+        dto.lifeExpectancy !== undefined ||
+        dto.targetAmount !== undefined ||
+        dto.currentAmount !== undefined ||
+        dto.targetDate !== undefined;
+
+      if (!hasUpdateField) {
+        throw new BadRequestException({
+          success: false,
+          message: 'No fields provided for update',
+        });
+      }
+
       const data: Prisma.RetirementGoalUpdateInput = {
         ...(dto.retirementAge !== undefined
           ? { retirementAge: dto.retirementAge }
@@ -149,20 +219,11 @@ export class RetirementGoalService {
         ...(dto.targetAmount !== undefined
           ? { targetAmount: new Prisma.Decimal(dto.targetAmount) }
           : {}),
-        ...(dto.currentAmount !== undefined
-          ? { currentAmount: new Prisma.Decimal(dto.currentAmount) }
-          : {}),
+        currentAmount: new Prisma.Decimal(currentAmount),
         ...(dto.targetDate !== undefined
           ? { targetDate: dto.targetDate ? new Date(dto.targetDate) : null }
           : {}),
       };
-
-      if (Object.keys(data).length === 0) {
-        throw new BadRequestException({
-          success: false,
-          message: 'No fields provided for update',
-        });
-      }
 
       const updated = await this.prisma.retirementGoal.update({
         where: { id },
