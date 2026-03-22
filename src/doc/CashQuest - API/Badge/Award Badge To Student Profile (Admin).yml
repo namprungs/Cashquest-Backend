@@ -1,25 +1,19 @@
 info:
-  name: Create Bank
+  name: Award Badge To Student Profile (Admin)
   type: http
-  seq: 1
+  seq: 6
 
 http:
   method: POST
-  url: "{{baseUrl}}/banks"
+  url: "{{baseUrl}}/badges/terms/{{termId}}/{{badgeId}}/award"
   headers:
     - name: Authorization
       value: Bearer {{accessToken}}
-    - name: Content-Type
-      value: application/json
   body:
     type: json
     data: |-
       {
-        "termId": "{{termId}}",
-        "name": "scb",
-        "interestRate": 0.015,
-        "withdrawLimitPerTerm": 3,
-        "feePerTransaction": 5
+        "studentProfileId": "{{studentProfileId}}"
       }
   auth: inherit
 

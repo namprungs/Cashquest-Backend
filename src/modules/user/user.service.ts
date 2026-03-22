@@ -207,6 +207,84 @@ export class UserService {
       },
     });
 
+    const classroomEnrollment = await this.prisma.classroomStudent.findFirst({
+      where: {
+        studentId: userId,
+        classroom: {
+          termId,
+        },
+      },
+      include: {
+        classroom: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        joinedAt: 'desc',
+      },
+    });
+
+    const term = await this.prisma.term.findUnique({
+      where: { id: termId },
+      select: {
+        id: true,
+        startDate: true,
+        totalWeeks: true,
+      },
+    });
+
+    let currentWeekNo: number | null = null;
+
+    if (term) {
+      const now = new Date();
+      const termWeek = await this.prisma.termWeek.findFirst({
+        where: {
+          termId,
+          startDate: { lte: now },
+          endDate: { gte: now },
+        },
+        select: {
+          weekNo: true,
+        },
+      });
+
+      if (termWeek) {
+        currentWeekNo = termWeek.weekNo;
+      } else {
+        const msPerDay = 1000 * 60 * 60 * 24;
+        const diffDays = Math.floor(
+          (now.getTime() - term.startDate.getTime()) / msPerDay,
+        );
+        const computedWeek = Math.floor(diffDays / 7) + 1;
+        currentWeekNo = Math.min(Math.max(computedWeek, 1), term.totalWeeks);
+      }
+    }
+
+    const activeStageRule =
+      currentWeekNo === null
+        ? null
+        : await this.prisma.termStageRule.findFirst({
+            where: {
+              termId,
+              startWeek: { lte: currentWeekNo },
+              endWeek: { gte: currentWeekNo },
+            },
+            include: {
+              lifeStage: {
+                select: {
+                  id: true,
+                  name: true,
+                  orderNo: true,
+                  unlockInvestment: true,
+                  enableRandomExpense: true,
+                },
+              },
+            },
+          });
+
     return {
       success: true,
       data: {
@@ -217,6 +295,10 @@ export class UserService {
         studentProfileId: studentProfile?.id ?? null,
         walletBalance: studentProfile?.wallet?.balance ?? 0,
         termId,
+        classroomName: classroomEnrollment?.classroom?.name ?? null,
+        classroomId: classroomEnrollment?.classroom?.id ?? null,
+        currentWeekNo,
+        lifeStage: activeStageRule?.lifeStage ?? null,
       },
     };
   }

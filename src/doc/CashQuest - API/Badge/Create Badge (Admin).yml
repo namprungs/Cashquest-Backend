@@ -1,0 +1,30 @@
+info:
+  name: Create Badge (Admin)
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/badges/terms/{{termId}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+              "code": "4",
+              "name": "หมีตื่นสาย",
+              "description": "Awarded when student logs in for the first time",
+              "ruleJson": {
+                "type": "event",
+                "event": "LOGIN_FIRST_TIME"
+              }
+            }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -152,6 +152,7 @@ model Term {
   bondPositions     BondPosition[]
   termEvents        TermEvent[]
   marketRegimes     MarketRegime[]
+  badges            Badge[]
 
   @@map("terms")
 }
@@ -262,6 +263,7 @@ model StudentProfile {
   wallet          Wallet? // 1-to-1
   savingsAccounts SavingsAccount[]
   fixedDeposits   FixedDeposit[]
+  studentBadges   StudentBadge[]
 
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
@@ -293,6 +295,37 @@ model RetirementGoal {
   updatedAt DateTime @updatedAt
 
   @@map("retirement_goals")
+}
+
+model Badge {
+  id          String @id @default(uuid()) @db.Uuid
+  termId      String @db.Uuid
+  term        Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  code        String
+  name        String
+  description String?
+  ruleJson    Json   @db.JsonB
+
+  studentBadges StudentBadge[]
+
+  @@index([termId])
+  @@unique([termId, code])
+  @@map("badges")
+}
+
+model StudentBadge {
+  studentProfileId String @db.Uuid
+  badgeId          String @db.Uuid
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  badge          Badge          @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  earnedAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([studentProfileId, badgeId])
+  @@index([badgeId])
+  @@map("student_badges")
 }
 
 // ---------------------------------------------------------
