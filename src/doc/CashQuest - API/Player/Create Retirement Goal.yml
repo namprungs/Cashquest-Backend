@@ -1,0 +1,31 @@
+info:
+  name: Create Retirement Goal
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/player/terms/{{termId}}/retirement-goals"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "retirementAge": 60,
+        "monthlyExpense": 25000,
+        "lifeExpectancy": 85,
+        "targetAmount": 9000000,
+        "currentAmount": 0,
+        "targetDate": "2046-12-31T00:00:00.000Z"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
