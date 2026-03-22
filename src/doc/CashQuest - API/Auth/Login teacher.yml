@@ -1,11 +1,11 @@
 info:
-  name: Create Classroom (by Term)
+  name: Login teacher
   type: http
-  seq: 1
+  seq: 4
 
 http:
   method: POST
-  url: "{{baseUrl}}/academic/terms/{{termId}}/classrooms"
+  url: "{{baseUrl}}/auth/login"
   headers:
     - name: Content-Type
       value: application/json
@@ -13,7 +13,8 @@ http:
     type: json
     data: |-
       {
-        "name": "มัธยม6/4"
+        "email": "teacher@school.com",
+        "password": "Teacher@1234"
       }
   auth: inherit
 

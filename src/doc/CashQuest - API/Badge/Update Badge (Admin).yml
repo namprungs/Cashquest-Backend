@@ -1,0 +1,30 @@
+info:
+  name: Update Badge (Admin)
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/badges/terms/{{termId}}/{{badgeId}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+  body:
+    mode: json
+    json: |
+      {
+        "name": "First Login (Updated)",
+        "description": "Updated badge description",
+        "ruleJson": {
+          "type": "event",
+          "event": "LOGIN_FIRST_TIME",
+          "version": 2
+        }
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
