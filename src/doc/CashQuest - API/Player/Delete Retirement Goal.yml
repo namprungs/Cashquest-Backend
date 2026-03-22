@@ -1,0 +1,18 @@
+info:
+  name: Delete Retirement Goal
+  type: http
+  seq: 8
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/player/terms/{{termId}}/retirement-goals/{{retirementGoalId}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

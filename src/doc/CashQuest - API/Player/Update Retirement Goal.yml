@@ -1,0 +1,31 @@
+info:
+  name: Update Retirement Goal
+  type: http
+  seq: 7
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/player/terms/{{termId}}/retirement-goals/{{retirementGoalId}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "retirementAge": 62,
+        "monthlyExpense": 28000,
+        "lifeExpectancy": 88,
+        "targetAmount": 10500000,
+        "currentAmount": 350000,
+        "targetDate": "2048-12-31T00:00:00.000Z"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
