@@ -14,23 +14,13 @@ import { MeFinanceService } from './services/me-finance.service';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
-<<<<<<< HEAD
-  controllers: [
-    BankController,
-    SavingsAccountController,
-    WalletController,
-    MeFinanceController,
-  ], // Register the controllers here
-||||||| parent of 1badf28 (feat/saving-interest-cron-job)
-  controllers: [BankController, SavingsAccountController, WalletController], // Register the controllers here
-=======
   controllers: [
     BankController,
     SavingsAccountController,
     WalletController,
     SavingsInterestController,
+    MeFinanceController,
   ], // Register the controllers here
->>>>>>> 1badf28 (feat/saving-interest-cron-job)
   providers: [
     WalletService,
     BankService,
