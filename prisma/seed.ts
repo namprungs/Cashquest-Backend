@@ -302,20 +302,26 @@ async function main() {
 
   const lifeStageDefs = [
     {
-      name: 'EARLY_STAGE',
+      name: 'วัยนักเรียน',
       orderNo: 1,
       unlockInvestment: false,
       enableRandomExpense: false,
     },
     {
-      name: 'MID_STAGE',
+      name: 'วัยนักศึกษา',
       orderNo: 2,
-      unlockInvestment: false,
+      unlockInvestment: true,
       enableRandomExpense: true,
     },
     {
-      name: 'ADVANCED_STAGE',
+      name: 'วัยทำงาน',
       orderNo: 3,
+      unlockInvestment: true,
+      enableRandomExpense: true,
+    },
+    {
+      name: 'วัยเกษียณ',
+      orderNo: 4,
       unlockInvestment: true,
       enableRandomExpense: true,
     },
@@ -376,7 +382,7 @@ async function main() {
     }
   }
 
-  const classroomName = 'Demo Classroom A';
+  const classroomName = 'มัธยมศึกษาปีที่  6/4';
   const classroom =
     (await prisma.classroom.findFirst({
       where: {
@@ -490,70 +496,150 @@ async function main() {
     }
   }
 
-  // 7. Seed Investment Market Demo (สำหรับกราฟราคา)
-  console.log('📈 กำลังสร้างข้อมูล Investment Market demo...');
+  console.log('🏦 กำลังสร้างข้อมูลธนาคารสำหรับเทอมหลัก...');
 
-  const marketTermName = 'Demo Market Term 2026';
-  const marketTermStart = new Date('2026-01-01T00:00:00.000Z');
-  const marketTermEnd = new Date('2026-12-31T00:00:00.000Z');
-  const marketTotalPoints = 365;
-
-  const existingMarketTerm = await prisma.term.findFirst({
-    where: {
-      schoolId: school.id,
-      name: marketTermName,
+  const bankSeeds = [
+    {
+      name: 'CashQuest Savings Plus',
+      interestRate: 0.0125,
+      withdrawLimitPerTerm: 4,
+      feePerTransaction: 10,
     },
-    select: { id: true },
-  });
+    {
+      name: 'CashQuest Flexi Save',
+      interestRate: 0.008,
+      withdrawLimitPerTerm: null,
+      feePerTransaction: 5,
+    },
+  ];
 
-  const marketTerm = existingMarketTerm
-    ? await prisma.term.update({
-        where: { id: existingMarketTerm.id },
+  for (const bankSeed of bankSeeds) {
+    const existingBank = await prisma.bank.findFirst({
+      where: {
+        termId: term.id,
+        name: bankSeed.name,
+      },
+      select: { id: true },
+    });
+
+    if (existingBank) {
+      await prisma.bank.update({
+        where: { id: existingBank.id },
         data: {
-          schoolId: school.id,
-          name: marketTermName,
-          startDate: marketTermStart,
-          endDate: marketTermEnd,
-          totalWeeks: marketTotalPoints,
-          status: TermStatus.ONGOING,
-        },
-      })
-    : await prisma.term.create({
-        data: {
-          schoolId: school.id,
-          name: marketTermName,
-          startDate: marketTermStart,
-          endDate: marketTermEnd,
-          totalWeeks: marketTotalPoints,
-          status: TermStatus.ONGOING,
+          interestRate: bankSeed.interestRate,
+          withdrawLimitPerTerm: bankSeed.withdrawLimitPerTerm,
+          feePerTransaction: bankSeed.feePerTransaction,
         },
       });
+    } else {
+      await prisma.bank.create({
+        data: {
+          termId: term.id,
+          name: bankSeed.name,
+          interestRate: bankSeed.interestRate,
+          withdrawLimitPerTerm: bankSeed.withdrawLimitPerTerm,
+          feePerTransaction: bankSeed.feePerTransaction,
+        },
+      });
+    }
+  }
 
-  const marketStudentProfile = await prisma.studentProfile.upsert({
-    where: {
-      userId_termId: {
-        userId: studentUser.id,
-        termId: marketTerm.id,
+  console.log('🏅 กำลังสร้างข้อมูล badges สำหรับเทอมหลัก...');
+
+  const badgeSeeds = [
+    {
+      code: 'FIRST_LOGIN',
+      name: 'หมีเรื่องแน่',
+      description: 'เข้าใช้งานครั้งแรกสำเร็จ',
+      ruleJson: {
+        type: 'event',
+        event: 'LOGIN_FIRST_TIME',
       },
+      earnedByDemoStudent: true,
     },
-    update: {},
-    create: {
-      userId: studentUser.id,
-      termId: marketTerm.id,
+    {
+      code: 'QUIZ_BEGINNER',
+      name: 'หมีไหลป่าว',
+      description: 'ทำแบบทดสอบผ่านอย่างน้อย 1 ครั้ง',
+      ruleJson: {
+        type: 'threshold',
+        event: 'QUIZ_PASSED_COUNT',
+        value: 1,
+      },
+      earnedByDemoStudent: false,
     },
-  });
+    {
+      code: 'FIRST_SAVE',
+      name: 'หมีตื่นเช้า',
+      description: 'เปิดบัญชีออมทรัพย์ครั้งแรก',
+      ruleJson: {
+        type: 'event',
+        event: 'OPEN_SAVINGS_ACCOUNT',
+      },
+      earnedByDemoStudent: false,
+    },
+    {
+      code: 'SAVER_LEVEL_1',
+      name: 'หมีคนเส๋า',
+      description: 'สะสมเงินออมรวมครบ 10,000',
+      ruleJson: {
+        type: 'threshold',
+        event: 'TOTAL_SAVINGS',
+        value: 10000,
+      },
+      earnedByDemoStudent: true,
+    },
+  ];
 
-  await prisma.wallet.upsert({
-    where: {
-      studentProfileId: marketStudentProfile.id,
-    },
-    update: {
-      balance: 250000,
-    },
-    create: {
-      studentProfileId: marketStudentProfile.id,
-      balance: 250000,
-    },
+  for (const badgeSeed of badgeSeeds) {
+    const badge = await prisma.badge.upsert({
+      where: {
+        termId_code: {
+          termId: term.id,
+          code: badgeSeed.code,
+        },
+      },
+      update: {
+        name: badgeSeed.name,
+        description: badgeSeed.description,
+        ruleJson: badgeSeed.ruleJson as Prisma.InputJsonValue,
+      },
+      create: {
+        termId: term.id,
+        code: badgeSeed.code,
+        name: badgeSeed.name,
+        description: badgeSeed.description,
+        ruleJson: badgeSeed.ruleJson as Prisma.InputJsonValue,
+      },
+    });
+
+    if (badgeSeed.earnedByDemoStudent) {
+      await prisma.studentBadge.upsert({
+        where: {
+          studentProfileId_badgeId: {
+            studentProfileId: demoStudentProfile.id,
+            badgeId: badge.id,
+          },
+        },
+        update: {
+          earnedAt: new Date(),
+        },
+        create: {
+          studentProfileId: demoStudentProfile.id,
+          badgeId: badge.id,
+          earnedAt: new Date(),
+        },
+      });
+    }
+  }
+
+  console.log('📈 กำลังสร้างข้อมูล market สำหรับเทอมหลักเดียวกัน...');
+
+  const marketTotalPoints = Math.max(term.totalWeeks, 12);
+
+  await prisma.wallet.update({
+    where: { studentProfileId: demoStudentProfile.id },
+    data: { balance: 250000 },
   });
 
   const productSeeds: {
@@ -577,7 +663,7 @@ async function main() {
       riskLevel: RiskLevel.HIGH,
       sector: 'TECH',
       isActive: true,
-      simulation: { initialPrice: 120, mu: 0.14, sigma: 0.33, dt: 1 / 365 },
+      simulation: { initialPrice: 120, mu: 0.14, sigma: 0.33, dt: 1 / 52 },
     },
     {
       type: ProductType.FUND,
@@ -586,7 +672,7 @@ async function main() {
       riskLevel: RiskLevel.MED,
       sector: 'MIXED',
       isActive: true,
-      simulation: { initialPrice: 85, mu: 0.09, sigma: 0.18, dt: 1 / 365 },
+      simulation: { initialPrice: 85, mu: 0.09, sigma: 0.18, dt: 1 / 52 },
     },
     {
       type: ProductType.BOND,
@@ -595,7 +681,7 @@ async function main() {
       riskLevel: RiskLevel.LOW,
       sector: 'GOV',
       isActive: true,
-      simulation: { initialPrice: 100, mu: 0.035, sigma: 0.06, dt: 1 / 365 },
+      simulation: { initialPrice: 100, mu: 0.035, sigma: 0.06, dt: 1 / 52 },
     },
   ];
 
@@ -647,7 +733,7 @@ async function main() {
     await prisma.productSimulation.upsert({
       where: {
         termId_productId: {
-          termId: marketTerm.id,
+          termId: term.id,
           productId: product.id,
         },
       },
@@ -658,7 +744,7 @@ async function main() {
         dt: seed.simulation.dt,
       },
       create: {
-        termId: marketTerm.id,
+        termId: term.id,
         productId: product.id,
         initialPrice: seed.simulation.initialPrice,
         mu: seed.simulation.mu,
@@ -675,16 +761,16 @@ async function main() {
   }
 
   await prisma.termSimulation.upsert({
-    where: { termId: marketTerm.id },
+    where: { termId: term.id },
     update: {
       randomSeed: 20260301,
-      currentWeek: 180,
+      currentWeek: Math.min(6, term.totalWeeks),
       engineVersion: 'market-seed-v1',
     },
     create: {
-      termId: marketTerm.id,
+      termId: term.id,
       randomSeed: 20260301,
-      currentWeek: 180,
+      currentWeek: Math.min(6, term.totalWeeks),
       engineVersion: 'market-seed-v1',
     },
   });
@@ -751,67 +837,81 @@ async function main() {
         },
       });
 
-  await prisma.termEvent.deleteMany({ where: { termId: marketTerm.id } });
+  await prisma.termEvent.deleteMany({ where: { termId: term.id } });
+
+  const event1Start = Math.max(2, Math.floor(marketTotalPoints * 0.2));
+  const event1End = Math.min(marketTotalPoints, event1Start + 2);
+  const event2Start = Math.max(
+    event1End + 1,
+    Math.floor(marketTotalPoints * 0.6),
+  );
+  const event2End = Math.min(marketTotalPoints, event2Start + 3);
+
   await prisma.termEvent.createMany({
     data: [
       {
-        termId: marketTerm.id,
+        termId: term.id,
         eventId: shockEvent.id,
-        startWeek: 60,
-        endWeek: 85,
+        startWeek: event1Start,
+        endWeek: event1End,
         status: TermEventStatus.EXPIRED,
       },
       {
-        termId: marketTerm.id,
+        termId: term.id,
         eventId: rallyEvent.id,
-        startWeek: 150,
-        endWeek: 210,
+        startWeek: event2Start,
+        endWeek: event2End,
         status: TermEventStatus.ACTIVE,
       },
     ],
   });
 
-  await prisma.marketRegime.deleteMany({ where: { termId: marketTerm.id } });
+  await prisma.marketRegime.deleteMany({ where: { termId: term.id } });
+
+  const split1 = Math.max(2, Math.floor(marketTotalPoints / 3));
+  const split2 = Math.max(split1 + 1, Math.floor((marketTotalPoints * 2) / 3));
+
   await prisma.marketRegime.createMany({
     data: [
       {
-        termId: marketTerm.id,
+        termId: term.id,
         name: MarketRegimeName.BULL,
         muAdjustment: 0.015,
         sigmaAdjustment: -0.01,
         startWeek: 1,
-        endWeek: 120,
+        endWeek: split1,
       },
       {
-        termId: marketTerm.id,
+        termId: term.id,
         name: MarketRegimeName.BEAR,
         muAdjustment: -0.018,
         sigmaAdjustment: 0.025,
-        startWeek: 121,
-        endWeek: 220,
+        startWeek: split1 + 1,
+        endWeek: split2,
       },
       {
-        termId: marketTerm.id,
+        termId: term.id,
         name: MarketRegimeName.SIDEWAYS,
         muAdjustment: 0.002,
         sigmaAdjustment: 0.005,
-        startWeek: 221,
-        endWeek: 365,
+        startWeek: split2 + 1,
+        endWeek: marketTotalPoints,
       },
     ],
   });
 
   const marketEvents = await prisma.termEvent.findMany({
-    where: { termId: marketTerm.id },
+    where: { termId: term.id },
     include: { event: true },
   });
+
   const marketRegimes = await prisma.marketRegime.findMany({
-    where: { termId: marketTerm.id },
+    where: { termId: term.id },
   });
 
   await prisma.productPrice.deleteMany({
     where: {
-      termId: marketTerm.id,
+      termId: term.id,
       productId: { in: products.map((product) => product.id) },
     },
   });
@@ -883,7 +983,7 @@ async function main() {
       const low = Math.max(0.01, Math.min(open, close) * (1 - wickNoise));
 
       rows.push({
-        termId: marketTerm.id,
+        termId: term.id,
         productId: product.id,
         weekNo: point,
         open,
@@ -897,7 +997,7 @@ async function main() {
         generationType: activeEvent
           ? PriceGenerationType.GBM_EVENT_ADJUSTED
           : PriceGenerationType.GBM,
-        createdAt: addDays(marketTermStart, point - 1),
+        createdAt: addDays(term.startDate, point - 1),
       });
 
       previousClose = close;
@@ -917,7 +1017,7 @@ async function main() {
 📧 Staff Email: staff@school.com / Pass: Staff@1234
 🏫 Demo School: ${demoSchoolName}
 📚 Demo Term: ${termName}
-📊 Market Term: ${marketTermName}
+📊 Market Seed: Enabled in Demo Term
   `);
 
   const roleWithPermissions = await prisma.role.findMany({
