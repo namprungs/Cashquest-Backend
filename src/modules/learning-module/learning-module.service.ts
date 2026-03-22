@@ -19,7 +19,9 @@ export class LearningModuleService {
   private assertTeacherOrAdmin(user: CurrentUser) {
     const roleName = user?.role?.name?.toUpperCase?.();
     if (!roleName || !['TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(roleName)) {
-      throw new ForbiddenException('Only teacher/admin can perform this action');
+      throw new ForbiddenException(
+        'Only teacher/admin can perform this action',
+      );
     }
   }
 
@@ -73,7 +75,11 @@ export class LearningModuleService {
     return { success: true, data: created };
   }
 
-  async update(moduleId: string, user: CurrentUser, dto: UpdateLearningModuleDto) {
+  async update(
+    moduleId: string,
+    user: CurrentUser,
+    dto: UpdateLearningModuleDto,
+  ) {
     this.assertTeacherOrAdmin(user);
 
     const existing = await this.prisma.learningModule.findUnique({
@@ -97,7 +103,9 @@ export class LearningModuleService {
       data: {
         ...(dto.termId ? { termId: dto.termId } : {}),
         ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.description !== undefined
+          ? { description: dto.description }
+          : {}),
         ...(dto.contentUrl !== undefined ? { contentUrl: dto.contentUrl } : {}),
         ...(dto.orderNo !== undefined ? { orderNo: dto.orderNo } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
