@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBankDto } from '../dto/create-bank.dto';
 import { UpdateBankDto } from '../dto/update-bank.dto';
@@ -28,9 +24,7 @@ export class BankService {
         name: dto.name,
         interestRate: new Prisma.Decimal(dto.interestRate),
         withdrawLimitPerTerm: dto.withdrawLimitPerTerm,
-        feePerTransaction: new Prisma.Decimal(
-          dto.feePerTransaction ?? 0,
-        ),
+        feePerTransaction: new Prisma.Decimal(dto.feePerTransaction ?? 0),
       },
     });
 

@@ -1,4 +1,12 @@
-import { IsArray, IsBoolean, IsOptional, IsString, IsUUID, Min, IsInt } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  IsInt,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class FinalizeLiveWeekDto {

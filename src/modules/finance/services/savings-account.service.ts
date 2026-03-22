@@ -177,7 +177,9 @@ export class SavingsAccountService {
     const savingsAccount = await this.prisma.savingsAccount.findUnique({
       where: { id: dto.savingsAccountId },
       include: {
-        bank: { select: { withdrawLimitPerTerm: true, feePerTransaction: true } },
+        bank: {
+          select: { withdrawLimitPerTerm: true, feePerTransaction: true },
+        },
         studentProfile: {
           select: {
             id: true,
@@ -203,7 +205,9 @@ export class SavingsAccountService {
 
     // Check withdraw limit
     if (savingsAccount.bank.withdrawLimitPerTerm) {
-      if (savingsAccount.withdrawCount >= savingsAccount.bank.withdrawLimitPerTerm) {
+      if (
+        savingsAccount.withdrawCount >= savingsAccount.bank.withdrawLimitPerTerm
+      ) {
         throw new BadRequestException(
           `Withdrawal limit of ${savingsAccount.bank.withdrawLimitPerTerm} per term reached`,
         );
@@ -258,7 +262,7 @@ export class SavingsAccountService {
           amount: withdrawAmount,
           balanceBefore: wallet.balance,
           balanceAfter: updatedWallet.balance,
-          description: `Withdrawal from savings account with fee: ${feeAmount}`,
+          description: `Withdrawal from savings account with fee: ${feeAmount.toString()}`,
           metadata: {
             source: 'SAVINGS_WITHDRAW',
             refId: dto.savingsAccountId,
@@ -296,7 +300,8 @@ export class SavingsAccountService {
           wallet: updatedWallet,
           fee: feeAmount,
           remainingWithdrawals: savingsAccount.bank.withdrawLimitPerTerm
-            ? savingsAccount.bank.withdrawLimitPerTerm - (savingsAccount.withdrawCount + 1)
+            ? savingsAccount.bank.withdrawLimitPerTerm -
+              (savingsAccount.withdrawCount + 1)
             : 'unlimited',
         },
       };
@@ -351,7 +356,9 @@ export class SavingsAccountService {
     const accounts = await this.prisma.savingsAccount.findMany({
       where: { bankId },
       include: {
-        studentProfile: { select: { user: { select: { username: true, email: true } } } },
+        studentProfile: {
+          select: { user: { select: { username: true, email: true } } },
+        },
         bank: true,
       },
       orderBy: { createdAt: 'desc' },

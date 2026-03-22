@@ -1,4 +1,3 @@
-/* eslint-disable no-underscore-dangle */
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export const GetUserPermissions = createParamDecorator(
