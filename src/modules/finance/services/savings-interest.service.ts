@@ -10,24 +10,41 @@ export class SavingsInterestService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Biweekly cron job - runs on 1st and 15th of every month at 00:00
-   * Cron expression: '0 0 1,15 * *'
-   * This gives interest to students every 1st and 15th of the month
+   * Daily cron job - runs every midnight
+   * Cron expression: '0 0 * * *'
+   * Pays out interest on the 1st and 15th of each month.
+   * Interest rate is monthly rate × 2, scaled by payout period: balance × (monthlyRate × 2 ÷ monthDays) × periodDays
    */
-  @Cron('0 0 1,15 * *')
-  async handleBiweeklyInterest() {
-    this.logger.log('Starting biweekly savings interest job');
+  @Cron('0 0 * * *')
+  async handleDailyInterest() {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+
+    this.logger.log(`Starting daily savings interest job (day ${dayOfMonth})`);
+
+    // Determine payout window for today (1st and 15th only)
+    const payout = this.getPayoutPeriod(today);
+    if (!payout) {
+      this.logger.debug('Not a payout day; daily accrual computed but not paid out yet.');
+      return;
+    }
+
+    const { periodStart, periodEnd, periodDays, monthDays, label } = payout;
+
+    this.logger.log(
+      `Payout day '${label}': applying interest for ${periodDays} days from ${periodStart.toISOString().slice(0, 10)} to ${periodEnd
+        .toISOString()
+        .slice(0, 10)} (monthDays=${monthDays})`,
+    );
 
     try {
-      // Get current week number for the term
       const currentWeekNo = await this.getCurrentWeekNo();
 
       if (!currentWeekNo) {
-        this.logger.warn('Could not determine current week number, skipping interest calculation');
+        this.logger.warn('Could not determine current week number, skipping interest payout calculation');
         return;
       }
 
-      // Get all active savings accounts with their bank details
       const accounts = await this.prisma.savingsAccount.findMany({
         where: { status: 'ACTIVE' },
         include: {
@@ -52,7 +69,7 @@ export class SavingsInterestService {
 
       for (const account of accounts) {
         try {
-          const interestResult = await this.applyInterest(account, currentWeekNo);
+          const interestResult = await this.applyInterest(account, currentWeekNo, periodDays, monthDays);
           if (interestResult) {
             processedCount++;
             totalInterest = totalInterest.add(interestResult.interestAmount);
@@ -66,13 +83,10 @@ export class SavingsInterestService {
       }
 
       this.logger.log(
-        `Biweekly interest job completed. Processed: ${processedCount}/${accounts.length} accounts, Total interest: ${totalInterest.toString()}`,
+        `Daily interest job completed. Processed: ${processedCount}/${accounts.length} accounts, Total interest: ${totalInterest.toString()}`,
       );
     } catch (error) {
-      this.logger.error(
-        `Biweekly interest job failed: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Daily interest job failed: ${error.message}`, error.stack);
     }
   }
 
@@ -82,6 +96,8 @@ export class SavingsInterestService {
   private async applyInterest(
     account: any,
     weekNo: number,
+    periodDays: number,
+    monthDays: number,
   ): Promise<{ interestAmount: Prisma.Decimal } | null> {
     const balance = new Prisma.Decimal(account.balance);
     const rate = new Prisma.Decimal(account.bank.interestRate);
@@ -91,9 +107,10 @@ export class SavingsInterestService {
       return null;
     }
 
-    // Calculate interest: balance * rate
-    // For biweekly interest, we calculate based on the full balance
-    const interestAmount = balance.mul(rate);
+    // Interest = balance × (monthlyRate × 2 ÷ monthDays) × periodDays
+    // Monthly rate is multiplied by 2 for the calculation
+    const dailyRate = rate.mul(new Prisma.Decimal(2)).div(new Prisma.Decimal(monthDays));
+    const interestAmount = balance.mul(dailyRate).mul(new Prisma.Decimal(periodDays));
 
     // Round to 2 decimal places
     const roundedInterest = interestAmount.toDecimalPlaces(2);
@@ -102,29 +119,39 @@ export class SavingsInterestService {
       return null;
     }
 
-    // Apply interest in a transaction
     await this.prisma.$transaction(async (tx) => {
       // 1. Insert interest log
       await tx.savingsInterestLog.create({
         data: {
           savingsAccountId: account.id,
-          weekNo: weekNo,
+          weekNo,
           rateUsed: rate,
           interestAmount: roundedInterest,
         },
       });
 
       // 2. Update account balance
+      const updatedBalance = balance.add(roundedInterest);
       await tx.savingsAccount.update({
         where: { id: account.id },
         data: {
-          balance: balance.add(roundedInterest),
+          balance: updatedBalance,
+        },
+      });
+
+      // 3. Record savings transaction for interest payout
+      await tx.savingsTransaction.create({
+        data: {
+          savingsAccountId: account.id,
+          type: 'INTEREST',
+          amount: roundedInterest,
+          balanceAfter: updatedBalance,
         },
       });
     });
 
     this.logger.debug(
-      `Applied interest to account ${account.id}: ${roundedInterest.toString()} (balance: ${balance.toString()} * rate: ${rate.toString()})`,
+      `Applied interest to account ${account.id}: ${roundedInterest.toString()} (balance: ${balance.toString()} * daily rate: ${dailyRate.toString()} * periodDays: ${periodDays})`,
     );
 
     return { interestAmount: roundedInterest };
@@ -174,9 +201,21 @@ export class SavingsInterestService {
       let processedCount = 0;
       let totalInterest = new Prisma.Decimal(0);
 
+      const payout = this.getPayoutPeriod(new Date());
+      if (!payout) {
+        return {
+          success: false,
+          message: 'Today is not a configured payout day (1 or 15)',
+          processedAccounts: 0,
+          totalInterest: '0',
+        };
+      }
+
+      const { periodDays, monthDays } = payout;
+
       for (const account of accounts) {
         try {
-          const interestResult = await this.applyInterest(account, currentWeekNo);
+          const interestResult = await this.applyInterest(account, currentWeekNo, periodDays, monthDays);
           if (interestResult) {
             processedCount++;
             totalInterest = totalInterest.add(interestResult.interestAmount);
@@ -254,6 +293,55 @@ export class SavingsInterestService {
       this.logger.error(`Failed to get current week number: ${error.message}`);
       return null;
     }
+  }
+
+  private getPayoutPeriod(date: Date):
+    | {
+        periodStart: Date;
+        periodEnd: Date;
+        periodDays: number;
+        monthDays: number;
+        label: string;
+      }
+    | null {
+    const day = date.getDate();
+
+    if (day === 15) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const monthDays = new Date(year, month + 1, 0).getDate();
+
+      return {
+        periodStart: new Date(year, month, 1),
+        periodEnd: new Date(year, month, 14),
+        periodDays: 14,
+        monthDays,
+        label: '1-14',
+      };
+    }
+
+    if (day === 1) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const prevMonthYear = month === 0 ? year - 1 : year;
+      const prevMonth = month === 0 ? 11 : month - 1;
+      const prevMonthDays = new Date(prevMonthYear, prevMonth + 1, 0).getDate();
+      const periodDays = prevMonthDays - 15;
+
+      if (periodDays <= 0) {
+        return null;
+      }
+
+      return {
+        periodStart: new Date(prevMonthYear, prevMonth, 16),
+        periodEnd: new Date(prevMonthYear, prevMonth, prevMonthDays),
+        periodDays,
+        monthDays: prevMonthDays,
+        label: '16-end previous month',
+      };
+    }
+
+    return null;
   }
 
   private calculateWeekFromTerm(term: any, date: Date): number | null {
