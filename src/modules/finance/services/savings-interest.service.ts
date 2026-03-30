@@ -10,31 +10,32 @@ export class SavingsInterestService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Daily cron job - runs every midnight
-   * Cron expression: '0 0 * * *'
-   * Pays out interest on the 1st and 15th of each month.
-   * Interest rate is monthly rate × 2, scaled by payout period: balance × (monthlyRate × 2 ÷ monthDays) × periodDays
+   * Bi-monthly cron job - runs on the 1st and 16th of every month at 00:00
+   * Cron expression: '0 0 1,16 * *'
+   * Payouts:
+   *   - 16th: interest for day 1-15 using rate/16
+   *   - 1st: interest for day 16-end of previous month using rate/(daysInPrevMonth-15)
    */
-  @Cron('0 0 * * *')
+  @Cron('0 0 1,16 * *')
   async handleDailyInterest() {
     const today = new Date();
     const dayOfMonth = today.getDate();
 
     this.logger.log(`Starting daily savings interest job (day ${dayOfMonth})`);
 
-    // Determine payout window for today (1st and 15th only)
+    // Determine payout window for today (1st and 16th only)
     const payout = this.getPayoutPeriod(today);
     if (!payout) {
       this.logger.debug('Not a payout day; daily accrual computed but not paid out yet.');
       return;
     }
 
-    const { periodStart, periodEnd, periodDays, monthDays, label } = payout;
+    const { periodStart, periodEnd, periodDays, rateDivisor, label } = payout;
 
     this.logger.log(
       `Payout day '${label}': applying interest for ${periodDays} days from ${periodStart.toISOString().slice(0, 10)} to ${periodEnd
         .toISOString()
-        .slice(0, 10)} (monthDays=${monthDays})`,
+        .slice(0, 10)} (rateDivisor=${rateDivisor})`,
     );
 
     try {
@@ -69,7 +70,7 @@ export class SavingsInterestService {
 
       for (const account of accounts) {
         try {
-          const interestResult = await this.applyInterest(account, currentWeekNo, periodDays, monthDays);
+          const interestResult = await this.applyInterest(account, currentWeekNo, periodDays, rateDivisor);
           if (interestResult) {
             processedCount++;
             totalInterest = totalInterest.add(interestResult.interestAmount);
@@ -97,7 +98,7 @@ export class SavingsInterestService {
     account: any,
     weekNo: number,
     periodDays: number,
-    monthDays: number,
+    rateDivisor: number,
   ): Promise<{ interestAmount: Prisma.Decimal } | null> {
     const balance = new Prisma.Decimal(account.balance);
     const rate = new Prisma.Decimal(account.bank.interestRate);
@@ -107,10 +108,8 @@ export class SavingsInterestService {
       return null;
     }
 
-    // Interest = balance × (monthlyRate × 2 ÷ monthDays) × periodDays
-    // Monthly rate is multiplied by 2 for the calculation
-    const dailyRate = rate.mul(new Prisma.Decimal(2)).div(new Prisma.Decimal(monthDays));
-    const interestAmount = balance.mul(dailyRate).mul(new Prisma.Decimal(periodDays));
+    // Interest = balance × (rate / rateDivisor)
+    const interestAmount = balance.mul(rate).div(new Prisma.Decimal(rateDivisor));
 
     // Round to 2 decimal places
     const roundedInterest = interestAmount.toDecimalPlaces(2);
@@ -151,7 +150,7 @@ export class SavingsInterestService {
     });
 
     this.logger.debug(
-      `Applied interest to account ${account.id}: ${roundedInterest.toString()} (balance: ${balance.toString()} * daily rate: ${dailyRate.toString()} * periodDays: ${periodDays})`,
+      `Applied interest to account ${account.id}: ${roundedInterest.toString()} (balance: ${balance.toString()} * rate: ${rate.toString()} / divisor: ${rateDivisor})`,
     );
 
     return { interestAmount: roundedInterest };
@@ -205,17 +204,17 @@ export class SavingsInterestService {
       if (!payout) {
         return {
           success: false,
-          message: 'Today is not a configured payout day (1 or 15)',
+          message: 'Today is not a configured payout day (1 or 16)',
           processedAccounts: 0,
           totalInterest: '0',
         };
       }
 
-      const { periodDays, monthDays } = payout;
+      const { periodDays, rateDivisor } = payout;
 
       for (const account of accounts) {
         try {
-          const interestResult = await this.applyInterest(account, currentWeekNo, periodDays, monthDays);
+          const interestResult = await this.applyInterest(account, currentWeekNo, periodDays, rateDivisor);
           if (interestResult) {
             processedCount++;
             totalInterest = totalInterest.add(interestResult.interestAmount);
@@ -300,23 +299,23 @@ export class SavingsInterestService {
         periodStart: Date;
         periodEnd: Date;
         periodDays: number;
-        monthDays: number;
+        rateDivisor: number;
         label: string;
       }
     | null {
     const day = date.getDate();
 
-    if (day === 15) {
+    if (day === 16) {
       const year = date.getFullYear();
       const month = date.getMonth();
       const monthDays = new Date(year, month + 1, 0).getDate();
 
       return {
         periodStart: new Date(year, month, 1),
-        periodEnd: new Date(year, month, 14),
-        periodDays: 14,
-        monthDays,
-        label: '1-14',
+        periodEnd: new Date(year, month, 15),
+        periodDays: 15,
+        rateDivisor: 16,
+        label: '1-15',
       };
     }
 
@@ -336,7 +335,7 @@ export class SavingsInterestService {
         periodStart: new Date(prevMonthYear, prevMonth, 16),
         periodEnd: new Date(prevMonthYear, prevMonth, prevMonthDays),
         periodDays,
-        monthDays: prevMonthDays,
+        rateDivisor: periodDays,
         label: '16-end previous month',
       };
     }
