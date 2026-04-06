@@ -1,0 +1,19 @@
+info:
+  name: Retrieves details of a specific fixed deposit
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{baseUrl}}/fixed-deposits/:id"
+  params:
+    - name: id
+      value: 1c8fbd1b-d713-4eb8-a52e-ee93fe373032
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

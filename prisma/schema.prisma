@@ -138,21 +138,21 @@ model Term {
   studentProfiles StudentProfile[]
   banks           Bank[]
 
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  learningModules LearningModule[]
-  quests          Quest[]
-  productSimulations ProductSimulation[]
-  termSimulation    TermSimulation?
-  productPrices     ProductPrice[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  learningModules       LearningModule[]
+  quests                Quest[]
+  productSimulations    ProductSimulation[]
+  termSimulation        TermSimulation?
+  productPrices         ProductPrice[]
   productLivePriceTicks ProductLivePriceTick[]
-  orders            Order[]
-  holdings          Holding[]
-  dividendPayouts   DividendPayout[]
-  bondPositions     BondPosition[]
-  termEvents        TermEvent[]
-  marketRegimes     MarketRegime[]
-  badges            Badge[]
+  orders                Order[]
+  holdings              Holding[]
+  dividendPayouts       DividendPayout[]
+  bondPositions         BondPosition[]
+  termEvents            TermEvent[]
+  marketRegimes         MarketRegime[]
+  badges                Badge[]
 
   @@map("terms")
 }
@@ -283,12 +283,12 @@ model RetirementGoal {
   studentProfileId String         @db.Uuid
   studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
 
-  retirementAge  Int      @default(60) // เช่น 65
-  monthlyExpense Decimal  @db.Decimal(12, 2)
-  lifeExpectancy Int     // optional เช่น 85
+  retirementAge  Int     @default(60) // เช่น 65
+  monthlyExpense Decimal @db.Decimal(12, 2)
+  lifeExpectancy Int // optional เช่น 85
 
-  targetAmount  Decimal  @db.Decimal(12, 2)
-  currentAmount Decimal  @default(0) @db.Decimal(12, 2)
+  targetAmount  Decimal   @db.Decimal(12, 2)
+  currentAmount Decimal   @default(0) @db.Decimal(12, 2)
   targetDate    DateTime?
 
   createdAt DateTime @default(now())
@@ -298,19 +298,19 @@ model RetirementGoal {
 }
 
 model Badge {
-  id          String @id @default(uuid()) @db.Uuid
-  termId      String @db.Uuid
-  term        Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid()) @db.Uuid
+  termId String @db.Uuid
+  term   Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
 
   code        String
   name        String
   description String?
-  ruleJson    Json   @db.JsonB
+  ruleJson    Json    @db.JsonB
 
   studentBadges StudentBadge[]
 
-  @@index([termId])
   @@unique([termId, code])
+  @@index([termId])
   @@map("badges")
 }
 
@@ -392,6 +392,7 @@ model Bank {
   feePerTransaction    Decimal @default(0) @db.Decimal(10, 2)
 
   savingsAccounts SavingsAccount[]
+  fixedDeposits   FixedDeposit[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -456,6 +457,9 @@ model FixedDeposit {
   studentProfileId String         @db.Uuid
   studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
 
+  bankId String @db.Uuid
+  bank   Bank   @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
   principal      Decimal @db.Decimal(12, 2) // เงินต้น
   interestRate   Decimal @db.Decimal(5, 4) // ดอกเบี้ยตามตกลง
   startWeekNo    Int
@@ -463,10 +467,28 @@ model FixedDeposit {
 
   status String @default("ACTIVE") // ACTIVE, MATURED, WITHDRAWN_EARLY
 
+  transactions FixedDepositTransaction[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("fixed_deposits")
+}
+
+model FixedDepositTransaction {
+  id             String       @id @default(uuid()) @db.Uuid
+  fixedDepositId String       @db.Uuid
+  fixedDeposit   FixedDeposit @relation(fields: [fixedDepositId], references: [id], onDelete: Cascade)
+
+  type           String
+  principal      Decimal @db.Decimal(12, 2)
+  interestAmount Decimal @default(0) @db.Decimal(12, 2)
+  amountPaid     Decimal @db.Decimal(12, 2)
+  description    String?
+
+  createdAt DateTime @default(now())
+
+  @@map("fixed_deposit_transactions")
 }
 
 // ---------------------------------------------------------
@@ -969,9 +991,9 @@ model ProductPrice {
   muUsed    Decimal? @map("mu_used") @db.Decimal(10, 6)
   sigmaUsed Decimal? @map("sigma_used") @db.Decimal(10, 6)
 
-  eventId         String?         @map("event_id") @db.Uuid
-  event           EconomicEvent?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  generationType  PriceGenerationType @map("generation_type")
+  eventId        String?             @map("event_id") @db.Uuid
+  event          EconomicEvent?      @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  generationType PriceGenerationType @map("generation_type")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -998,8 +1020,8 @@ model ProductLivePriceTick {
   muUsed    Decimal? @map("mu_used") @db.Decimal(10, 6)
   sigmaUsed Decimal? @map("sigma_used") @db.Decimal(10, 6)
 
-  eventId        String?        @map("event_id") @db.Uuid
-  event          EconomicEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId        String?             @map("event_id") @db.Uuid
+  event          EconomicEvent?      @relation(fields: [eventId], references: [id], onDelete: SetNull)
   generationType PriceGenerationType @map("generation_type")
 
   @@index([termId, productId, simulatedWeekNo, tickedAt])
@@ -1137,8 +1159,8 @@ model EconomicEvent {
   defaultImpact Json              @map("default_impact")
   isRepeatable  Boolean           @default(false) @map("is_repeatable")
 
-  termEvents    TermEvent[]
-  productPrices ProductPrice[]
+  termEvents            TermEvent[]
+  productPrices         ProductPrice[]
   productLivePriceTicks ProductLivePriceTick[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -1175,8 +1197,8 @@ model MarketRegime {
   term   Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
 
   name            MarketRegimeName
-  muAdjustment    Decimal @map("mu_adjustment") @db.Decimal(10, 6)
-  sigmaAdjustment Decimal @map("sigma_adjustment") @db.Decimal(10, 6)
+  muAdjustment    Decimal          @map("mu_adjustment") @db.Decimal(10, 6)
+  sigmaAdjustment Decimal          @map("sigma_adjustment") @db.Decimal(10, 6)
 
   startWeek Int @map("start_week")
   endWeek   Int @map("end_week")
