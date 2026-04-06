@@ -9,6 +9,7 @@ import {
   QuestSubmissionStatus,
   QuestStatus,
   QuestType,
+  TransactionType,
   type User,
   type Quest,
 } from '@prisma/client';
@@ -474,6 +475,109 @@ export class QuestService {
     return profile;
   }
 
+  private async rewardQuestToWallet(
+    tx: Prisma.TransactionClient,
+    submissionId: string,
+    studentProfileId: string,
+    quest: {
+      id: string;
+      title: string;
+      rewardCoins: number;
+    },
+    extraMetadata?: Record<string, unknown>,
+  ) {
+    if (quest.rewardCoins <= 0) {
+      return;
+    }
+
+    const wallet = await tx.wallet.upsert({
+      where: { studentProfileId },
+      update: {},
+      create: {
+        studentProfileId,
+        balance: new Prisma.Decimal(0),
+      },
+    });
+
+    const updatedWallet = await tx.wallet.update({
+      where: { id: wallet.id },
+      data: {
+        balance: wallet.balance.plus(quest.rewardCoins),
+      },
+    });
+
+    await tx.walletTransaction.create({
+      data: {
+        walletId: wallet.id,
+        type: TransactionType.QUEST_REWARD,
+        amount: new Prisma.Decimal(quest.rewardCoins),
+        balanceBefore: wallet.balance,
+        balanceAfter: updatedWallet.balance,
+        description: `Quest reward: ${quest.title}`,
+        metadata: {
+          source: 'QUEST_REWARD',
+          refId: submissionId,
+          questId: quest.id,
+          ...(extraMetadata ?? {}),
+        },
+      },
+    });
+  }
+
+  private async approveSubmissionAndReward(
+    tx: Prisma.TransactionClient,
+    params: {
+      submissionId: string;
+      studentProfileId: string;
+      quest: {
+        id: string;
+        title: string;
+        rewardCoins: number;
+      };
+      reviewedById?: string;
+      includeQuest?: boolean;
+      extraMetadata?: Record<string, unknown>;
+    },
+  ) {
+    const include: Prisma.QuestSubmissionInclude = {
+      versions: {
+        orderBy: { versionNo: 'desc' },
+        take: 1,
+      },
+    };
+
+    if (params.includeQuest) {
+      include.quest = {
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          description: true,
+        },
+      };
+    }
+
+    const approvedSubmission = await tx.questSubmission.update({
+      where: { id: params.submissionId },
+      data: {
+        status: QuestSubmissionStatus.APPROVED,
+        rejectReason: null,
+        ...(params.reviewedById ? { reviewedById: params.reviewedById } : {}),
+      },
+      include,
+    });
+
+    await this.rewardQuestToWallet(
+      tx,
+      params.submissionId,
+      params.studentProfileId,
+      params.quest,
+      params.extraMetadata,
+    );
+
+    return approvedSubmission;
+  }
+
   async submitMyQuest(questId: string, user: CurrentUser, dto: SubmitQuestDto) {
     this.assertStudent(user);
 
@@ -629,6 +733,14 @@ export class QuestService {
         id: true,
         status: true,
         updatedAt: true,
+        studentProfileId: true,
+        quest: {
+          select: {
+            id: true,
+            title: true,
+            rewardCoins: true,
+          },
+        },
       },
     });
 
@@ -642,20 +754,14 @@ export class QuestService {
       throw new BadRequestException('Submission is already approved');
     }
 
-    const updated = await this.prisma.questSubmission.update({
-      where: { id: submissionId },
-      data: {
-        status: QuestSubmissionStatus.APPROVED,
+    const updated = await this.prisma.$transaction((tx) =>
+      this.approveSubmissionAndReward(tx, {
+        submissionId,
+        studentProfileId: submission.studentProfileId,
+        quest: submission.quest,
         reviewedById: user.id,
-        rejectReason: null,
-      },
-      include: {
-        versions: {
-          orderBy: { versionNo: 'desc' },
-          take: 1,
-        },
-      },
-    });
+      }),
+    );
 
     return { success: true, data: updated };
   }
@@ -702,6 +808,76 @@ export class QuestService {
     });
 
     return { success: true, data: updated };
+  }
+
+  async completeInteractiveQuest(userId: string, actionType: string) {
+    if (!actionType?.trim()) {
+      throw new BadRequestException('actionType is required');
+    }
+
+    try {
+      const submission = await this.prisma.questSubmission.findFirst({
+        where: {
+          status: QuestSubmissionStatus.PENDING,
+          studentProfile: {
+            userId,
+          },
+          quest: {
+            type: QuestType.INTERACTIVE,
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+        include: {
+          versions: {
+            orderBy: { versionNo: 'desc' },
+            take: 1,
+          },
+          quest: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              description: true,
+              rewardCoins: true,
+            },
+          },
+          studentProfile: {
+            select: {
+              id: true,
+              userId: true,
+            },
+          },
+        },
+      });
+      if (!submission) {
+        throw new NotFoundException(
+          'No pending interactive quest submission found for this action',
+        );
+      }
+
+      const updated = await this.prisma.$transaction((tx) =>
+        this.approveSubmissionAndReward(tx, {
+          submissionId: submission.id,
+          studentProfileId: submission.studentProfile.id,
+          quest: submission.quest,
+          includeQuest: true,
+          extraMetadata: { actionType },
+        }),
+      );
+
+      return { success: true, data: updated };
+    } catch (error: unknown) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      throw new BadRequestException('Unable to complete interactive quest');
+    }
   }
 
   async getMyQuestDetail(questId: string, user: CurrentUser) {

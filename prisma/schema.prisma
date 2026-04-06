@@ -703,6 +703,7 @@ enum QuestType {
   QUIZ
   ASSIGNMENT
   PROJECT
+  INTERACTIVE
   OTHER
 }
 
@@ -737,6 +738,7 @@ model Quest {
 
   title          String
   description    String?
+  isSystem       Boolean              @default(false) @map("is_system")
   rewardCoins    Int                  @default(0) @map("reward_coins")
   submissionType QuestSubmissionType? @map("submission_type")
   status         QuestStatus          @default(DRAFT)

@@ -5,5 +5,6 @@ import { QuestService } from './quest.service';
 @Module({
   controllers: [QuestController],
   providers: [QuestService],
+  exports: [QuestService],
 })
 export class QuestModule {}
