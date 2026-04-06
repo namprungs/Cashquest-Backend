@@ -8,7 +8,7 @@ http:
   url: "{{baseUrl}}/fixed-deposits/student/:studentProfileId"
   params:
     - name: studentProfileId
-      value: 3f53c6f0-e985-4e5d-990e-d8751896e35c
+      value: d50f4bda-eea2-4a26-b867-e8edb489969a
       type: path
   auth: inherit
 
