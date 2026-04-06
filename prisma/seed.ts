@@ -7,6 +7,8 @@ import {
   PriceGenerationType,
   Prisma,
   PrismaClient,
+  QuestStatus,
+  QuestType,
   ProductType,
   RiskLevel,
   TermEventStatus,
@@ -495,6 +497,66 @@ async function main() {
       });
     }
   }
+
+  console.log('🧭 กำลังสร้างระบบเควส Interactive: เปิดบัญชีครั้งแรก...');
+
+  const openAccountQuestTitle = 'เปิดบัญชีครั้งแรก';
+  const openAccountQuestDescription =
+    'ทำภารกิจเปิดบัญชีออมทรัพย์ครั้งแรกให้สำเร็จ (actionType: opensavingaccount)';
+
+  const existingOpenAccountQuest = await prisma.quest.findFirst({
+    where: {
+      termId: term.id,
+      title: openAccountQuestTitle,
+    },
+    select: { id: true },
+  });
+
+  const openAccountQuest = existingOpenAccountQuest
+    ? await prisma.quest.update({
+        where: { id: existingOpenAccountQuest.id },
+        data: {
+          createdById: teacherUser.id,
+          type: QuestType.INTERACTIVE,
+          title: openAccountQuestTitle,
+          description: openAccountQuestDescription,
+          rewardCoins: 100,
+          status: QuestStatus.PUBLISHED,
+          startAt: term.startDate,
+          deadlineAt: term.endDate,
+          isSystem: true,
+        },
+        select: { id: true, title: true },
+      })
+    : await prisma.quest.create({
+        data: {
+          termId: term.id,
+          createdById: teacherUser.id,
+          type: QuestType.INTERACTIVE,
+          title: openAccountQuestTitle,
+          description: openAccountQuestDescription,
+          rewardCoins: 100,
+          status: QuestStatus.PUBLISHED,
+          startAt: term.startDate,
+          deadlineAt: term.endDate,
+          isSystem: true,
+        },
+        select: { id: true, title: true },
+      });
+
+  await prisma.questClassroom.upsert({
+    where: {
+      questId_classroomId: {
+        questId: openAccountQuest.id,
+        classroomId: classroom.id,
+      },
+    },
+    update: {},
+    create: {
+      questId: openAccountQuest.id,
+      classroomId: classroom.id,
+    },
+  });
 
   console.log('🏦 กำลังสร้างข้อมูลธนาคารสำหรับเทอมหลัก...');
 
