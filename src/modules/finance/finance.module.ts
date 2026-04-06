@@ -13,9 +13,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SavingsInterestService } from './services/savings-interest.service';
 import { MeFinanceController } from './controllers/me-finance.controller';
 import { MeFinanceService } from './services/me-finance.service';
+import { QuestModule } from '../quest/quest.module';
 
 @Module({
-  imports: [ScheduleModule.forRoot()],
+  imports: [ScheduleModule.forRoot(), QuestModule],
   controllers: [
     BankController,
     SavingsAccountController,

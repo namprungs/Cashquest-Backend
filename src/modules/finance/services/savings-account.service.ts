@@ -1,10 +1,12 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, QuestType } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { QuestService } from 'src/modules/quest/quest.service';
 import { CreateSavingsAccountDto } from '../dto/create-savings-account.dto';
 import { DepositSavingsDto } from '../dto/deposit-savings.dto';
 import { WithdrawSavingsDto } from '../dto/withdraw-savings.dto';
@@ -12,9 +14,12 @@ import { WalletService } from './wallet.service';
 
 @Injectable()
 export class SavingsAccountService {
+  private readonly logger = new Logger(SavingsAccountService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService,
+    private readonly questService: QuestService,
   ) {}
 
   /**
@@ -24,7 +29,11 @@ export class SavingsAccountService {
     // Verify student profile exists
     const studentProfile = await this.prisma.studentProfile.findUnique({
       where: { id: dto.studentProfileId },
-      select: { id: true, wallet: { select: { id: true, balance: true } } },
+      select: {
+        id: true,
+        userId: true,
+        wallet: { select: { id: true, balance: true } },
+      },
     });
 
     if (!studentProfile) {
@@ -58,7 +67,7 @@ export class SavingsAccountService {
     }
 
     // Create account with optional initial deposit
-    return await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const account = await tx.savingsAccount.create({
         data: {
           studentProfileId: dto.studentProfileId,
@@ -83,6 +92,28 @@ export class SavingsAccountService {
 
       return { success: true, data: account };
     });
+
+    console.log('hahahahahah araiwaaaaa');
+    // Trigger interactive quest auto-completion after successful first account open.
+    // This should not block the main banking flow if no matching quest exists.
+    try {
+      const questResult = await this.questService.completeInteractiveQuest(
+        studentProfile.userId,
+        QuestType.INTERACTIVE,
+      );
+      console.log('this is ', questResult);
+    } catch (error: unknown) {
+      if (error instanceof NotFoundException) {
+        return result;
+      }
+
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Interactive quest completion skipped after opening savings account: ${message}`,
+      );
+    }
+
+    return result;
   }
 
   /**
