@@ -1,0 +1,25 @@
+info:
+  name: Open fixed deposit account
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/fixed-deposits/open"
+  body:
+    type: json
+    data: |-
+      {
+        "studentProfileId": "3f53c6f0-e985-4e5d-990e-d8751896e35c",
+        "bankId": "73dda017-948a-4c09-9010-41d13005679b",
+        "principal": "100",
+        "startWeekNo": "5",
+        "maturityWeekNo": "6"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
