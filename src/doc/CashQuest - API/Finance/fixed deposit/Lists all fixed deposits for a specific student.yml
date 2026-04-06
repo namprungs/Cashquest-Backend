@@ -1,0 +1,19 @@
+info:
+  name: Lists all fixed deposits for a specific student
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/fixed-deposits/student/:studentProfileId"
+  params:
+    - name: studentProfileId
+      value: 3f53c6f0-e985-4e5d-990e-d8751896e35c
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

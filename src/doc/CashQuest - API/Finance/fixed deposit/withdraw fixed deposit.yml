@@ -1,0 +1,21 @@
+info:
+  name: withdraw fixed deposit
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/fixed-deposits/withdraw"
+  body:
+    type: json
+    data: |-
+      {
+        "fixedDepositId": "1c8fbd1b-d713-4eb8-a52e-ee93fe373032"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
