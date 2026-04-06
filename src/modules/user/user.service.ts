@@ -165,14 +165,29 @@ export class UserService {
     return user;
   }
 
-  async getUsers(): Promise<Omit<User, 'password'>> {
-    const users = await this.prisma.user.findMany();
+  async getMe(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        roleId: true,
+        createdAt: true,
+        updatedAt: true,
+        role: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
 
-    if (!users) {
-      throw new NotFoundException();
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return users.map(({ password, ...user }) => user)[0];
+
+    return user;
   }
 
   async getMeProfile(userId: string, termId: string) {
