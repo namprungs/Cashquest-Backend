@@ -65,6 +65,10 @@ export class InvestmentService {
     return this.portfolioService.getMyPortfolio(termId, user);
   }
 
+  openInvestmentWallet(termId: string, user: CurrentUser) {
+    return this.portfolioService.openInvestmentWallet(termId, user);
+  }
+
   getMyHoldings(termId: string, user: CurrentUser) {
     return this.portfolioService.getMyHoldings(termId, user);
   }

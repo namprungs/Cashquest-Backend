@@ -66,7 +66,13 @@ export class InvestmentCoreService {
       select: {
         id: true,
         userId: true,
-        wallet: {
+        mainWallet: {
+          select: {
+            id: true,
+            balance: true,
+          },
+        },
+        investmentWallet: {
           select: {
             id: true,
             balance: true,
