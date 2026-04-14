@@ -32,7 +32,7 @@ export class SavingsAccountService {
       select: {
         id: true,
         userId: true,
-        wallet: { select: { id: true, balance: true } },
+        mainWallet: { select: { id: true, balance: true } },
       },
     });
 
@@ -125,7 +125,7 @@ export class SavingsAccountService {
     // Verify savings account exists
     const savingsAccount = await this.prisma.savingsAccount.findUnique({
       where: { id: dto.savingsAccountId },
-      include: { studentProfile: { select: { wallet: true } }, bank: true },
+      include: { studentProfile: { select: { mainWallet: true } }, bank: true },
     });
 
     if (!savingsAccount) {
@@ -137,7 +137,7 @@ export class SavingsAccountService {
     }
 
     // Verify wallet has sufficient balance
-    const wallet = savingsAccount.studentProfile.wallet;
+    const wallet = savingsAccount.studentProfile.mainWallet;
     if (!wallet || wallet.balance.lessThan(depositAmount)) {
       throw new BadRequestException('Insufficient wallet balance');
     }
@@ -214,7 +214,7 @@ export class SavingsAccountService {
         studentProfile: {
           select: {
             id: true,
-            wallet: true,
+            mainWallet: true,
             term: { select: { id: true } },
           },
         },
@@ -247,10 +247,9 @@ export class SavingsAccountService {
 
     // Calculate fee
     const feeAmount = new Prisma.Decimal(
-      savingsAccount.bank.feePerTransaction ?? 0,
+      String((savingsAccount.bank.feePerTransaction ?? 0) as unknown),
     );
     const totalDeduction = withdrawAmount.plus(feeAmount);
-
     // Verify sufficient balance for amount + fee
     if (savingsAccount.balance.lessThan(totalDeduction)) {
       throw new BadRequestException(
@@ -259,11 +258,10 @@ export class SavingsAccountService {
     }
 
     // Ensure wallet exists
-    let wallet = savingsAccount.studentProfile.wallet;
+    let wallet = savingsAccount.studentProfile.mainWallet;
     if (!wallet) {
-      wallet = await this.walletService.ensureWallet(
-        savingsAccount.studentProfile.id,
-      );
+      const studentProfileId = savingsAccount.studentProfile.id as string;
+      wallet = await this.walletService.ensureWallet(studentProfileId);
     }
 
     // Perform withdrawal in transaction
