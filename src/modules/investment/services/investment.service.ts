@@ -20,6 +20,7 @@ import { ProcessPayoutsDto } from '../dto/process-payouts.dto';
 import { ListLivePriceTicksQueryDto } from '../dto/list-live-price-ticks-query.dto';
 import { GenerateLiveTicksDto } from '../dto/generate-live-ticks.dto';
 import { FinalizeLiveWeekDto } from '../dto/finalize-live-week.dto';
+import { InvestmentWalletTransferDto } from '../dto/investment-wallet-transfer.dto';
 import { CurrentUser } from './investment/investment-core.service';
 import { InvestmentManagementService } from './investment/investment-management.service';
 import { InvestmentMarketService } from './investment/investment-market.service';
@@ -67,6 +68,26 @@ export class InvestmentService {
 
   openInvestmentWallet(termId: string, user: CurrentUser) {
     return this.portfolioService.openInvestmentWallet(termId, user);
+  }
+
+  depositToInvestment(
+    termId: string,
+    user: CurrentUser,
+    dto: InvestmentWalletTransferDto,
+  ) {
+    return this.portfolioService.depositToInvestment(termId, user, dto.amount);
+  }
+
+  withdrawFromInvestment(
+    termId: string,
+    user: CurrentUser,
+    dto: InvestmentWalletTransferDto,
+  ) {
+    return this.portfolioService.withdrawFromInvestment(
+      termId,
+      user,
+      dto.amount,
+    );
   }
 
   getMyHoldings(termId: string, user: CurrentUser) {

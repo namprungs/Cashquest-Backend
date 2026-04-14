@@ -33,6 +33,7 @@ import { ProcessPayoutsDto } from '../dto/process-payouts.dto';
 import { ListLivePriceTicksQueryDto } from '../dto/list-live-price-ticks-query.dto';
 import { GenerateLiveTicksDto } from '../dto/generate-live-ticks.dto';
 import { FinalizeLiveWeekDto } from '../dto/finalize-live-week.dto';
+import { InvestmentWalletTransferDto } from '../dto/investment-wallet-transfer.dto';
 
 @Controller('market')
 export class InvestmentController {
@@ -77,6 +78,26 @@ export class InvestmentController {
     @CurrentUser() user: User,
   ) {
     return this.investmentService.openInvestmentWallet(termId, user);
+  }
+
+  @Post('terms/:termId/investment-wallet/deposit')
+  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  depositToInvestment(
+    @Param('termId') termId: string,
+    @CurrentUser() user: User,
+    @Body() dto: InvestmentWalletTransferDto,
+  ) {
+    return this.investmentService.depositToInvestment(termId, user, dto);
+  }
+
+  @Post('terms/:termId/investment-wallet/withdraw')
+  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  withdrawFromInvestment(
+    @Param('termId') termId: string,
+    @CurrentUser() user: User,
+    @Body() dto: InvestmentWalletTransferDto,
+  ) {
+    return this.investmentService.withdrawFromInvestment(termId, user, dto);
   }
 
   @Get('terms/:termId/holdings/me')
