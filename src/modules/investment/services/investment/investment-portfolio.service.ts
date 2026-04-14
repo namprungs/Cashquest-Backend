@@ -116,6 +116,8 @@ export class InvestmentPortfolioService {
 
     const cash = this.core.toNumber(profile.investmentWallet?.balance ?? 0);
     const transferredIn = this.core.toNumber(transferInAgg._sum.amount ?? 0);
+    const hasInvestmentWallet = profile.investmentWallet != null;
+    const investmentWalletId = profile.investmentWallet?.id ?? null;
     const equity = cash + marketValue;
     const roiPercent =
       transferredIn > 0 ? ((equity - transferredIn) / transferredIn) * 100 : 0;
@@ -131,6 +133,8 @@ export class InvestmentPortfolioService {
         unrealizedPnL: marketValue - investedValue,
         transferredIn,
         roiPercent,
+        hasInvestmentWallet,
+        investmentWalletId,
         holdings: items,
       },
     };

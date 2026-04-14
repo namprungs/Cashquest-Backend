@@ -49,6 +49,12 @@ export class MeFinanceService {
             balance: true,
           },
         },
+        investmentWallet: {
+          select: {
+            id: true,
+            balance: true,
+          },
+        },
       },
     });
 
@@ -56,7 +62,7 @@ export class MeFinanceService {
       throw new NotFoundException('Student profile not found for this term');
     }
 
-    const [savingsAccounts, fixedDeposits, holdings] = await Promise.all([
+    const [savingsAccounts, fixedDeposits] = await Promise.all([
       this.prisma.savingsAccount.findMany({
         where: {
           studentProfileId: profile.id,
@@ -77,54 +83,12 @@ export class MeFinanceService {
           principal: true,
         },
       }),
-      this.prisma.holding.findMany({
-        where: {
-          studentProfileId: profile.id,
-          termId,
-        },
-        select: {
-          productId: true,
-          units: true,
-        },
-      }),
     ]);
 
-    const productIds = holdings.map((holding) => holding.productId);
-
-    const latestPrices = productIds.length
-      ? await this.prisma.productPrice.findMany({
-          where: {
-            termId,
-            productId: {
-              in: productIds,
-            },
-          },
-          orderBy: [{ weekNo: 'desc' }, { createdAt: 'desc' }],
-        })
-      : [];
-
-    const latestPriceByProduct = new Map<
-      string,
-      (typeof latestPrices)[number]
-    >();
-    for (const price of latestPrices) {
-      if (!latestPriceByProduct.has(price.productId)) {
-        latestPriceByProduct.set(price.productId, price);
-      }
-    }
-
-    let marketValue = 0;
-
-    for (const holding of holdings) {
-      const units = this.toNumber(holding.units);
-      const lastPrice = this.toNumber(
-        latestPriceByProduct.get(holding.productId)?.close,
-      );
-
-      marketValue += units * lastPrice;
-    }
-
     const walletBalance = this.toNumber(profile.mainWallet?.balance);
+    const investmentWalletBalance = this.toNumber(
+      profile.investmentWallet?.balance,
+    );
     const savingsBalance = savingsAccounts.reduce(
       (sum, account) => sum + this.toNumber(account.balance),
       0,
@@ -134,22 +98,30 @@ export class MeFinanceService {
       0,
     );
 
+    const investmentTotal = investmentWalletBalance;
+
     return {
       success: true,
       data: {
         termId,
         studentProfileId: profile.id,
         walletId: profile.mainWallet?.id ?? null,
+        investmentWalletId: profile.investmentWallet?.id ?? null,
         summary: {
           totalAssets:
-            walletBalance + savingsBalance + fixedDepositBalance + marketValue,
+            walletBalance +
+            savingsBalance +
+            fixedDepositBalance +
+            investmentTotal,
           changeFromPreviousMonth: null,
         },
         breakdown: {
           cash: walletBalance,
           savings: savingsBalance,
           fixedDeposit: fixedDepositBalance,
-          investment: marketValue,
+          investment: investmentTotal,
+          investmentCash: investmentWalletBalance,
+          investmentMarketValue: 0,
         },
       },
     };
