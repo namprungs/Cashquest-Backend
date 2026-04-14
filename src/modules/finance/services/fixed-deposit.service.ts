@@ -30,7 +30,7 @@ export class FixedDepositService {
     const [studentProfile, bank] = await Promise.all([
       this.prisma.studentProfile.findUnique({
         where: { id: dto.studentProfileId },
-        include: { term: true, wallet: true },
+        include: { term: true, mainWallet: true },
       }),
       this.prisma.bank.findUnique({
         where: { id: dto.bankId },
@@ -133,7 +133,7 @@ export class FixedDepositService {
     const fixedDeposit = await this.prisma.fixedDeposit.findUnique({
       where: { id: dto.fixedDepositId },
       include: {
-        studentProfile: { select: { wallet: true, termId: true } },
+        studentProfile: { select: { mainWallet: true, termId: true } },
         bank: { select: { interestRate: true, name: true } },
       },
     });
@@ -146,9 +146,8 @@ export class FixedDepositService {
       throw new BadRequestException('Fixed deposit is not active');
     }
 
-    const currentWeekNo = await this.getCurrentWeekNo(
-      fixedDeposit.studentProfile.termId,
-    );
+    const studentTermId = String(fixedDeposit.studentProfile.termId);
+    const currentWeekNo = await this.getCurrentWeekNo(studentTermId);
     const isMatured =
       currentWeekNo !== null && currentWeekNo >= fixedDeposit.maturityWeekNo;
 
@@ -160,7 +159,7 @@ export class FixedDepositService {
 
       if (isMatured) {
         const term = await tx.term.findUnique({
-          where: { id: fixedDeposit.studentProfile.termId },
+          where: { id: studentTermId },
           select: { totalWeeks: true },
         });
 
@@ -371,7 +370,7 @@ export class FixedDepositService {
         maturityWeekNo: { lte: currentWeekNo },
       },
       include: {
-        studentProfile: { select: { wallet: true, termId: true } },
+        studentProfile: { select: { mainWallet: true, termId: true } },
         bank: { select: { name: true, interestRate: true } },
       },
     });
@@ -449,11 +448,13 @@ export class FixedDepositService {
 
         processed += 1;
         this.logger.log(`Processed matured fixed deposit ${deposit.id}`);
-      } catch (error) {
+      } catch (error: unknown) {
         failed += 1;
+        const message = error instanceof Error ? error.message : String(error);
+        const stack = error instanceof Error ? error.stack : undefined;
         this.logger.error(
-          `Failed to process matured fixed deposit ${deposit.id}: ${error.message}`,
-          error.stack,
+          `Failed to process matured fixed deposit ${deposit.id}: ${message}`,
+          stack,
         );
       }
     }
