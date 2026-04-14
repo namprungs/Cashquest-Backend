@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import {
   BondPositionStatus,
+  InvestmentTransactionType,
   OrderSide,
   OrderStatus,
   OrderType,
@@ -32,6 +33,23 @@ export class InvestmentPortfolioService {
     this.core.assertStudent(user);
 
     const profile = await this.core.getStudentProfileOrThrow(user.id, termId);
+
+    const transferInAgg = await this.prisma.investmentTransaction.aggregate({
+      where: {
+        investmentWallet: {
+          studentProfileId: profile.id,
+          termId,
+        },
+        type: InvestmentTransactionType.TRANSFER_IN,
+        metadata: {
+          path: ['source'],
+          equals: 'MAIN_WALLET',
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
 
     const holdings = await this.prisma.holding.findMany({
       where: {
@@ -96,7 +114,11 @@ export class InvestmentPortfolioService {
       };
     });
 
-    const cash = this.core.toNumber(profile.wallet?.balance ?? 0);
+    const cash = this.core.toNumber(profile.investmentWallet?.balance ?? 0);
+    const transferredIn = this.core.toNumber(transferInAgg._sum.amount ?? 0);
+    const equity = cash + marketValue;
+    const roiPercent =
+      transferredIn > 0 ? ((equity - transferredIn) / transferredIn) * 100 : 0;
 
     return {
       success: true,
@@ -105,9 +127,77 @@ export class InvestmentPortfolioService {
         cash,
         investedValue,
         marketValue,
-        equity: cash + marketValue,
+        equity,
         unrealizedPnL: marketValue - investedValue,
+        transferredIn,
+        roiPercent,
         holdings: items,
+      },
+    };
+  }
+
+  private isStudentLifeStageName(name: string) {
+    const normalized = name.trim().toLowerCase();
+    return (
+      normalized === 'วัยนักศึกษา' ||
+      normalized === 'student' ||
+      normalized === 'high_school'
+    );
+  }
+
+  async openInvestmentWallet(termId: string, user: CurrentUser) {
+    this.core.assertStudent(user);
+
+    const profile = await this.core.getStudentProfileOrThrow(user.id, termId);
+    const currentWeek = await this.core.getCurrentWeek(termId);
+
+    const activeStageRule = await this.prisma.termStageRule.findFirst({
+      where: {
+        termId,
+        startWeek: { lte: currentWeek },
+        endWeek: { gte: currentWeek },
+      },
+      include: {
+        lifeStage: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        startWeek: 'desc',
+      },
+    });
+
+    if (!activeStageRule?.lifeStage?.name) {
+      throw new BadRequestException(
+        'Cannot open investment wallet: life stage is not configured for current week',
+      );
+    }
+
+    if (!this.isStudentLifeStageName(activeStageRule.lifeStage.name)) {
+      throw new BadRequestException(
+        'Cannot open investment wallet: allowed only in life stage "วัยนักศึกษา"',
+      );
+    }
+
+    const wallet = await this.prisma.investmentWallet.upsert({
+      where: { studentProfileId: profile.id },
+      update: {},
+      create: {
+        studentProfileId: profile.id,
+        termId,
+        balance: 0,
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        wallet,
+        lifeStage: activeStageRule.lifeStage,
+        currentWeek,
       },
     };
   }
@@ -239,6 +329,188 @@ export class InvestmentPortfolioService {
     return { success: true, data: created };
   }
 
+  async depositToInvestment(termId: string, user: CurrentUser, amount: number) {
+    this.core.assertStudent(user);
+
+    if (amount <= 0) {
+      throw new BadRequestException('amount must be greater than 0');
+    }
+
+    const profile = await this.core.getStudentProfileOrThrow(user.id, termId);
+
+    const data = await this.prisma.$transaction(async (tx) => {
+      const mainWallet = await tx.wallet.upsert({
+        where: { studentProfileId: profile.id },
+        update: {},
+        create: {
+          studentProfileId: profile.id,
+          balance: 0,
+        },
+        select: {
+          id: true,
+          balance: true,
+        },
+      });
+
+      const investmentWallet = await tx.investmentWallet.findUnique({
+        where: { studentProfileId: profile.id },
+        select: {
+          id: true,
+          balance: true,
+        },
+      });
+
+      if (!investmentWallet) {
+        throw new NotFoundException(
+          'Investment wallet not found. Please open investment wallet first',
+        );
+      }
+
+      const mainBefore = this.core.toNumber(mainWallet.balance);
+      if (mainBefore < amount) {
+        throw new BadRequestException('Insufficient main wallet balance');
+      }
+
+      const mainAfter = mainBefore - amount;
+      const investmentBefore = this.core.toNumber(investmentWallet.balance);
+      const investmentAfter = investmentBefore + amount;
+
+      await tx.wallet.update({
+        where: { id: mainWallet.id },
+        data: { balance: mainAfter },
+      });
+
+      await tx.investmentWallet.update({
+        where: { id: investmentWallet.id },
+        data: { balance: investmentAfter },
+      });
+
+      await tx.investmentTransaction.create({
+        data: {
+          investmentWalletId: investmentWallet.id,
+          type: InvestmentTransactionType.TRANSFER_IN,
+          amount,
+          balanceBefore: investmentBefore,
+          balanceAfter: investmentAfter,
+          description: 'Transfer from main wallet to investment wallet',
+          metadata: {
+            source: 'MAIN_WALLET',
+            refId: profile.id,
+          },
+        },
+      });
+
+      return {
+        mainWallet: {
+          id: mainWallet.id,
+          balanceBefore: mainBefore,
+          balanceAfter: mainAfter,
+        },
+        investmentWallet: {
+          id: investmentWallet.id,
+          balanceBefore: investmentBefore,
+          balanceAfter: investmentAfter,
+        },
+        amount,
+      };
+    });
+
+    return { success: true, data };
+  }
+
+  async withdrawFromInvestment(
+    termId: string,
+    user: CurrentUser,
+    amount: number,
+  ) {
+    this.core.assertStudent(user);
+
+    if (amount <= 0) {
+      throw new BadRequestException('amount must be greater than 0');
+    }
+
+    const profile = await this.core.getStudentProfileOrThrow(user.id, termId);
+
+    const data = await this.prisma.$transaction(async (tx) => {
+      const mainWallet = await tx.wallet.upsert({
+        where: { studentProfileId: profile.id },
+        update: {},
+        create: {
+          studentProfileId: profile.id,
+          balance: 0,
+        },
+        select: {
+          id: true,
+          balance: true,
+        },
+      });
+
+      const investmentWallet = await tx.investmentWallet.findUnique({
+        where: { studentProfileId: profile.id },
+        select: {
+          id: true,
+          balance: true,
+        },
+      });
+
+      if (!investmentWallet) {
+        throw new NotFoundException(
+          'Investment wallet not found. Please open investment wallet first',
+        );
+      }
+
+      const investmentBefore = this.core.toNumber(investmentWallet.balance);
+      if (investmentBefore < amount) {
+        throw new BadRequestException('Insufficient investment wallet balance');
+      }
+
+      const investmentAfter = investmentBefore - amount;
+      const mainBefore = this.core.toNumber(mainWallet.balance);
+      const mainAfter = mainBefore + amount;
+
+      await tx.investmentWallet.update({
+        where: { id: investmentWallet.id },
+        data: { balance: investmentAfter },
+      });
+
+      await tx.wallet.update({
+        where: { id: mainWallet.id },
+        data: { balance: mainAfter },
+      });
+
+      await tx.investmentTransaction.create({
+        data: {
+          investmentWalletId: investmentWallet.id,
+          type: InvestmentTransactionType.TRANSFER_OUT,
+          amount,
+          balanceBefore: investmentBefore,
+          balanceAfter: investmentAfter,
+          description: 'Transfer from investment wallet to main wallet',
+          metadata: {
+            source: 'MAIN_WALLET',
+            refId: profile.id,
+          },
+        },
+      });
+
+      return {
+        mainWallet: {
+          id: mainWallet.id,
+          balanceBefore: mainBefore,
+          balanceAfter: mainAfter,
+        },
+        investmentWallet: {
+          id: investmentWallet.id,
+          balanceBefore: investmentBefore,
+          balanceAfter: investmentAfter,
+        },
+        amount,
+      };
+    });
+
+    return { success: true, data };
+  }
+
   private async applyExecutedOrder(
     tx: TxClient,
     params: {
@@ -254,22 +526,17 @@ export class InvestmentPortfolioService {
   ) {
     const amount = params.executedPrice * params.quantity;
 
-    const profile = await tx.studentProfile.findUnique({
-      where: { id: params.studentProfileId },
+    const investmentWallet = await tx.investmentWallet.findUnique({
+      where: { studentProfileId: params.studentProfileId },
       select: {
         id: true,
-        wallet: {
-          select: {
-            id: true,
-            balance: true,
-          },
-        },
+        balance: true,
       },
     });
 
-    if (!profile?.wallet) {
-      throw new BadRequestException(
-        'Wallet not found for this student profile',
+    if (!investmentWallet) {
+      throw new NotFoundException(
+        'Investment wallet not found. Please open investment wallet first',
       );
     }
 
@@ -285,15 +552,34 @@ export class InvestmentPortfolioService {
 
     if (params.side === OrderSide.BUY) {
       const totalCost = amount + params.fee;
-      const walletBalance = this.core.toNumber(profile.wallet.balance);
+      const walletBalance = this.core.toNumber(investmentWallet.balance);
       if (walletBalance < totalCost) {
         throw new BadRequestException('Insufficient wallet balance');
       }
 
-      await tx.wallet.update({
-        where: { id: profile.wallet.id },
+      const updatedInvestmentWallet = await tx.investmentWallet.update({
+        where: { id: investmentWallet.id },
         data: {
           balance: walletBalance - totalCost,
+        },
+      });
+
+      await tx.investmentTransaction.create({
+        data: {
+          investmentWalletId: investmentWallet.id,
+          type: InvestmentTransactionType.STOCK_BUY,
+          amount: totalCost,
+          balanceBefore: walletBalance,
+          balanceAfter: this.core.toNumber(updatedInvestmentWallet.balance),
+          description: 'Stock buy order executed',
+          metadata: {
+            refId: params.orderId,
+            side: params.side,
+            quantity: params.quantity,
+            executedPrice: params.executedPrice,
+            grossAmount: amount,
+            fee: params.fee,
+          },
         },
       });
 
@@ -336,13 +622,36 @@ export class InvestmentPortfolioService {
       }
 
       const proceeds = amount - params.fee;
-      const walletBalance = this.core.toNumber(profile.wallet.balance);
+      if (proceeds < 0) {
+        throw new BadRequestException('Fee exceeds sell amount');
+      }
+
+      const walletBalance = this.core.toNumber(investmentWallet.balance);
       const nextUnits = oldUnits - params.quantity;
 
-      await tx.wallet.update({
-        where: { id: profile.wallet.id },
+      const updatedInvestmentWallet = await tx.investmentWallet.update({
+        where: { id: investmentWallet.id },
         data: {
           balance: walletBalance + proceeds,
+        },
+      });
+
+      await tx.investmentTransaction.create({
+        data: {
+          investmentWalletId: investmentWallet.id,
+          type: InvestmentTransactionType.STOCK_SELL,
+          amount: proceeds,
+          balanceBefore: walletBalance,
+          balanceAfter: this.core.toNumber(updatedInvestmentWallet.balance),
+          description: 'Stock sell order executed',
+          metadata: {
+            refId: params.orderId,
+            side: params.side,
+            quantity: params.quantity,
+            executedPrice: params.executedPrice,
+            grossAmount: amount,
+            fee: params.fee,
+          },
         },
       });
 
@@ -575,7 +884,7 @@ export class InvestmentPortfolioService {
             product: true,
             studentProfile: {
               include: {
-                wallet: true,
+                investmentWallet: true,
               },
             },
           },
@@ -597,14 +906,31 @@ export class InvestmentPortfolioService {
             },
           });
 
-          if (holding.studentProfile.wallet) {
+          if (holding.studentProfile.investmentWallet) {
             const walletBalance = this.core.toNumber(
-              holding.studentProfile.wallet.balance,
+              holding.studentProfile.investmentWallet.balance,
             );
-            await tx.wallet.update({
-              where: { id: holding.studentProfile.wallet.id },
+            await tx.investmentWallet.update({
+              where: { id: holding.studentProfile.investmentWallet.id },
               data: {
                 balance: walletBalance + amount,
+              },
+            });
+
+            await tx.investmentTransaction.create({
+              data: {
+                investmentWalletId: holding.studentProfile.investmentWallet.id,
+                type: 'DIVIDEND' as unknown as InvestmentTransactionType,
+                amount,
+                balanceBefore: walletBalance,
+                balanceAfter: walletBalance + amount,
+                description: 'Dividend payout credited to investment wallet',
+                metadata: {
+                  source: 'DIVIDEND_PAYOUT',
+                  productId: holding.productId,
+                  termId,
+                  weekNo,
+                },
               },
             });
           }
@@ -625,7 +951,7 @@ export class InvestmentPortfolioService {
             include: {
               studentProfile: {
                 include: {
-                  wallet: true,
+                  investmentWallet: true,
                 },
               },
             },
@@ -667,14 +993,32 @@ export class InvestmentPortfolioService {
           },
         });
 
-        if (bond.holding.studentProfile.wallet) {
+        if (bond.holding.studentProfile.investmentWallet) {
           const walletBalance = this.core.toNumber(
-            bond.holding.studentProfile.wallet.balance,
+            bond.holding.studentProfile.investmentWallet.balance,
           );
-          await tx.wallet.update({
-            where: { id: bond.holding.studentProfile.wallet.id },
+          await tx.investmentWallet.update({
+            where: { id: bond.holding.studentProfile.investmentWallet.id },
             data: {
               balance: walletBalance + couponAmount,
+            },
+          });
+
+          await tx.investmentTransaction.create({
+            data: {
+              investmentWalletId:
+                bond.holding.studentProfile.investmentWallet.id,
+              type: 'COUPON' as unknown as InvestmentTransactionType,
+              amount: couponAmount,
+              balanceBefore: walletBalance,
+              balanceAfter: walletBalance + couponAmount,
+              description: 'Bond coupon payout credited to investment wallet',
+              metadata: {
+                source: 'BOND_COUPON_PAYOUT',
+                bondPositionId: bond.id,
+                termId,
+                weekNo,
+              },
             },
           });
         }
