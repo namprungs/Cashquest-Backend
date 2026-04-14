@@ -214,7 +214,7 @@ export class UserService {
       select: {
         id: true,
         termId: true,
-        wallet: {
+        mainWallet: {
           select: {
             balance: true,
           },
@@ -308,7 +308,7 @@ export class UserService {
         studentCode: user.username,
         email: user.email,
         studentProfileId: studentProfile?.id ?? null,
-        walletBalance: studentProfile?.wallet?.balance ?? 0,
+        walletBalance: studentProfile?.mainWallet?.balance ?? 0,
         termId,
         classroomName: classroomEnrollment?.classroom?.name ?? null,
         classroomId: classroomEnrollment?.classroom?.id ?? null,
