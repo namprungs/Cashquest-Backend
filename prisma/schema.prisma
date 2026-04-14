@@ -153,6 +153,7 @@ model Term {
   termEvents            TermEvent[]
   marketRegimes         MarketRegime[]
   badges                Badge[]
+  investmentWallets     InvestmentWallet[]
 
   @@map("terms")
 }
@@ -260,7 +261,8 @@ model StudentProfile {
 
   // Relations
   retirementGoals RetirementGoal[]
-  wallet          Wallet? // 1-to-1
+  mainWallet      Wallet?           @relation("MainWallet") // 1-to-1 main wallet
+  investmentWallet InvestmentWallet? @relation("InvestmentWallet") // 1-to-1 investment wallet
   savingsAccounts SavingsAccount[]
   fixedDeposits   FixedDeposit[]
   studentBadges   StudentBadge[]
@@ -336,7 +338,7 @@ model Wallet {
   id               String         @id @default(uuid()) @db.Uuid
   // ✅ เชื่อมกับ StudentProfile แทน User+Term
   studentProfileId String         @unique @db.Uuid
-  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  studentProfile   StudentProfile @relation("MainWallet", fields: [studentProfileId], references: [id], onDelete: Cascade)
 
   balance Decimal @default(0) @db.Decimal(12, 2) // รองรับพันล้าน และทศนิยม 2 ตำแหน่ง
 
@@ -346,6 +348,25 @@ model Wallet {
   updatedAt DateTime @updatedAt
 
   @@map("wallets")
+}
+
+model InvestmentWallet {
+  id               String         @id @default(uuid()) @db.Uuid
+  studentProfileId String         @unique @db.Uuid
+  studentProfile   StudentProfile @relation("InvestmentWallet", fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  termId String @db.Uuid
+  term   Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  balance Decimal @default(0) @db.Decimal(12, 2)
+
+  transactions InvestmentTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([termId])
+  @@map("investment_wallets")
 }
 
 model WalletTransaction {
@@ -375,6 +396,34 @@ enum TransactionType {
   FINE_PAYMENT
   TRANSFER_IN
   TRANSFER_OUT
+}
+
+model InvestmentTransaction {
+  id                 String           @id @default(uuid()) @db.Uuid
+  investmentWalletId String           @db.Uuid
+  investmentWallet   InvestmentWallet @relation(fields: [investmentWalletId], references: [id], onDelete: Cascade)
+
+  type          InvestmentTransactionType
+  amount        Decimal                   @db.Decimal(12, 2)
+  balanceBefore Decimal                   @db.Decimal(12, 2)
+  balanceAfter  Decimal                   @db.Decimal(12, 2)
+
+  metadata    Json?
+  description String?
+
+  createdAt DateTime @default(now())
+
+  @@index([investmentWalletId, createdAt])
+  @@map("investment_transactions")
+}
+
+enum InvestmentTransactionType {
+  STOCK_BUY
+  STOCK_SELL
+  TRANSFER_IN
+  TRANSFER_OUT
+  DIVIDEND
+  COUPON
 }
 
 // --- BANKING SYSTEM ---
