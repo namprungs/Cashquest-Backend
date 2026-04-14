@@ -70,6 +70,15 @@ export class InvestmentController {
     return this.investmentService.getMyPortfolio(termId, user);
   }
 
+  @Post('terms/:termId/investment-wallet/open')
+  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  openInvestmentWallet(
+    @Param('termId') termId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.investmentService.openInvestmentWallet(termId, user);
+  }
+
   @Get('terms/:termId/holdings/me')
   @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
   myHoldings(@Param('termId') termId: string, @CurrentUser() user: User) {
