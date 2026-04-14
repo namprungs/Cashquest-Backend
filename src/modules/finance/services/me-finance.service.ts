@@ -43,7 +43,7 @@ export class MeFinanceService {
       },
       select: {
         id: true,
-        wallet: {
+        mainWallet: {
           select: {
             id: true,
             balance: true,
@@ -124,7 +124,7 @@ export class MeFinanceService {
       marketValue += units * lastPrice;
     }
 
-    const walletBalance = this.toNumber(profile.wallet?.balance);
+    const walletBalance = this.toNumber(profile.mainWallet?.balance);
     const savingsBalance = savingsAccounts.reduce(
       (sum, account) => sum + this.toNumber(account.balance),
       0,
@@ -139,7 +139,7 @@ export class MeFinanceService {
       data: {
         termId,
         studentProfileId: profile.id,
-        walletId: profile.wallet?.id ?? null,
+        walletId: profile.mainWallet?.id ?? null,
         summary: {
           totalAssets:
             walletBalance + savingsBalance + fixedDepositBalance + marketValue,

@@ -59,7 +59,7 @@ export class PlayerService {
       where: { termId },
       include: {
         user: { select: { id: true, username: true, email: true } },
-        wallet: { select: { balance: true } },
+        mainWallet: { select: { balance: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -73,7 +73,7 @@ export class PlayerService {
       where: { id },
       include: {
         user: { select: { id: true, username: true, email: true } },
-        wallet: { select: { balance: true } },
+        mainWallet: { select: { balance: true } },
         term: { select: { id: true, name: true, status: true } },
       },
     });
