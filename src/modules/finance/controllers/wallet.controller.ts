@@ -8,7 +8,7 @@ export class WalletController {
 
   /**
    * Get wallet transaction history with filtering, pagination, and sorting
-   * GET /wallets/:walletId/transactions?type=TRANSFER_IN&page=1&limit=20
+   * GET /wallets/:walletId/transactions?type=TRANSFER_IN&account=savings&month=8&year=2025&page=1&limit=20
    */
   @Get(':walletId/transactions')
   async getTransactionHistory(
@@ -18,6 +18,9 @@ export class WalletController {
     return this.walletService.getTransactionHistory(
       walletId,
       query.type,
+      query.account,
+      query.month,
+      query.year,
       query.page,
       query.limit,
     );

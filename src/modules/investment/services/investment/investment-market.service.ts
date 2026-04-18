@@ -208,30 +208,6 @@ export class InvestmentMarketService {
     return { success: true, data, meta: { simulatedWeekNo } };
   }
 
-  async listActiveEvents(termId: string, weekNo?: string) {
-    await this.core.assertTermExists(termId);
-    const currentWeek = weekNo
-      ? Number(weekNo)
-      : await this.core.getCurrentWeek(termId);
-
-    const data = await this.prisma.termEvent.findMany({
-      where: {
-        termId,
-        startWeek: { lte: currentWeek },
-        endWeek: { gte: currentWeek },
-        status: {
-          in: [TermEventStatus.SCHEDULED, TermEventStatus.ACTIVE],
-        },
-      },
-      include: {
-        event: true,
-      },
-      orderBy: [{ startWeek: 'asc' }, { createdAt: 'asc' }],
-    });
-
-    return { success: true, data, meta: { weekNo: currentWeek } };
-  }
-
   async generateLiveTicks(termId: string, dto: GenerateLiveTicksDto) {
     await this.core.assertTermExists(termId);
     const weekNo = dto.weekNo ?? (await this.core.getCurrentWeek(termId));

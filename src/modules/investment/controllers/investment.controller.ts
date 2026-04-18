@@ -34,6 +34,7 @@ import { ListLivePriceTicksQueryDto } from '../dto/list-live-price-ticks-query.d
 import { GenerateLiveTicksDto } from '../dto/generate-live-ticks.dto';
 import { FinalizeLiveWeekDto } from '../dto/finalize-live-week.dto';
 import { InvestmentWalletTransferDto } from '../dto/investment-wallet-transfer.dto';
+import { ListTermEventsQueryDto } from '../dto/list-term-events-query.dto';
 
 @Controller('market')
 export class InvestmentController {
@@ -155,6 +156,15 @@ export class InvestmentController {
     @Query('weekNo') weekNo?: string,
   ) {
     return this.investmentService.listActiveEvents(termId, weekNo);
+  }
+
+  @Get('terms/:termId/events')
+  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  listTermEvents(
+    @Param('termId') termId: string,
+    @Query() query: ListTermEventsQueryDto,
+  ) {
+    return this.investmentService.listTermEvents(termId, query);
   }
 
   @Post('terms/:termId/products')

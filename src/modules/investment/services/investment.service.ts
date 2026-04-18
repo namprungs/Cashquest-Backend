@@ -21,7 +21,9 @@ import { ListLivePriceTicksQueryDto } from '../dto/list-live-price-ticks-query.d
 import { GenerateLiveTicksDto } from '../dto/generate-live-ticks.dto';
 import { FinalizeLiveWeekDto } from '../dto/finalize-live-week.dto';
 import { InvestmentWalletTransferDto } from '../dto/investment-wallet-transfer.dto';
+import { ListTermEventsQueryDto } from '../dto/list-term-events-query.dto';
 import { CurrentUser } from './investment/investment-core.service';
+import { InvestmentEventsService } from './investment/investment-events.service';
 import { InvestmentManagementService } from './investment/investment-management.service';
 import { InvestmentMarketService } from './investment/investment-market.service';
 import { InvestmentPortfolioService } from './investment/investment-portfolio.service';
@@ -30,6 +32,7 @@ import { InvestmentPortfolioService } from './investment/investment-portfolio.se
 export class InvestmentService {
   constructor(
     private readonly marketService: InvestmentMarketService,
+    private readonly eventsService: InvestmentEventsService,
     private readonly managementService: InvestmentManagementService,
     private readonly portfolioService: InvestmentPortfolioService,
   ) {}
@@ -115,7 +118,11 @@ export class InvestmentService {
   }
 
   listActiveEvents(termId: string, weekNo?: string) {
-    return this.marketService.listActiveEvents(termId, weekNo);
+    return this.eventsService.listActiveEvents(termId, weekNo);
+  }
+
+  listTermEvents(termId: string, query: ListTermEventsQueryDto) {
+    return this.eventsService.listTermEvents(termId, query);
   }
 
   createProduct(termId: string, dto: CreateProductDto) {

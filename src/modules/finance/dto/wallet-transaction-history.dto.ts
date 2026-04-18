@@ -10,10 +10,35 @@ export enum TransactionTypeFilter {
   TRANSFER_OUT = 'TRANSFER_OUT',
 }
 
+export enum WalletAccountFilter {
+  WALLET = 'wallet',
+  SAVINGS = 'savings',
+  FIXED_DEPOSIT = 'fixed_deposit',
+  INVESTMENT = 'investment',
+}
+
 export class WalletTransactionHistoryDto {
   @IsOptional()
   @IsEnum(TransactionTypeFilter)
   type?: TransactionTypeFilter;
+
+  @IsOptional()
+  @IsEnum(WalletAccountFilter)
+  account?: WalletAccountFilter;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  month?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1900)
+  @Max(2600)
+  year?: number;
 
   @IsOptional()
   @Type(() => Number)

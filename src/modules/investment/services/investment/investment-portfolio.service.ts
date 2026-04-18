@@ -10,6 +10,7 @@ import {
   OrderStatus,
   OrderType,
   ProductType,
+  TransactionType,
 } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateOrderDto } from '../../dto/create-order.dto';
@@ -379,7 +380,7 @@ export class InvestmentPortfolioService {
       const investmentBefore = this.core.toNumber(investmentWallet.balance);
       const investmentAfter = investmentBefore + amount;
 
-      await tx.wallet.update({
+      const updatedMainWallet = await tx.wallet.update({
         where: { id: mainWallet.id },
         data: { balance: mainAfter },
       });
@@ -400,6 +401,22 @@ export class InvestmentPortfolioService {
           metadata: {
             source: 'MAIN_WALLET',
             refId: profile.id,
+          },
+        },
+      });
+
+      await tx.walletTransaction.create({
+        data: {
+          walletId: mainWallet.id,
+          type: TransactionType.TRANSFER_OUT,
+          amount,
+          balanceBefore: mainBefore,
+          balanceAfter: this.core.toNumber(updatedMainWallet.balance),
+          description: 'Transfer to investment wallet',
+          metadata: {
+            source: 'INVESTMENT_TRANSFER_IN',
+            refId: investmentWallet.id,
+            termId,
           },
         },
       });
@@ -477,7 +494,7 @@ export class InvestmentPortfolioService {
         data: { balance: investmentAfter },
       });
 
-      await tx.wallet.update({
+      const updatedMainWallet = await tx.wallet.update({
         where: { id: mainWallet.id },
         data: { balance: mainAfter },
       });
@@ -493,6 +510,22 @@ export class InvestmentPortfolioService {
           metadata: {
             source: 'MAIN_WALLET',
             refId: profile.id,
+          },
+        },
+      });
+
+      await tx.walletTransaction.create({
+        data: {
+          walletId: mainWallet.id,
+          type: TransactionType.TRANSFER_IN,
+          amount,
+          balanceBefore: mainBefore,
+          balanceAfter: this.core.toNumber(updatedMainWallet.balance),
+          description: 'Transfer from investment wallet',
+          metadata: {
+            source: 'INVESTMENT_TRANSFER_OUT',
+            refId: investmentWallet.id,
+            termId,
           },
         },
       });
