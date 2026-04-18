@@ -1,0 +1,28 @@
+info:
+  name: Get News (Events)
+  type: http
+  seq: 32
+
+http:
+  method: GET
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/events?limit=10&includeUpcoming=true&sort=desc"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: limit
+      value: "10"
+      type: query
+    - name: includeUpcoming
+      value: "true"
+      type: query
+    - name: sort
+      value: "desc"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
