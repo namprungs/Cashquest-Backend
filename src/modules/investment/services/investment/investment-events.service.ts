@@ -12,24 +12,26 @@ export class InvestmentEventsService {
   ) {}
 
   async listTermEvents(termId: string, query: ListTermEventsQueryDto) {
-    console.log('0 ja');
     await this.core.assertTermExists(termId);
-    console.log('1 ja');
+
     const targetWeek = query.weekNo ?? (await this.core.getCurrentWeek(termId));
     const includeUpcoming = query.includeUpcoming ?? false;
-    const statuses = this.resolveStatuses(query.statuses);
+    const includePast = query.includePast ?? false;
+    const publishedOnly = query.publishedOnly === true;
+    const statuses = this.resolveStatuses(query.statuses, publishedOnly);
     const sort = query.sort ?? 'asc';
     const limit = query.limit;
+
+    const weekWindow = this.buildWeekWindow({
+      targetWeek,
+      includePast,
+      includeUpcoming,
+    });
 
     const where: Prisma.TermEventWhereInput = {
       termId,
       status: { in: statuses },
-      ...(includeUpcoming
-        ? { endWeek: { gte: targetWeek } }
-        : {
-            startWeek: { lte: targetWeek },
-            endWeek: { gte: targetWeek },
-          }),
+      ...weekWindow,
     };
 
     const data = await this.prisma.termEvent.findMany({
@@ -45,6 +47,8 @@ export class InvestmentEventsService {
       meta: {
         weekNo: targetWeek,
         includeUpcoming,
+        includePast,
+        publishedOnly,
         statuses,
       },
     };
@@ -55,6 +59,7 @@ export class InvestmentEventsService {
     return this.listTermEvents(termId, {
       weekNo: parsedWeek,
       includeUpcoming: false,
+      includePast: false,
       statuses: `${TermEventStatus.SCHEDULED},${TermEventStatus.ACTIVE}`,
     });
   }
@@ -72,8 +77,13 @@ export class InvestmentEventsService {
     return parsed;
   }
 
-  private resolveStatuses(raw?: string): TermEventStatus[] {
-    const defaultStatuses = [TermEventStatus.SCHEDULED, TermEventStatus.ACTIVE];
+  private resolveStatuses(
+    raw?: string,
+    publishedOnly = false,
+  ): TermEventStatus[] {
+    const defaultStatuses = publishedOnly
+      ? [TermEventStatus.ACTIVE, TermEventStatus.EXPIRED]
+      : [TermEventStatus.SCHEDULED, TermEventStatus.ACTIVE];
 
     if (!raw || raw.trim().length === 0) {
       return defaultStatuses;
@@ -93,5 +103,34 @@ export class InvestmentEventsService {
     }
 
     return statuses;
+  }
+
+  private buildWeekWindow(params: {
+    targetWeek: number;
+    includePast: boolean;
+    includeUpcoming: boolean;
+  }): Prisma.TermEventWhereInput {
+    const { targetWeek, includePast, includeUpcoming } = params;
+
+    if (includePast && includeUpcoming) {
+      return {};
+    }
+
+    if (includePast) {
+      return {
+        startWeek: { lte: targetWeek },
+      };
+    }
+
+    if (includeUpcoming) {
+      return {
+        endWeek: { gte: targetWeek },
+      };
+    }
+
+    return {
+      startWeek: { lte: targetWeek },
+      endWeek: { gte: targetWeek },
+    };
   }
 }
