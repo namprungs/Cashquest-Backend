@@ -34,6 +34,18 @@ export class ClassroomController {
   }
 
   // -----------------------------
+  // Teacher home dashboard (summary + classroom cards)
+  // -----------------------------
+  @Get('terms/:termId/classrooms/me/dashboard')
+  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  teacherDashboard(
+    @Param('termId') termId: string,
+    @CurrentUser() teacher: User,
+  ) {
+    return this.classroomService.getTeacherDashboard(termId, teacher.id);
+  }
+
+  // -----------------------------
   // Add student
   // -----------------------------
   @Post('classrooms/:classroomId/students')
