@@ -7,6 +7,7 @@ import type { User } from '@prisma/client';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
 import { ListQuestsQueryDto } from './dto/list-quests-query.dto';
+import { ListMyQuestsQueryDto } from './dto/list-my-quests-query.dto';
 import { SubmitQuestDto } from './dto/submit-quest.dto';
 import {
   ApproveSubmissionDto,
@@ -41,8 +42,8 @@ export class QuestController {
 
   @Get('me')
   @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
-  listMe(@CurrentUser() user: User) {
-    return this.questService.listMyQuests(user);
+  listMe(@CurrentUser() user: User, @Query() query: ListMyQuestsQueryDto) {
+    return this.questService.listMyQuests(user, query);
   }
 
   @Get(':questId/me')

@@ -8,6 +8,7 @@ import {
   Prisma,
   PrismaClient,
   QuestStatus,
+  QuestSubmissionType,
   QuestType,
   ProductType,
   RiskLevel,
@@ -557,6 +558,127 @@ async function main() {
       classroomId: classroom.id,
     },
   });
+
+  console.log('📝 กำลัง seed เควสเรียนรู้เพิ่มเติมสำหรับนักเรียน...');
+
+  const questSeeds: {
+    title: string;
+    description: string;
+    type: QuestType;
+    submissionType: QuestSubmissionType | null;
+    rewardCoins: number;
+    startAt: Date;
+    deadlineAt: Date;
+    isSystem: boolean;
+    status: QuestStatus;
+  }[] = [
+    {
+      title: 'เข้าใจดอกเบี้ยทบต้น',
+      description:
+        'อธิบายตัวอย่างการออมเงิน 12 เดือน พร้อมคำนวณดอกเบี้ยทบต้นแบบสั้นๆ',
+      type: QuestType.ASSIGNMENT,
+      submissionType: QuestSubmissionType.TEXT,
+      rewardCoins: 300,
+      startAt: term.startDate,
+      deadlineAt: addDays(term.startDate, 21),
+      isSystem: false,
+      status: QuestStatus.PUBLISHED,
+    },
+    {
+      title: 'ตั้งงบประมาณรายเดือน',
+      description:
+        'วางแผนรายรับรายจ่าย 1 เดือน และส่งลิงก์ไฟล์แผนงบประมาณของตนเอง',
+      type: QuestType.PROJECT,
+      submissionType: QuestSubmissionType.LINK,
+      rewardCoins: 250,
+      startAt: addDays(term.startDate, 3),
+      deadlineAt: addDays(term.startDate, 28),
+      isSystem: false,
+      status: QuestStatus.PUBLISHED,
+    },
+    {
+      title: 'จดบันทึกรายจ่าย 7 วัน',
+      description:
+        'บันทึกรายจ่ายประจำวันต่อเนื่อง 7 วัน พร้อมสรุปสิ่งที่ได้เรียนรู้',
+      type: QuestType.ASSIGNMENT,
+      submissionType: QuestSubmissionType.FILE,
+      rewardCoins: 200,
+      startAt: addDays(term.startDate, 7),
+      deadlineAt: addDays(term.startDate, 35),
+      isSystem: false,
+      status: QuestStatus.PUBLISHED,
+    },
+    {
+      title: 'วิเคราะห์ความเสี่ยงการลงทุนเบื้องต้น',
+      description:
+        'เลือกสินทรัพย์ 3 ประเภทและสรุประดับความเสี่ยงที่เหมาะกับตนเอง',
+      type: QuestType.OTHER,
+      submissionType: QuestSubmissionType.TEXT,
+      rewardCoins: 220,
+      startAt: addDays(term.startDate, 10),
+      deadlineAt: addDays(term.startDate, 42),
+      isSystem: false,
+      status: QuestStatus.PUBLISHED,
+    },
+  ];
+
+  for (const questSeed of questSeeds) {
+    const existingQuest = await prisma.quest.findFirst({
+      where: {
+        termId: term.id,
+        title: questSeed.title,
+      },
+      select: { id: true },
+    });
+
+    const quest = existingQuest
+      ? await prisma.quest.update({
+          where: { id: existingQuest.id },
+          data: {
+            createdById: teacherUser.id,
+            type: questSeed.type,
+            title: questSeed.title,
+            description: questSeed.description,
+            rewardCoins: questSeed.rewardCoins,
+            status: questSeed.status,
+            submissionType: questSeed.submissionType,
+            startAt: questSeed.startAt,
+            deadlineAt: questSeed.deadlineAt,
+            isSystem: questSeed.isSystem,
+          },
+          select: { id: true },
+        })
+      : await prisma.quest.create({
+          data: {
+            termId: term.id,
+            createdById: teacherUser.id,
+            type: questSeed.type,
+            title: questSeed.title,
+            description: questSeed.description,
+            rewardCoins: questSeed.rewardCoins,
+            status: questSeed.status,
+            submissionType: questSeed.submissionType,
+            startAt: questSeed.startAt,
+            deadlineAt: questSeed.deadlineAt,
+            isSystem: questSeed.isSystem,
+          },
+          select: { id: true },
+        });
+
+    await prisma.questClassroom.upsert({
+      where: {
+        questId_classroomId: {
+          questId: quest.id,
+          classroomId: classroom.id,
+        },
+      },
+      update: {},
+      create: {
+        questId: quest.id,
+        classroomId: classroom.id,
+      },
+    });
+  }
 
   console.log('🏦 กำลังสร้างข้อมูลธนาคารสำหรับเทอมหลัก...');
 

@@ -17,6 +17,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { UpdateQuestDto } from './dto/update-quest.dto';
 import { ListQuestsQueryDto } from './dto/list-quests-query.dto';
+import { ListMyQuestsQueryDto } from './dto/list-my-quests-query.dto';
 import { SubmitQuestDto } from './dto/submit-quest.dto';
 import {
   ApproveSubmissionDto,
@@ -378,7 +379,7 @@ export class QuestService {
     return { classroomIds, termIds };
   }
 
-  async listMyQuests(user: CurrentUser) {
+  async listMyQuests(user: CurrentUser, query: ListMyQuestsQueryDto) {
     this.assertStudent(user);
 
     const context = await this.getStudentContext(user);
@@ -395,9 +396,21 @@ export class QuestService {
             classroomId: { in: context.classroomIds },
           },
         },
+        ...(query.notSubmittedOnly
+          ? {
+              submissions: {
+                none: {
+                  studentProfile: {
+                    userId: user.id,
+                  },
+                },
+              },
+            }
+          : {}),
       },
       include: this.toQuestInclude(),
       orderBy: { createdAt: 'desc' },
+      ...(query.limit ? { take: query.limit } : {}),
     });
 
     return { success: true, data: quests };
