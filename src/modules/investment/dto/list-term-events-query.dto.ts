@@ -22,6 +22,16 @@ export class ListTermEventsQueryDto {
   includeUpcoming?: boolean;
 
   @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  includePast?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  publishedOnly?: boolean;
+
+  @IsOptional()
   @IsString()
   statuses?: string;
 
