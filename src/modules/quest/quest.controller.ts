@@ -52,6 +52,12 @@ export class QuestController {
     return this.questService.getMyQuestDetail(questId, user);
   }
 
+  @Get('classrooms/:classroomId/pending-submissions')
+  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  getPendingSubmissions(@Param('classroomId') classroomId: string) {
+    return this.questService.getPendingSubmissionsForClassroom(classroomId);
+  }
+
   @Get(':questId')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
   getOne(@Param('questId') questId: string) {

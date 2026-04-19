@@ -986,4 +986,60 @@ export class QuestService {
       },
     };
   }
+
+  // -----------------------------
+  // Get pending submissions for classroom
+  // -----------------------------
+  async getPendingSubmissionsForClassroom(classroomId: string) {
+    // Get classroom with students
+    const classroom = await this.prisma.classroom.findUnique({
+      where: { id: classroomId },
+      include: { students: { select: { studentId: true } } },
+    });
+    if (!classroom) {
+      throw new NotFoundException('Classroom not found');
+    }
+
+    const studentIds = classroom.students.map((s) => s.studentId);
+
+    // Get student profiles
+    const profiles = await this.prisma.studentProfile.findMany({
+      where: {
+        userId: { in: studentIds },
+        termId: classroom.termId,
+      },
+      select: {
+        id: true,
+        user: { select: { username: true } },
+      },
+    });
+
+    const profileIds = profiles.map((p) => p.id);
+    const userNameByProfileId = new Map(
+      profiles.map((p) => [p.id, p.user.username]),
+    );
+
+    // Get pending submissions
+    const submissions = await this.prisma.questSubmission.findMany({
+      where: {
+        status: QuestSubmissionStatus.PENDING,
+        studentProfileId: { in: profileIds },
+      },
+      select: {
+        createdAt: true,
+        quest: {
+          select: { title: true, deadlineAt: true },
+        },
+        studentProfileId: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return submissions.map((s) => ({
+      task_name: s.quest.title,
+      student_name: userNameByProfileId.get(s.studentProfileId) || 'Unknown',
+      submitted_at: s.createdAt.toISOString(),
+      is_late: s.createdAt > (s.quest.deadlineAt || new Date()),
+    }));
+  }
 }

@@ -12,6 +12,7 @@ import {
   Prisma,
   PrismaClient,
   QuestStatus,
+  QuestSubmissionStatus,
   QuestSubmissionType,
   QuestType,
   ProductType,
@@ -851,6 +852,34 @@ async function main() {
       create: {
         questId: quest.id,
         classroomId: classroom.id,
+      },
+    });
+  }
+
+  const pendingQuest = await prisma.quest.findFirst({
+    where: {
+      termId: term.id,
+      title: 'เข้าใจดอกเบี้ยทบต้น',
+    },
+    select: { id: true },
+  });
+
+  if (pendingQuest) {
+    await prisma.questSubmission.upsert({
+      where: {
+        questId_studentProfileId: {
+          questId: pendingQuest.id,
+          studentProfileId: demoStudentProfile.id,
+        },
+      },
+      update: {
+        status: QuestSubmissionStatus.PENDING,
+      },
+      create: {
+        questId: pendingQuest.id,
+        studentProfileId: demoStudentProfile.id,
+        status: QuestSubmissionStatus.PENDING,
+        latestVersionNo: 1,
       },
     });
   }
