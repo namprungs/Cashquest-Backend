@@ -13,7 +13,7 @@ http:
     type: json
     data: |-
       {
-        "name": "มัธยม6/4"
+        "name": "มัธยมศึกษาปีที่ 5/2"
       }
   auth: inherit
 
