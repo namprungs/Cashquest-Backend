@@ -1,0 +1,26 @@
+info:
+  name: Deposit To Investment Wallet
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/investment-wallet/deposit"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "amount": 1000
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
