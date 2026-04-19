@@ -23,6 +23,7 @@ export class InvestmentMarketService {
 
   async listProducts(termId: string) {
     await this.core.assertTermExists(termId);
+    const currentWeek = await this.core.getCurrentWeek(termId);
 
     const simulations = await this.prisma.productSimulation.findMany({
       where: { termId },
@@ -56,18 +57,174 @@ export class InvestmentMarketService {
       }
     }
 
-    const data = simulations.map((sim) => ({
-      ...sim.product,
-      simulation: {
-        initialPrice: sim.initialPrice,
-        mu: sim.mu,
-        sigma: sim.sigma,
-        dt: sim.dt,
-      },
-      latestPrice: latestPriceByProduct.get(sim.productId) ?? null,
-    }));
+    const data = await Promise.all(
+      simulations.map(async (sim) => {
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const liveTicks = await this.prisma.productLivePriceTick.findMany({
+          where: {
+            termId,
+            productId: sim.productId,
+            simulatedWeekNo: currentWeek,
+            tickedAt: { gte: oneDayAgo },
+          },
+          orderBy: [{ tickedAt: 'asc' }],
+          take: 500,
+        });
+
+        let sparkline = liveTicks.map((tick) => this.core.toNumber(tick.price));
+
+        const firstLiveTick = liveTicks[0] ?? null;
+        const latestLiveTick = liveTicks[liveTicks.length - 1] ?? null;
+        const closeReturnPct = this.core.toNumber(
+          latestPriceByProduct.get(sim.productId)?.returnPct ?? 0,
+        );
+        const dayOpenPrice = this.core.toNumber(firstLiveTick?.price ?? 0);
+        const liveTickPrice = this.core.toNumber(latestLiveTick?.price ?? 0);
+        const liveReturnPct =
+          dayOpenPrice > 0 && liveTickPrice > 0
+            ? ((liveTickPrice - dayOpenPrice) / dayOpenPrice) * 100
+            : closeReturnPct;
+
+        if (!sparkline.length) {
+          const fallbackPrices = await this.prisma.productPrice.findMany({
+            where: {
+              termId,
+              productId: sim.productId,
+            },
+            orderBy: [{ weekNo: 'desc' }],
+            take: 20,
+          });
+
+          sparkline = fallbackPrices
+            .map((price) => this.core.toNumber(price.close))
+            .reverse();
+        }
+
+        return {
+          ...sim.product,
+          simulation: {
+            initialPrice: sim.initialPrice,
+            mu: sim.mu,
+            sigma: sim.sigma,
+            dt: sim.dt,
+          },
+          latestPrice: latestPriceByProduct.get(sim.productId) ?? null,
+          liveTickPrice: latestLiveTick?.price ?? null,
+          liveTickAt: latestLiveTick?.tickedAt ?? null,
+          liveReturnPct,
+          sparkline,
+        };
+      }),
+    );
 
     return { success: true, data };
+  }
+
+  async getProductDetail(termId: string, productId: string) {
+    await this.core.assertTermExists(termId);
+
+    const simulation = await this.prisma.productSimulation.findUnique({
+      where: {
+        termId_productId: {
+          termId,
+          productId,
+        },
+      },
+      include: {
+        product: true,
+      },
+    });
+
+    if (!simulation) {
+      throw new NotFoundException('Product simulation in this term not found');
+    }
+
+    const latestTwoPrices = await this.prisma.productPrice.findMany({
+      where: {
+        termId,
+        productId,
+      },
+      orderBy: [{ weekNo: 'desc' }, { createdAt: 'desc' }],
+      take: 2,
+    });
+
+    const latestPrice = latestTwoPrices[0] ?? null;
+    const previousPrice = latestTwoPrices[1] ?? null;
+    const latestClose = this.core.toNumber(latestPrice?.close ?? 0);
+    const previousClose = this.core.toNumber(previousPrice?.close ?? 0);
+
+    const returnPct =
+      previousClose > 0
+        ? ((latestClose - previousClose) / previousClose) * 100
+        : this.core.toNumber(latestPrice?.returnPct ?? 0);
+
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const dayTicks = await this.prisma.productLivePriceTick.findMany({
+      where: {
+        termId,
+        productId,
+        tickedAt: { gte: oneDayAgo },
+      },
+      orderBy: [{ tickedAt: 'asc' }],
+      take: 500,
+    });
+
+    const latestLiveTick = dayTicks[dayTicks.length - 1] ?? null;
+    const firstLiveTick = dayTicks[0] ?? null;
+    const dayOpenPrice = this.core.toNumber(firstLiveTick?.price ?? 0);
+    const liveTickPrice = this.core.toNumber(latestLiveTick?.price ?? 0);
+    const liveReturnPct =
+      dayOpenPrice > 0 && liveTickPrice > 0
+        ? ((liveTickPrice - dayOpenPrice) / dayOpenPrice) * 100
+        : returnPct;
+
+    if (!latestLiveTick) {
+      const latestTickAny = await this.prisma.productLivePriceTick.findFirst({
+        where: {
+          termId,
+          productId,
+        },
+        orderBy: [{ tickedAt: 'desc' }],
+      });
+
+      return {
+        success: true,
+        data: {
+          ...simulation.product,
+          simulation: {
+            initialPrice: simulation.initialPrice,
+            mu: simulation.mu,
+            sigma: simulation.sigma,
+            dt: simulation.dt,
+          },
+          latestPrice,
+          liveTickPrice: latestTickAny?.price ?? null,
+          liveTickAt: latestTickAny?.tickedAt ?? null,
+          liveReturnPct: returnPct,
+          previousPrice,
+          returnPct,
+        },
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        ...simulation.product,
+        simulation: {
+          initialPrice: simulation.initialPrice,
+          mu: simulation.mu,
+          sigma: simulation.sigma,
+          dt: simulation.dt,
+        },
+        latestPrice,
+        liveTickPrice: latestLiveTick?.price ?? null,
+        liveTickAt: latestLiveTick?.tickedAt ?? null,
+        liveReturnPct,
+        previousPrice,
+        returnPct,
+      },
+    };
   }
 
   async listProductPrices(

@@ -41,6 +41,10 @@ export class InvestmentService {
     return this.marketService.listProducts(termId);
   }
 
+  getProductDetail(termId: string, productId: string) {
+    return this.marketService.getProductDetail(termId, productId);
+  }
+
   listProductPrices(
     termId: string,
     productId: string,
