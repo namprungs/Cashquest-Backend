@@ -63,7 +63,7 @@ request:
     - name: marketTermId
       value: dcb99990-0391-4907-b2c2-3db18aa1e18e
     - name: productId
-      value: ""
+      value: e8e85faa-8da8-467d-805d-1adf91005ec2
     - name: orderId
       value: ""
     - name: economicEventId

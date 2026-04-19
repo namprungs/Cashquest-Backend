@@ -837,6 +837,10 @@ async function main() {
     riskLevel: RiskLevel;
     sector: string;
     isActive: boolean;
+    isDividendEnabled: boolean;
+    dividendYieldAnnual?: number;
+    dividendPayoutIntervalWeeks?: number;
+    fixedDividendPerUnit?: number;
     simulation: {
       initialPrice: number;
       mu: number;
@@ -847,29 +851,36 @@ async function main() {
     {
       type: ProductType.STOCK,
       symbol: 'CQTECH',
-      name: 'CashQuest Tech Growth',
+      name: 'CashQuest Hyper Growth',
       riskLevel: RiskLevel.HIGH,
       sector: 'TECH',
       isActive: true,
+      isDividendEnabled: false,
+      dividendPayoutIntervalWeeks: 4,
       simulation: { initialPrice: 120, mu: 0.14, sigma: 0.33, dt: 1 / 52 },
     },
     {
-      type: ProductType.FUND,
-      symbol: 'CQBAL',
-      name: 'CashQuest Balanced Fund',
+      type: ProductType.STOCK,
+      symbol: 'CQGROW',
+      name: 'CashQuest Growth Select',
       riskLevel: RiskLevel.MED,
-      sector: 'MIXED',
+      sector: 'CONSUMER',
       isActive: true,
-      simulation: { initialPrice: 85, mu: 0.09, sigma: 0.18, dt: 1 / 52 },
+      isDividendEnabled: false,
+      dividendPayoutIntervalWeeks: 4,
+      simulation: { initialPrice: 95, mu: 0.1, sigma: 0.2, dt: 1 / 52 },
     },
     {
-      type: ProductType.BOND,
-      symbol: 'CQBOND10',
-      name: 'CashQuest Gov Bond 10Y',
+      type: ProductType.STOCK,
+      symbol: 'CQDIV',
+      name: 'CashQuest Dividend Shield',
       riskLevel: RiskLevel.LOW,
-      sector: 'GOV',
+      sector: 'UTILITY',
       isActive: true,
-      simulation: { initialPrice: 100, mu: 0.035, sigma: 0.06, dt: 1 / 52 },
+      isDividendEnabled: true,
+      dividendYieldAnnual: 0.055,
+      dividendPayoutIntervalWeeks: 4,
+      simulation: { initialPrice: 102, mu: 0.055, sigma: 0.1, dt: 1 / 52 },
     },
   ];
 
@@ -892,6 +903,10 @@ async function main() {
         name: seed.name,
         riskLevel: seed.riskLevel,
         sector: seed.sector,
+        isDividendEnabled: seed.isDividendEnabled,
+        dividendYieldAnnual: seed.dividendYieldAnnual,
+        dividendPayoutIntervalWeeks: seed.dividendPayoutIntervalWeeks ?? 4,
+        fixedDividendPerUnit: seed.fixedDividendPerUnit,
         isActive: seed.isActive,
         metaJson: {
           source: 'seed',
@@ -905,6 +920,10 @@ async function main() {
         name: seed.name,
         riskLevel: seed.riskLevel,
         sector: seed.sector,
+        isDividendEnabled: seed.isDividendEnabled,
+        dividendYieldAnnual: seed.dividendYieldAnnual,
+        dividendPayoutIntervalWeeks: seed.dividendPayoutIntervalWeeks ?? 4,
+        fixedDividendPerUnit: seed.fixedDividendPerUnit,
         isActive: seed.isActive,
         metaJson: {
           source: 'seed',
@@ -1233,7 +1252,7 @@ async function main() {
       investmentCash: 90000,
       holdings: [
         { symbol: 'CQTECH', units: 180, avgCost: 118 },
-        { symbol: 'CQBAL', units: 220, avgCost: 84 },
+        { symbol: 'CQGROW', units: 220, avgCost: 94 },
       ],
     },
     {
@@ -1243,7 +1262,7 @@ async function main() {
       investmentCash: 120000,
       holdings: [
         { symbol: 'CQTECH', units: 110, avgCost: 121 },
-        { symbol: 'CQBOND10', units: 320, avgCost: 99.5 },
+        { symbol: 'CQDIV', units: 320, avgCost: 101.2 },
       ],
     },
     {
@@ -1252,8 +1271,8 @@ async function main() {
       mainWalletBalance: 180000,
       investmentCash: 70000,
       holdings: [
-        { symbol: 'CQBAL', units: 380, avgCost: 82.5 },
-        { symbol: 'CQBOND10', units: 240, avgCost: 100.2 },
+        { symbol: 'CQGROW', units: 380, avgCost: 93.4 },
+        { symbol: 'CQDIV', units: 240, avgCost: 100.8 },
       ],
     },
   ];
