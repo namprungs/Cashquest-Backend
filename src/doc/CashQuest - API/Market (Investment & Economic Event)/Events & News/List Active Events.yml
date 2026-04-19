@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/market/terms/{{marketTermId}}/events/active?weekNo=180"
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/events/active"
   headers:
     - name: Authorization
       value: Bearer {{accessToken}}
@@ -13,6 +13,7 @@ http:
     - name: weekNo
       value: "180"
       type: query
+      disabled: true
   auth: inherit
 
 settings:

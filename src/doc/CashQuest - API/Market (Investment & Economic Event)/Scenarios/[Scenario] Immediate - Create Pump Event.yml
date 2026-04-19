@@ -1,0 +1,40 @@
+info:
+  name: "[Scenario] Immediate - Create Pump Event"
+  type: http
+  seq: 34
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/economic-events"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Scenario: Immediate TECH Pump",
+        "description": "Immediate positive shock for TECH sector",
+        "eventType": "SECTOR_SPECIFIC",
+        "defaultImpact": {
+          "instantShockPct": 0.55,
+          "targetSectors": ["TECH"]
+        },
+        "isRepeatable": true
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const json = res.getBody();
+        if (json?.data?.id) bru.setVar('economicEventId', json.data.id);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

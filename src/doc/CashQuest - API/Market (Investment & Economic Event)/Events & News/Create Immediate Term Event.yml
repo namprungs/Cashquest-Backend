@@ -1,0 +1,34 @@
+info:
+  name: Create Immediate Term Event
+  type: http
+  seq: 26
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/term-events"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "eventId": "{{economicEventId}}",
+        "startWeek": 6,
+        "endWeek": 7,
+        "applyMode": "IMMEDIATE",
+        "status": "ACTIVE",
+        "customImpact": {
+          "instantShockPct": 0.55,
+          "targetSectors": ["TECH"]
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

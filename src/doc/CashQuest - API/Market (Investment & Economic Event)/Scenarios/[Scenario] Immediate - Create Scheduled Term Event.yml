@@ -1,0 +1,41 @@
+info:
+  name: "[Scenario] Immediate - Create Scheduled Term Event"
+  type: http
+  seq: 35
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/term-events"
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "eventId": "{{economicEventId}}",
+        "startWeek": 1,
+        "endWeek": 999,
+        "applyMode": "IMMEDIATE",
+        "status": "SCHEDULED",
+        "customImpact": {
+          "instantShockPct": 0.55,
+          "targetSectors": ["TECH"]
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const json = res.getBody();
+        if (json?.data?.id) bru.setVar('termEventId', json.data.id);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

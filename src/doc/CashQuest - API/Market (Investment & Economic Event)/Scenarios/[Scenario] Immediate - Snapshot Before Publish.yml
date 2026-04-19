@@ -1,0 +1,27 @@
+info:
+  name: "[Scenario] Immediate - Snapshot Before Publish"
+  type: http
+  seq: 36
+
+http:
+  method: GET
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/products/{{productId}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const json = res.getBody();
+        const data = json?.data;
+        const price = Number(data?.liveTickPrice ?? data?.latestPrice?.close ?? 0);
+        if (price > 0) bru.setVar('beforePrice', String(price));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

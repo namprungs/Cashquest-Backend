@@ -7,4 +7,4 @@ ALTER TABLE "products"
 
 -- Prevent duplicate dividend payout rows for same holder/product/week
 CREATE UNIQUE INDEX "dividend_payouts_term_product_student_week_key"
-ON "dividend_payouts"("term_id", "product_id", "student_profile_id", "week_no");
+ON "dividend_payouts"("termId", "productId", "student_profile_id", "week_no");
