@@ -46,6 +46,15 @@ export class InvestmentController {
     return this.investmentService.listProducts(termId);
   }
 
+  @Get('terms/:termId/products/:productId')
+  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  getProductDetail(
+    @Param('termId') termId: string,
+    @Param('productId') productId: string,
+  ) {
+    return this.investmentService.getProductDetail(termId, productId);
+  }
+
   @Get('terms/:termId/products/:productId/prices')
   @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
   listProductPrices(
