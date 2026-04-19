@@ -70,6 +70,177 @@ async function main() {
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   };
 
+  const toNumber = (value: unknown) => {
+    if (value === null || value === undefined) {
+      return 0;
+    }
+    return Number(value);
+  };
+
+  const normalizeStringArray = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => String(item).trim().toUpperCase())
+        .filter((item) => item.length > 0);
+    }
+
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((item) => item.trim().toUpperCase())
+        .filter((item) => item.length > 0);
+    }
+
+    return [];
+  };
+
+  const eventAppliesToProduct = (impact: unknown, sector?: string | null) => {
+    if (!impact || typeof impact !== 'object' || Array.isArray(impact)) {
+      return true;
+    }
+
+    const data = impact as Record<string, unknown>;
+    const targetSectors = normalizeStringArray(
+      data.targetSectors ?? data.sectors ?? data.targetSector,
+    );
+    const excludeSectors = normalizeStringArray(
+      data.excludeSectors ?? data.excludedSectors,
+    );
+
+    if (!targetSectors.length && !excludeSectors.length) {
+      return true;
+    }
+
+    const normalizedSector = (sector ?? '').trim().toUpperCase();
+    if (!normalizedSector) {
+      return false;
+    }
+
+    if (targetSectors.length && !targetSectors.includes(normalizedSector)) {
+      return false;
+    }
+
+    if (excludeSectors.includes(normalizedSector)) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const applyImmediateEventShockForSeed = async (
+    termId: string,
+    termEventId: string,
+  ) => {
+    const weekNo =
+      (
+        await prisma.termSimulation.findUnique({
+          where: { termId },
+          select: { currentWeek: true },
+        })
+      )?.currentWeek ?? 1;
+
+    const termEvent = await prisma.termEvent.findFirst({
+      where: {
+        id: termEventId,
+        termId,
+        status: TermEventStatus.ACTIVE,
+      },
+      include: { event: true },
+    });
+
+    if (!termEvent || termEvent.applyMode !== 'IMMEDIATE') {
+      return 0;
+    }
+
+    if (termEvent.startWeek > weekNo || termEvent.endWeek < weekNo) {
+      return 0;
+    }
+
+    const impact = termEvent.customImpact ?? termEvent.event.defaultImpact;
+    const impactRecord =
+      impact && typeof impact === 'object' && !Array.isArray(impact)
+        ? (impact as Record<string, unknown>)
+        : {};
+
+    const shockPct =
+      toNumber(impactRecord.instantShockPct) ||
+      toNumber(impactRecord.immediateShockPct) ||
+      toNumber(impactRecord.priceShockPct) ||
+      toNumber(impactRecord.shockPct) ||
+      0;
+
+    if (shockPct === 0) {
+      return 0;
+    }
+
+    const simulations = await prisma.productSimulation.findMany({
+      where: { termId },
+      include: {
+        product: {
+          select: {
+            sector: true,
+          },
+        },
+      },
+    });
+
+    let createdCount = 0;
+
+    for (const sim of simulations) {
+      if (!eventAppliesToProduct(impact, sim.product?.sector)) {
+        continue;
+      }
+
+      const previousTick = await prisma.productLivePriceTick.findFirst({
+        where: {
+          termId,
+          productId: sim.productId,
+          simulatedWeekNo: weekNo,
+        },
+        orderBy: [{ tickedAt: 'desc' }],
+      });
+
+      const previousClosePrice = await prisma.productPrice.findFirst({
+        where: {
+          termId,
+          productId: sim.productId,
+          weekNo: { lte: weekNo },
+        },
+        orderBy: [{ weekNo: 'desc' }, { createdAt: 'desc' }],
+        select: { close: true },
+      });
+
+      const previousPrice = toNumber(
+        previousTick?.price ?? previousClosePrice?.close ?? sim.initialPrice,
+      );
+
+      if (previousPrice <= 0) {
+        continue;
+      }
+
+      const nextPrice = Math.max(0.0001, previousPrice * (1 + shockPct));
+      const returnPct = (nextPrice - previousPrice) / previousPrice;
+
+      await prisma.productLivePriceTick.create({
+        data: {
+          termId,
+          productId: sim.productId,
+          simulatedWeekNo: weekNo,
+          price: nextPrice,
+          returnPct,
+          muUsed: sim.mu,
+          sigmaUsed: sim.sigma,
+          eventId: termEvent.eventId,
+          generationType: PriceGenerationType.LIVE_TICK,
+        },
+      });
+
+      createdCount += 1;
+    }
+
+    return createdCount;
+  };
+
   // --- Logic การ Seed ข้อมูล ---
 
   // 1. ดึงข้อมูลสิทธิ์ทั้งหมดจาก Constant มาเป็น Array แบนๆ
@@ -1046,6 +1217,43 @@ async function main() {
         },
       });
 
+  const existingFlashCrashEvent = await prisma.economicEvent.findFirst({
+    where: { title: 'Flash Crash Breaking News' },
+    select: { id: true },
+  });
+
+  const flashCrashEvent = existingFlashCrashEvent
+    ? await prisma.economicEvent.update({
+        where: { id: existingFlashCrashEvent.id },
+        data: {
+          eventType: EconomicEventType.MARKET_CRASH,
+          defaultImpact: {
+            muAdjustment: -0.25,
+            sigmaAdjustment: 0.2,
+            sigmaMultiplier: 1.5,
+            instantShockPct: -0.16,
+            targetSectors: ['TECH', 'CONSUMER'],
+          } as Prisma.InputJsonValue,
+          isRepeatable: true,
+        },
+      })
+    : await prisma.economicEvent.create({
+        data: {
+          title: 'Flash Crash Breaking News',
+          description:
+            'ข่าวด่วนตลาดผันผวนรุนแรง ทำให้ราคากลุ่มเสี่ยงปรับลงทันที',
+          eventType: EconomicEventType.MARKET_CRASH,
+          defaultImpact: {
+            muAdjustment: -0.25,
+            sigmaAdjustment: 0.2,
+            sigmaMultiplier: 1.5,
+            instantShockPct: -0.16,
+            targetSectors: ['TECH', 'CONSUMER'],
+          } as Prisma.InputJsonValue,
+          isRepeatable: true,
+        },
+      });
+
   await prisma.termEvent.deleteMany({ where: { termId: term.id } });
 
   const event1Start = Math.max(2, Math.floor(marketTotalPoints * 0.2));
@@ -1056,24 +1264,50 @@ async function main() {
   );
   const event2End = Math.min(marketTotalPoints, event2Start + 3);
 
-  await prisma.termEvent.createMany({
-    data: [
-      {
-        termId: term.id,
-        eventId: shockEvent.id,
-        startWeek: event1Start,
-        endWeek: event1End,
-        status: TermEventStatus.EXPIRED,
-      },
-      {
-        termId: term.id,
-        eventId: rallyEvent.id,
-        startWeek: event2Start,
-        endWeek: event2End,
-        status: TermEventStatus.ACTIVE,
-      },
-    ],
+  await prisma.termEvent.create({
+    data: {
+      termId: term.id,
+      eventId: shockEvent.id,
+      startWeek: event1Start,
+      endWeek: event1End,
+      applyMode: 'NEXT_TICK',
+      status: TermEventStatus.EXPIRED,
+    },
   });
+
+  await prisma.termEvent.create({
+    data: {
+      termId: term.id,
+      eventId: rallyEvent.id,
+      startWeek: event2Start,
+      endWeek: event2End,
+      applyMode: 'NEXT_TICK',
+      status: TermEventStatus.ACTIVE,
+    },
+  });
+
+  const seededImmediateEvent = await prisma.termEvent.create({
+    data: {
+      termId: term.id,
+      eventId: flashCrashEvent.id,
+      startWeek: Math.max(1, currentMarketWeek),
+      endWeek: Math.min(term.totalWeeks, currentMarketWeek + 1),
+      applyMode: 'IMMEDIATE',
+      status: TermEventStatus.SCHEDULED,
+      customImpact: {
+        instantShockPct: 2,
+        targetSectors: ['TECH'],
+      } as Prisma.InputJsonValue,
+    },
+  });
+
+  const immediateShockAppliedCount = await applyImmediateEventShockForSeed(
+    term.id,
+    seededImmediateEvent.id,
+  );
+  console.log(
+    `⚡ Applied immediate shock ticks from seed: ${immediateShockAppliedCount}`,
+  );
 
   await prisma.marketRegime.deleteMany({ where: { termId: term.id } });
 

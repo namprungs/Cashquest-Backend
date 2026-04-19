@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { TermEventStatus } from '@prisma/client';
+import { TermEventApplyMode, TermEventStatus } from '@prisma/client';
 import {
   IsEnum,
   IsInt,
@@ -29,6 +29,10 @@ export class UpdateTermEventDto {
   @IsOptional()
   @IsObject()
   customImpact?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsEnum(TermEventApplyMode)
+  applyMode?: TermEventApplyMode;
 
   @IsOptional()
   @IsEnum(TermEventStatus)

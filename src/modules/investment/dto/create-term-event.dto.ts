@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { TermEventStatus } from '@prisma/client';
+import { TermEventApplyMode, TermEventStatus } from '@prisma/client';
 import {
   IsEnum,
   IsInt,
@@ -11,21 +11,25 @@ import {
 
 export class CreateTermEventDto {
   @IsUUID()
-  eventId: string;
+  eventId!: string;
 
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  startWeek: number;
+  startWeek!: number;
 
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  endWeek: number;
+  endWeek!: number;
 
   @IsOptional()
   @IsObject()
   customImpact?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsEnum(TermEventApplyMode)
+  applyMode?: TermEventApplyMode;
 
   @IsOptional()
   @IsEnum(TermEventStatus)

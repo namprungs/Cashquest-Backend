@@ -522,6 +522,140 @@ export class InvestmentMarketService {
     return { success: true, data, meta: { weekNo, ticksPerWeek } };
   }
 
+  async applyImmediateEventShock(termId: string, termEventId: string) {
+    await this.core.assertTermExists(termId);
+
+    const weekNo = await this.core.getCurrentWeek(termId);
+
+    const data = await this.prisma.$transaction(async (tx) => {
+      const termEvent = await tx.termEvent.findFirst({
+        where: {
+          id: termEventId,
+          termId,
+        },
+        include: { event: true },
+      });
+
+      if (!termEvent) {
+        throw new NotFoundException('Term event not found');
+      }
+
+      if ((termEvent as any).applyMode !== 'IMMEDIATE') {
+        return [];
+      }
+
+      if (termEvent.status !== TermEventStatus.ACTIVE) {
+        return [];
+      }
+
+      if (termEvent.startWeek > weekNo || termEvent.endWeek < weekNo) {
+        return [];
+      }
+
+      const impact = termEvent.customImpact ?? termEvent.event.defaultImpact;
+
+      const simulations = await tx.productSimulation.findMany({
+        where: { termId },
+        include: {
+          product: {
+            select: {
+              sector: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      const createdTicks: Array<
+        Awaited<ReturnType<typeof tx.productLivePriceTick.create>>
+      > = [];
+
+      for (const sim of simulations) {
+        if (!this.core.eventAppliesToProduct(impact, sim.product?.sector)) {
+          continue;
+        }
+
+        const previousTick = await tx.productLivePriceTick.findFirst({
+          where: {
+            termId,
+            productId: sim.productId,
+            simulatedWeekNo: weekNo,
+          },
+          orderBy: [{ tickedAt: 'desc' }],
+        });
+
+        const previousClosePrice = await tx.productPrice.findFirst({
+          where: {
+            termId,
+            productId: sim.productId,
+            weekNo: { lte: weekNo },
+          },
+          orderBy: [{ weekNo: 'desc' }, { createdAt: 'desc' }],
+          select: { close: true },
+        });
+
+        const previousPrice = this.core.toNumber(
+          previousTick?.price ?? previousClosePrice?.close ?? sim.initialPrice,
+        );
+
+        if (previousPrice <= 0) {
+          continue;
+        }
+
+        const impactRecord =
+          impact && typeof impact === 'object' && !Array.isArray(impact)
+            ? (impact as Record<string, unknown>)
+            : {};
+
+        const shockPct =
+          this.core.toNumber(impactRecord.instantShockPct) ||
+          this.core.toNumber(impactRecord.immediateShockPct) ||
+          this.core.toNumber(impactRecord.priceShockPct) ||
+          this.core.toNumber(impactRecord.shockPct) ||
+          0;
+
+        const nextPrice = Math.max(0.0001, previousPrice * (1 + shockPct));
+        const returnPct = (nextPrice - previousPrice) / previousPrice;
+
+        const eventAdjustments = this.core.resolveEventAdjustments(impact);
+        const muUsed =
+          this.core.toNumber(sim.mu) + eventAdjustments.muAdjustment;
+        const sigmaUsed = Math.max(
+          0.000001,
+          (this.core.toNumber(sim.sigma) + eventAdjustments.sigmaAdjustment) *
+            eventAdjustments.sigmaMultiplier,
+        );
+
+        const tick = await tx.productLivePriceTick.create({
+          data: {
+            termId,
+            productId: sim.productId,
+            simulatedWeekNo: weekNo,
+            price: nextPrice,
+            returnPct,
+            muUsed,
+            sigmaUsed,
+            eventId: termEvent.eventId,
+            generationType: PriceGenerationType.LIVE_TICK,
+          },
+        });
+
+        createdTicks.push(tick);
+      }
+
+      return createdTicks;
+    });
+
+    return {
+      success: true,
+      data,
+      meta: {
+        weekNo,
+        termEventId,
+      },
+    };
+  }
+
   async finalizeLiveWeek(termId: string, dto: FinalizeLiveWeekDto) {
     await this.core.assertTermExists(termId);
 

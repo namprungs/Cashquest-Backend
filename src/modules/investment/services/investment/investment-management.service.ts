@@ -12,12 +12,14 @@ import { UpdateTermEventDto } from '../../dto/update-term-event.dto';
 import { UpsertProductSimulationsDto } from '../../dto/upsert-product-simulations.dto';
 import { UpsertTermSimulationDto } from '../../dto/upsert-term-simulation.dto';
 import { InvestmentCoreService } from './investment-core.service';
+import { InvestmentMarketService } from './investment-market.service';
 
 @Injectable()
 export class InvestmentManagementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly core: InvestmentCoreService,
+    private readonly marketService: InvestmentMarketService,
   ) {}
 
   async createProduct(termId: string, dto: CreateProductDto) {
@@ -257,10 +259,18 @@ export class InvestmentManagementService {
         startWeek: dto.startWeek,
         endWeek: dto.endWeek,
         customImpact: this.core.toInputJson(dto.customImpact),
+        applyMode: dto.applyMode ?? 'NEXT_TICK',
         status: dto.status ?? TermEventStatus.SCHEDULED,
       },
       include: { event: true },
     });
+
+    if (
+      data.status === TermEventStatus.ACTIVE &&
+      (data as any).applyMode === 'IMMEDIATE'
+    ) {
+      await this.marketService.applyImmediateEventShock(termId, data.id);
+    }
 
     return { success: true, data };
   }
@@ -277,7 +287,7 @@ export class InvestmentManagementService {
         id: termEventId,
         termId,
       },
-      select: { id: true },
+      select: { id: true, status: true, applyMode: true },
     });
 
     if (!termEvent) {
@@ -303,10 +313,23 @@ export class InvestmentManagementService {
         ...(dto.customImpact !== undefined
           ? { customImpact: this.core.toInputJson(dto.customImpact) }
           : {}),
+        ...(dto.applyMode !== undefined ? { applyMode: dto.applyMode } : {}),
         ...(dto.status ? { status: dto.status } : {}),
       },
       include: { event: true },
     });
+
+    const nextStatus = dto.status ?? termEvent.status;
+    const publishedFromScheduledToActive =
+      termEvent.status === TermEventStatus.SCHEDULED &&
+      nextStatus === TermEventStatus.ACTIVE;
+
+    if (
+      publishedFromScheduledToActive &&
+      (data as any).applyMode === 'IMMEDIATE'
+    ) {
+      await this.marketService.applyImmediateEventShock(termId, data.id);
+    }
 
     return { success: true, data };
   }
