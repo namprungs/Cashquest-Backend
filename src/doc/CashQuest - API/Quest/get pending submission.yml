@@ -1,0 +1,19 @@
+info:
+  name: get pending submission
+  type: http
+  seq: 12
+
+http:
+  method: GET
+  url: "{{baseUrl}}/quests/classrooms/:classroomId/pending-submissions"
+  params:
+    - name: classroomId
+      value: 93f85662-2db2-4964-bce4-983d2c37eb9a
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -6,12 +6,14 @@ import {
 import { QuestStatus, QuestSubmissionStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PlayerService } from 'src/modules/player/services/studentProfile.service';
+import { QuestService } from '../quest/quest.service';
 
 @Injectable()
 export class ClassroomService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly playerService: PlayerService,
+    private readonly questService: QuestService,
   ) {}
 
   // -----------------------------
@@ -309,5 +311,96 @@ export class ClassroomService {
     });
 
     return { success: true, data: students };
+  }
+
+  // -----------------------------
+  // Home overview for classroom
+  // -----------------------------
+  async getHomeOverview(classroomId: string) {
+    const classroom = await this.prisma.classroom.findUnique({
+      where: { id: classroomId },
+      include: { students: { select: { studentId: true } }, term: true },
+    });
+    if (!classroom) {
+      throw new NotFoundException('Classroom not found');
+    }
+
+    const studentIds = classroom.students.map((s) => s.studentId);
+
+    // total_students
+    const total_students = studentIds.length;
+
+    // active_missions
+    const active_missions = await this.prisma.questClassroom.count({
+      where: {
+        classroomId,
+        quest: { status: QuestStatus.PUBLISHED },
+      },
+    });
+
+    // avg_balance_per_student
+    const profiles = await this.prisma.studentProfile.findMany({
+      where: {
+        userId: { in: studentIds },
+        termId: classroom.termId,
+      },
+      select: {
+        mainWallet: { select: { balance: true } },
+      },
+    });
+
+    const total_balance = profiles.reduce(
+      (sum, p) => sum + Number(p.mainWallet?.balance || 0),
+      0,
+    );
+    const avg_balance_per_student =
+      total_students > 0 ? total_balance / total_students : 0;
+
+    // pending_tasks
+    const pending_tasks =
+      await this.questService.getPendingSubmissionsForClassroom(classroomId);
+
+    // leaderboard
+    const leaderboardData = await this.prisma.studentProfile.findMany({
+      where: {
+        userId: { in: studentIds },
+        termId: classroom.termId,
+      },
+      select: {
+        user: { select: { username: true } },
+        mainWallet: { select: { balance: true } },
+      },
+      orderBy: { mainWallet: { balance: 'desc' } },
+      take: 10,
+    });
+
+    let rank = 1;
+    const leaderboard = leaderboardData.map((p, index) => {
+      if (
+        index > 0 &&
+        Number(p.mainWallet?.balance) ===
+          Number(leaderboardData[index - 1].mainWallet?.balance)
+      ) {
+        // same balance, same rank
+      } else {
+        rank = index + 1;
+      }
+      return {
+        rank,
+        name: p.user.username,
+        total_coin: Number(p.mainWallet?.balance || 0),
+        change_pct: 0, // placeholder
+      };
+    });
+
+    return {
+      summary: {
+        total_students,
+        active_missions,
+        avg_balance_per_student: Math.round(avg_balance_per_student * 100) / 100,
+      },
+      pending_tasks,
+      leaderboard,
+    };
   }
 }

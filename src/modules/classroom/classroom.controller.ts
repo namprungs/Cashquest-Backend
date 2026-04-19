@@ -77,4 +77,13 @@ export class ClassroomController {
   listStudents(@Param('classroomId') classroomId: string) {
     return this.classroomService.listStudents(classroomId);
   }
+
+  // -----------------------------
+  // Home overview
+  // -----------------------------
+  @Get('classrooms/:id/home-overview')
+  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  homeOverview(@Param('id') classroomId: string) {
+    return this.classroomService.getHomeOverview(classroomId);
+  }
 }
