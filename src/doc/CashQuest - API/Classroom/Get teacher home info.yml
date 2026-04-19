@@ -1,0 +1,19 @@
+info:
+  name: Get teacher home info
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{baseUrl}}/academic/classrooms/:id/home-overview"
+  params:
+    - name: id
+      value: 315904ca-e475-4ab2-bdd6-3f08c1e703fb
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
