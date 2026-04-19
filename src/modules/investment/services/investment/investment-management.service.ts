@@ -32,6 +32,10 @@ export class InvestmentManagementService {
           riskLevel: dto.riskLevel,
           sector: dto.sector,
           metaJson: this.core.toInputJson(dto.metaJson),
+          isDividendEnabled: dto.isDividendEnabled ?? false,
+          dividendYieldAnnual: dto.dividendYieldAnnual,
+          dividendPayoutIntervalWeeks: dto.dividendPayoutIntervalWeeks ?? 4,
+          fixedDividendPerUnit: dto.fixedDividendPerUnit,
           isActive: dto.isActive ?? true,
         },
       });
@@ -75,6 +79,18 @@ export class InvestmentManagementService {
         ...(dto.sector !== undefined ? { sector: dto.sector } : {}),
         ...(dto.metaJson !== undefined
           ? { metaJson: this.core.toInputJson(dto.metaJson) }
+          : {}),
+        ...(dto.isDividendEnabled !== undefined
+          ? { isDividendEnabled: dto.isDividendEnabled }
+          : {}),
+        ...(dto.dividendYieldAnnual !== undefined
+          ? { dividendYieldAnnual: dto.dividendYieldAnnual }
+          : {}),
+        ...(dto.dividendPayoutIntervalWeeks !== undefined
+          ? { dividendPayoutIntervalWeeks: dto.dividendPayoutIntervalWeeks }
+          : {}),
+        ...(dto.fixedDividendPerUnit !== undefined
+          ? { fixedDividendPerUnit: dto.fixedDividendPerUnit }
           : {}),
       },
     });

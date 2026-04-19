@@ -973,6 +973,10 @@ model Product {
   riskLevel RiskLevel   @map("risk_level")
   sector    String?
   metaJson  Json?       @map("meta_json")
+  isDividendEnabled        Boolean  @default(false) @map("is_dividend_enabled")
+  dividendYieldAnnual      Decimal? @map("dividend_yield_annual") @db.Decimal(10, 6)
+  dividendPayoutIntervalWeeks Int   @default(4) @map("dividend_payout_interval_weeks")
+  fixedDividendPerUnit     Decimal? @map("fixed_dividend_per_unit") @db.Decimal(18, 6)
   isActive  Boolean     @default(true) @map("is_active")
 
   simulations     ProductSimulation[]
@@ -1155,6 +1159,7 @@ model DividendPayout {
 
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@unique([termId, productId, studentProfileId, weekNo])
   @@index([termId, productId, studentProfileId, weekNo])
   @@map("dividend_payouts")
 }

@@ -898,82 +898,136 @@ export class InvestmentPortfolioService {
     await this.core.assertTermExists(termId);
 
     const weekNo = dto.weekNo ?? (await this.core.getCurrentWeek(termId));
-    const dividendPerUnit = dto.dividendPerUnit ?? 0;
+    const manualDividendPerUnit = dto.dividendPerUnit;
 
     let dividendCount = 0;
     let couponCount = 0;
 
     await this.prisma.$transaction(async (tx) => {
-      if (dividendPerUnit > 0) {
-        const holdings = await tx.holding.findMany({
-          where: {
-            termId,
-            units: {
-              gt: 0,
-            },
-            product: {
-              type: {
-                in: [ProductType.STOCK, ProductType.FUND],
-              },
+      const holdings = await tx.holding.findMany({
+        where: {
+          termId,
+          units: {
+            gt: 0,
+          },
+          product: {
+            type: ProductType.STOCK,
+            isDividendEnabled: true,
+          },
+        },
+        include: {
+          product: true,
+          studentProfile: {
+            include: {
+              investmentWallet: true,
             },
           },
-          include: {
-            product: true,
-            studentProfile: {
-              include: {
-                investmentWallet: true,
+        },
+      });
+
+      for (const holding of holdings) {
+        const intervalWeeks = Math.max(
+          1,
+          holding.product.dividendPayoutIntervalWeeks ?? 4,
+        );
+
+        if (weekNo % intervalWeeks !== 0) {
+          continue;
+        }
+
+        const existingDividend = await tx.dividendPayout.findFirst({
+          where: {
+            termId,
+            productId: holding.productId,
+            studentProfileId: holding.studentProfileId,
+            weekNo,
+          },
+          select: { id: true },
+        });
+
+        if (existingDividend) {
+          continue;
+        }
+
+        const units = this.core.toNumber(holding.units);
+        let dividendPerUnit = manualDividendPerUnit;
+
+        if (dividendPerUnit === undefined || dividendPerUnit <= 0) {
+          dividendPerUnit = this.core.toNumber(
+            holding.product.fixedDividendPerUnit ?? 0,
+          );
+        }
+
+        if (dividendPerUnit <= 0) {
+          const yieldAnnual = this.core.toNumber(
+            holding.product.dividendYieldAnnual ?? 0,
+          );
+          if (yieldAnnual > 0) {
+            const latestPrice = await tx.productPrice.findFirst({
+              where: {
+                termId,
+                productId: holding.productId,
+                weekNo: { lte: weekNo },
               },
-            },
+              orderBy: [{ weekNo: 'desc' }, { createdAt: 'desc' }],
+              select: { close: true },
+            });
+
+            const closePrice = this.core.toNumber(latestPrice?.close ?? 0);
+            const payoutsPerYear = Math.max(1, 52 / intervalWeeks);
+            dividendPerUnit = closePrice > 0 ? (closePrice * yieldAnnual) / payoutsPerYear : 0;
+          }
+        }
+
+        if (dividendPerUnit <= 0) {
+          continue;
+        }
+
+        const amount = units * dividendPerUnit;
+
+        await tx.dividendPayout.create({
+          data: {
+            termId,
+            productId: holding.productId,
+            studentProfileId: holding.studentProfileId,
+            weekNo,
+            units,
+            dividendPerUnit,
+            amount,
           },
         });
 
-        for (const holding of holdings) {
-          const units = this.core.toNumber(holding.units);
-          const amount = units * dividendPerUnit;
-
-          await tx.dividendPayout.create({
+        if (holding.studentProfile.investmentWallet) {
+          const walletBalance = this.core.toNumber(
+            holding.studentProfile.investmentWallet.balance,
+          );
+          await tx.investmentWallet.update({
+            where: { id: holding.studentProfile.investmentWallet.id },
             data: {
-              termId,
-              productId: holding.productId,
-              studentProfileId: holding.studentProfileId,
-              weekNo,
-              units,
-              dividendPerUnit,
-              amount,
+              balance: walletBalance + amount,
             },
           });
 
-          if (holding.studentProfile.investmentWallet) {
-            const walletBalance = this.core.toNumber(
-              holding.studentProfile.investmentWallet.balance,
-            );
-            await tx.investmentWallet.update({
-              where: { id: holding.studentProfile.investmentWallet.id },
-              data: {
-                balance: walletBalance + amount,
+          await tx.investmentTransaction.create({
+            data: {
+              investmentWalletId: holding.studentProfile.investmentWallet.id,
+              type: InvestmentTransactionType.DIVIDEND,
+              amount,
+              balanceBefore: walletBalance,
+              balanceAfter: walletBalance + amount,
+              description: 'Dividend payout credited to investment wallet',
+              metadata: {
+                source: 'DIVIDEND_PAYOUT',
+                productId: holding.productId,
+                termId,
+                weekNo,
+                intervalWeeks,
               },
-            });
-
-            await tx.investmentTransaction.create({
-              data: {
-                investmentWalletId: holding.studentProfile.investmentWallet.id,
-                type: 'DIVIDEND' as unknown as InvestmentTransactionType,
-                amount,
-                balanceBefore: walletBalance,
-                balanceAfter: walletBalance + amount,
-                description: 'Dividend payout credited to investment wallet',
-                metadata: {
-                  source: 'DIVIDEND_PAYOUT',
-                  productId: holding.productId,
-                  termId,
-                  weekNo,
-                },
-              },
-            });
-          }
-
-          dividendCount += 1;
+            },
+          });
         }
+
+        dividendCount += 1;
       }
 
       const bonds = await tx.bondPosition.findMany({

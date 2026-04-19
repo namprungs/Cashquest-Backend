@@ -103,4 +103,30 @@ export class LivePriceTickScheduler {
       }
     }
   }
+
+  @Cron(CronExpression.EVERY_6_HOURS)
+  async handleEverySixHoursProcessPayouts() {
+    const enabled = process.env.MARKET_PAYOUT_CRON_ENABLED !== 'false';
+    if (!enabled) {
+      return;
+    }
+
+    const configuredTermId = process.env.MARKET_LIVE_TICK_TERM_ID;
+    const terms = configuredTermId
+      ? [{ id: configuredTermId }]
+      : await this.prisma.term.findMany({
+          where: { status: TermStatus.ONGOING },
+          select: { id: true },
+        });
+
+    for (const term of terms) {
+      try {
+        await this.investmentService.processPayouts(term.id, {});
+      } catch (error) {
+        this.logger.warn(
+          `Failed to process payouts for term ${term.id}: ${error instanceof Error ? error.message : 'unknown error'}`,
+        );
+      }
+    }
+  }
 }
