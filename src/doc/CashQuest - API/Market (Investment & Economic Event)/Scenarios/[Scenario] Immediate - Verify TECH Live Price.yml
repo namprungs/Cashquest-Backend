@@ -1,0 +1,25 @@
+info:
+  name: "[Scenario] Immediate - Verify TECH Live Price"
+  type: http
+  seq: 38
+
+http:
+  method: GET
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/products/{{productId}}/live-prices?minutes=240&limit=100"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: minutes
+      value: "240"
+      type: query
+    - name: limit
+      value: "100"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -958,6 +958,11 @@ enum TermEventStatus {
   EXPIRED
 }
 
+enum TermEventApplyMode {
+  NEXT_TICK
+  IMMEDIATE
+}
+
 enum MarketRegimeName {
   BULL
   BEAR
@@ -1237,6 +1242,7 @@ model TermEvent {
   endWeek   Int @map("end_week")
 
   customImpact Json?           @map("custom_impact")
+  applyMode    TermEventApplyMode @default(NEXT_TICK) @map("apply_mode")
   status       TermEventStatus @default(SCHEDULED)
 
   createdAt DateTime @default(now()) @map("created_at")

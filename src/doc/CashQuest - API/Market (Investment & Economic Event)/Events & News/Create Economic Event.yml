@@ -15,7 +15,7 @@ http:
     type: json
     data: |-
       {
-        "title": "Oil Price Spike",
+        "title": "น้ำปรุงขึ้นภาษี",
         "description": "Energy shock",
         "eventType": "VOLATILITY_SHOCK",
         "defaultImpact": {

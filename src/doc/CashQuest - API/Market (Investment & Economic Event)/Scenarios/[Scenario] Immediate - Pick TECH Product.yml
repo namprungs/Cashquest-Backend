@@ -1,0 +1,27 @@
+info:
+  name: "[Scenario] Immediate - Pick TECH Product"
+  type: http
+  seq: 33
+
+http:
+  method: GET
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/products"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const json = res.getBody();
+        const items = json?.data ?? [];
+        const tech = items.find((p) => String(p?.sector ?? '').toUpperCase() === 'TECH');
+        if (tech?.id) bru.setVar('productId', tech.id);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
