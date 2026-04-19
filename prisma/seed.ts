@@ -3,7 +3,11 @@ import 'dotenv/config';
 
 import {
   EconomicEventType,
+  InvestmentTransactionType,
   MarketRegimeName,
+  OrderSide,
+  OrderStatus,
+  OrderType,
   PriceGenerationType,
   Prisma,
   PrismaClient,
@@ -959,6 +963,8 @@ async function main() {
     },
   });
 
+  const currentMarketWeek = Math.min(6, term.totalWeeks);
+
   const existingShockEvent = await prisma.economicEvent.findFirst({
     where: { title: 'FED Rate Hike Shock' },
     select: { id: true },
@@ -1190,6 +1196,227 @@ async function main() {
     if (rows.length > 0) {
       await prisma.productPrice.createMany({ data: rows });
     }
+  }
+
+  console.log('👥 กำลัง seed ผู้เล่นตลาดเพิ่มเติมสำหรับทีม...');
+
+  const latestPriceRows = await prisma.productPrice.findMany({
+    where: {
+      termId: term.id,
+      productId: { in: products.map((product) => product.id) },
+    },
+    orderBy: [{ weekNo: 'desc' }, { createdAt: 'desc' }],
+  });
+
+  const latestPriceByProductId = new Map<string, number>();
+  for (const row of latestPriceRows) {
+    if (!latestPriceByProductId.has(row.productId)) {
+      latestPriceByProductId.set(row.productId, Number(row.close));
+    }
+  }
+
+  const productBySymbol = new Map(
+    products.map((product) => [product.symbol, product]),
+  );
+
+  const marketStudentSeeds: {
+    email: string;
+    username: string;
+    mainWalletBalance: number;
+    investmentCash: number;
+    holdings: Array<{ symbol: string; units: number; avgCost: number }>;
+  }[] = [
+    {
+      email: 'student@school.com',
+      username: 'student_demo',
+      mainWalletBalance: 250000,
+      investmentCash: 90000,
+      holdings: [
+        { symbol: 'CQTECH', units: 180, avgCost: 118 },
+        { symbol: 'CQBAL', units: 220, avgCost: 84 },
+      ],
+    },
+    {
+      email: 'student2@school.com',
+      username: 'student_demo_2',
+      mainWalletBalance: 200000,
+      investmentCash: 120000,
+      holdings: [
+        { symbol: 'CQTECH', units: 110, avgCost: 121 },
+        { symbol: 'CQBOND10', units: 320, avgCost: 99.5 },
+      ],
+    },
+    {
+      email: 'student3@school.com',
+      username: 'student_demo_3',
+      mainWalletBalance: 180000,
+      investmentCash: 70000,
+      holdings: [
+        { symbol: 'CQBAL', units: 380, avgCost: 82.5 },
+        { symbol: 'CQBOND10', units: 240, avgCost: 100.2 },
+      ],
+    },
+  ];
+
+  for (const studentSeed of marketStudentSeeds) {
+    const user = await prisma.user.upsert({
+      where: { email: studentSeed.email },
+      update: {
+        username: studentSeed.username,
+        roleId: studentRole.id,
+        schoolId: school.id,
+        isActive: true,
+      },
+      create: {
+        email: studentSeed.email,
+        username: studentSeed.username,
+        password: studentPassword,
+        roleId: studentRole.id,
+        schoolId: school.id,
+        isActive: true,
+      },
+    });
+
+    await prisma.classroomStudent.upsert({
+      where: {
+        classroomId_studentId: {
+          classroomId: classroom.id,
+          studentId: user.id,
+        },
+      },
+      update: {},
+      create: {
+        classroomId: classroom.id,
+        studentId: user.id,
+      },
+    });
+
+    const profile = await prisma.studentProfile.upsert({
+      where: {
+        userId_termId: {
+          userId: user.id,
+          termId: term.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: user.id,
+        termId: term.id,
+      },
+    });
+
+    await prisma.wallet.upsert({
+      where: { studentProfileId: profile.id },
+      update: { balance: studentSeed.mainWalletBalance },
+      create: {
+        studentProfileId: profile.id,
+        balance: studentSeed.mainWalletBalance,
+      },
+    });
+
+    const investmentWallet = await prisma.investmentWallet.upsert({
+      where: { studentProfileId: profile.id },
+      update: {
+        termId: term.id,
+        balance: studentSeed.investmentCash,
+      },
+      create: {
+        studentProfileId: profile.id,
+        termId: term.id,
+        balance: studentSeed.investmentCash,
+      },
+      select: { id: true },
+    });
+
+    await prisma.order.deleteMany({
+      where: {
+        termId: term.id,
+        studentProfileId: profile.id,
+      },
+    });
+
+    await prisma.holding.deleteMany({
+      where: {
+        termId: term.id,
+        studentProfileId: profile.id,
+      },
+    });
+
+    await prisma.investmentTransaction.deleteMany({
+      where: {
+        investmentWalletId: investmentWallet.id,
+      },
+    });
+
+    for (const holdingSeed of studentSeed.holdings) {
+      const product = productBySymbol.get(holdingSeed.symbol);
+      if (!product) continue;
+
+      await prisma.holding.create({
+        data: {
+          studentProfileId: profile.id,
+          termId: term.id,
+          productId: product.id,
+          units: holdingSeed.units,
+          avgCost: holdingSeed.avgCost,
+        },
+      });
+
+      const marketPrice =
+        latestPriceByProductId.get(product.id) ?? holdingSeed.avgCost;
+
+      await prisma.order.createMany({
+        data: [
+          {
+            studentProfileId: profile.id,
+            termId: term.id,
+            productId: product.id,
+            side: OrderSide.BUY,
+            orderType: OrderType.MARKET,
+            requestedPrice: null,
+            executedPrice: holdingSeed.avgCost,
+            quantity: holdingSeed.units,
+            fee: 0,
+            weekNo: Math.max(1, currentMarketWeek - 1),
+            status: OrderStatus.EXECUTED,
+          },
+          {
+            studentProfileId: profile.id,
+            termId: term.id,
+            productId: product.id,
+            side: OrderSide.SELL,
+            orderType: OrderType.MARKET,
+            requestedPrice: null,
+            executedPrice: marketPrice,
+            quantity: Number((holdingSeed.units * 0.1).toFixed(6)),
+            fee: 0,
+            weekNo: currentMarketWeek,
+            status: OrderStatus.EXECUTED,
+          },
+        ],
+      });
+    }
+
+    const investedCost = studentSeed.holdings.reduce(
+      (sum, item) => sum + item.units * item.avgCost,
+      0,
+    );
+    const transferInAmount = investedCost + studentSeed.investmentCash;
+
+    await prisma.investmentTransaction.create({
+      data: {
+        investmentWalletId: investmentWallet.id,
+        type: InvestmentTransactionType.TRANSFER_IN,
+        amount: transferInAmount,
+        balanceBefore: 0,
+        balanceAfter: studentSeed.investmentCash,
+        metadata: {
+          source: 'MAIN_WALLET',
+          note: 'seed-market-bootstrap',
+        } as Prisma.InputJsonValue,
+        description: 'Seed transfer into investment wallet',
+      },
+    });
   }
 
   console.log(`
