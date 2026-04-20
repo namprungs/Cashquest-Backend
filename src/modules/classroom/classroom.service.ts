@@ -358,7 +358,7 @@ export class ClassroomService {
 
     // pending_tasks
     const pending_tasks =
-      await this.questService.getPendingSubmissionsForClassroom(classroomId);
+      await this.questService.getPendingSubmissionsForClassroom(classroomId, 2);
 
     // leaderboard
     const leaderboardData = await this.prisma.studentProfile.findMany({
