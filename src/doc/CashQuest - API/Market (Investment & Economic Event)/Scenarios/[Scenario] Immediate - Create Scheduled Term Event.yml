@@ -16,13 +16,13 @@ http:
     data: |-
       {
         "eventId": "{{economicEventId}}",
-        "startWeek": 1,
-        "endWeek": 999,
+        "startWeek":6,
+        "endWeek": 7,
         "applyMode": "IMMEDIATE",
         "status": "SCHEDULED",
         "customImpact": {
-          "instantShockPct": 0.55,
-          "targetSectors": ["TECH"]
+          "instantShockPct": -0.25,
+          "targetSectors": ["UTILITY"]
         }
       }
   auth: inherit

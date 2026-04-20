@@ -29,13 +29,13 @@ request:
     - name: schoolId
       value: ""
     - name: termId
-      value: dcb99990-0391-4907-b2c2-3db18aa1e18e
+      value: b73f6003-4394-40dd-a903-b8336a0d5ee3
     - name: lifeStageId
       value: ""
     - name: termStageRuleId
       value: ""
     - name: classroomId
-      value: e63f4e37-c418-4613-8b42-c08dc5224b0c
+      value: 315904ca-e475-4ab2-bdd6-3f08c1e703fb
     - name: studentId
       value: b9a3abdb-d5c8-4fc1-a2aa-c1a6cac2006a
     - name: roleId
@@ -61,9 +61,9 @@ request:
     - name: expectedUpdatedAt
       value: ""
     - name: marketTermId
-      value: 81198905-ec1e-47da-861a-b5206c152875
+      value: b73f6003-4394-40dd-a903-b8336a0d5ee3
     - name: productId
-      value: e8e85faa-8da8-467d-805d-1adf91005ec2
+      value: e5e8eee5-4f50-471f-b876-fc05e1cb9db2
     - name: orderId
       value: ""
     - name: economicEventId

@@ -21,6 +21,19 @@ export class InvestmentMarketService {
     private readonly core: InvestmentCoreService,
   ) {}
 
+  private mapRiskLevel(riskLevel: string) {
+    switch (riskLevel) {
+      case 'LOW':
+        return 'low';
+      case 'MED':
+        return 'medium';
+      case 'HIGH':
+        return 'high';
+      default:
+        return 'medium';
+    }
+  }
+
   async listProducts(termId: string) {
     await this.core.assertTermExists(termId);
     const currentWeek = await this.core.getCurrentWeek(termId);
@@ -102,6 +115,7 @@ export class InvestmentMarketService {
 
         return {
           ...sim.product,
+          risk: this.mapRiskLevel(sim.product.riskLevel),
           simulation: {
             initialPrice: sim.initialPrice,
             mu: sim.mu,
@@ -191,6 +205,7 @@ export class InvestmentMarketService {
         success: true,
         data: {
           ...simulation.product,
+          risk: this.mapRiskLevel(simulation.product.riskLevel),
           simulation: {
             initialPrice: simulation.initialPrice,
             mu: simulation.mu,
@@ -211,6 +226,7 @@ export class InvestmentMarketService {
       success: true,
       data: {
         ...simulation.product,
+        risk: this.mapRiskLevel(simulation.product.riskLevel),
         simulation: {
           initialPrice: simulation.initialPrice,
           mu: simulation.mu,
