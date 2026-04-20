@@ -54,8 +54,12 @@ export class QuestController {
 
   @Get('classrooms/:classroomId/pending-submissions')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
-  getPendingSubmissions(@Param('classroomId') classroomId: string) {
-    return this.questService.getPendingSubmissionsForClassroom(classroomId);
+  getPendingSubmissions(
+    @Param('classroomId') classroomId: string,
+    @Query('limit') limit?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : 50;
+    return this.questService.getPendingSubmissionsForClassroom(classroomId, limitNum);
   }
 
   @Get(':questId')

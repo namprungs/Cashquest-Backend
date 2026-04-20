@@ -990,7 +990,7 @@ export class QuestService {
   // -----------------------------
   // Get pending submissions for classroom
   // -----------------------------
-  async getPendingSubmissionsForClassroom(classroomId: string) {
+  async getPendingSubmissionsForClassroom(classroomId: string, limit: number = 50) {
     // Get classroom with students
     const classroom = await this.prisma.classroom.findUnique({
       where: { id: classroomId },
@@ -1026,6 +1026,7 @@ export class QuestService {
         studentProfileId: { in: profileIds },
       },
       select: {
+        id: true,
         createdAt: true,
         quest: {
           select: { title: true, deadlineAt: true },
@@ -1033,9 +1034,11 @@ export class QuestService {
         studentProfileId: true,
       },
       orderBy: { createdAt: 'desc' },
+      take: limit,
     });
 
     return submissions.map((s) => ({
+      id: s.id,
       task_name: s.quest.title,
       student_name: userNameByProfileId.get(s.studentProfileId) || 'Unknown',
       submitted_at: s.createdAt.toISOString(),
