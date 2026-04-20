@@ -22,7 +22,7 @@ http:
         "status": "SCHEDULED",
         "customImpact": {
           "instantShockPct": -0.25,
-          "targetSectors": ["UTILITY"]
+          "targetSectors": ["TECH","UTILITY"]
         }
       }
   auth: inherit

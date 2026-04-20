@@ -34,6 +34,7 @@ export class InvestmentPortfolioService {
     this.core.assertStudent(user);
 
     const profile = await this.core.getStudentProfileOrThrow(user.id, termId);
+    const currentWeek = await this.core.getCurrentWeek(termId);
 
     const transferInAgg = await this.prisma.investmentTransaction.aggregate({
       where: {
@@ -56,6 +57,9 @@ export class InvestmentPortfolioService {
       where: {
         termId,
         studentProfileId: profile.id,
+        units: {
+          gt: 0,
+        },
       },
       include: {
         product: true,
@@ -88,6 +92,48 @@ export class InvestmentPortfolioService {
       }
     }
 
+    const liveTicks = productIds.length
+      ? await this.prisma.productLivePriceTick.findMany({
+          where: {
+            termId,
+            productId: {
+              in: productIds,
+            },
+            simulatedWeekNo: currentWeek,
+          },
+          orderBy: [{ tickedAt: 'desc' }],
+        })
+      : [];
+
+    const latestLiveTickByProduct = new Map<
+      string,
+      (typeof liveTicks)[number]
+    >();
+    for (const tick of liveTicks) {
+      if (!latestLiveTickByProduct.has(tick.productId)) {
+        latestLiveTickByProduct.set(tick.productId, tick);
+      }
+    }
+
+    const fallbackLiveTicks =
+      productIds.length && latestLiveTickByProduct.size < productIds.length
+        ? await this.prisma.productLivePriceTick.findMany({
+            where: {
+              termId,
+              productId: {
+                in: productIds,
+              },
+            },
+            orderBy: [{ tickedAt: 'desc' }],
+          })
+        : [];
+
+    for (const tick of fallbackLiveTicks) {
+      if (!latestLiveTickByProduct.has(tick.productId)) {
+        latestLiveTickByProduct.set(tick.productId, tick);
+      }
+    }
+
     let investedValue = 0;
     let marketValue = 0;
 
@@ -95,7 +141,10 @@ export class InvestmentPortfolioService {
       const units = this.core.toNumber(holding.units);
       const avgCost = this.core.toNumber(holding.avgCost);
       const latest = latestPriceByProduct.get(holding.productId);
-      const lastPrice = this.core.toNumber(latest?.close ?? 0);
+      const latestLiveTick = latestLiveTickByProduct.get(holding.productId);
+      const lastPrice = this.core.toNumber(
+        latestLiveTick?.price ?? latest?.close ?? 0,
+      );
 
       const costValue = units * avgCost;
       const currentValue = units * lastPrice;
@@ -107,6 +156,9 @@ export class InvestmentPortfolioService {
       return {
         holding,
         latestPrice: latest,
+        liveTickPrice: latestLiveTick?.price ?? null,
+        liveTickAt: latestLiveTick?.tickedAt ?? null,
+        effectivePrice: lastPrice,
         metrics: {
           costValue,
           currentValue,
@@ -121,7 +173,11 @@ export class InvestmentPortfolioService {
     const investmentWalletId = profile.investmentWallet?.id ?? null;
     const equity = cash + marketValue;
     const roiPercent =
-      transferredIn > 0 ? ((equity - transferredIn) / transferredIn) * 100 : 0;
+      investedValue > 0
+        ? ((marketValue - investedValue) / investedValue) * 100
+        : transferredIn > 0
+          ? ((equity - transferredIn) / transferredIn) * 100
+          : 0;
 
     return {
       success: true,
@@ -215,6 +271,9 @@ export class InvestmentPortfolioService {
       where: {
         termId,
         studentProfileId: profile.id,
+        units: {
+          gt: 0,
+        },
       },
       include: {
         product: true,
@@ -268,6 +327,32 @@ export class InvestmentPortfolioService {
 
     const currentWeek = await this.core.getCurrentWeek(termId);
 
+    const latestLiveTickInWeek =
+      await this.prisma.productLivePriceTick.findFirst({
+        where: {
+          termId,
+          productId: dto.productId,
+          simulatedWeekNo: currentWeek,
+        },
+        orderBy: [{ tickedAt: 'desc' }],
+        select: {
+          price: true,
+        },
+      });
+
+    const latestLiveTickAnyWeek = latestLiveTickInWeek
+      ? null
+      : await this.prisma.productLivePriceTick.findFirst({
+          where: {
+            termId,
+            productId: dto.productId,
+          },
+          orderBy: [{ tickedAt: 'desc' }],
+          select: {
+            price: true,
+          },
+        });
+
     const latestPrice = await this.prisma.productPrice.findFirst({
       where: {
         termId,
@@ -279,7 +364,12 @@ export class InvestmentPortfolioService {
       },
     });
 
-    const marketPrice = this.core.toNumber(latestPrice?.close ?? 0);
+    const marketPrice = this.core.toNumber(
+      latestLiveTickInWeek?.price ??
+        latestLiveTickAnyWeek?.price ??
+        latestPrice?.close ??
+        0,
+    );
 
     let status: OrderStatus = OrderStatus.PENDING;
     let executedPrice: number | null = null;
@@ -692,13 +782,19 @@ export class InvestmentPortfolioService {
         },
       });
 
-      await tx.holding.update({
-        where: { id: holding.id },
-        data: {
-          units: nextUnits,
-          avgCost: nextUnits === 0 ? 0 : holding.avgCost,
-        },
-      });
+      if (nextUnits === 0) {
+        await tx.holding.delete({
+          where: { id: holding.id },
+        });
+      } else {
+        await tx.holding.update({
+          where: { id: holding.id },
+          data: {
+            units: nextUnits,
+            avgCost: holding.avgCost,
+          },
+        });
+      }
     }
 
     await tx.order.update({
@@ -975,7 +1071,8 @@ export class InvestmentPortfolioService {
 
             const closePrice = this.core.toNumber(latestPrice?.close ?? 0);
             const payoutsPerYear = Math.max(1, 52 / intervalWeeks);
-            dividendPerUnit = closePrice > 0 ? (closePrice * yieldAnnual) / payoutsPerYear : 0;
+            dividendPerUnit =
+              closePrice > 0 ? (closePrice * yieldAnnual) / payoutsPerYear : 0;
           }
         }
 

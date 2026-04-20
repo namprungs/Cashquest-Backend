@@ -61,9 +61,9 @@ request:
     - name: expectedUpdatedAt
       value: ""
     - name: marketTermId
-      value: b73f6003-4394-40dd-a903-b8336a0d5ee3
+      value: c4a096c3-fc6a-452c-9511-37ad5e32c503
     - name: productId
-      value: e5e8eee5-4f50-471f-b876-fc05e1cb9db2
+      value: c158d09b-a660-4f76-934b-be1977b58e23
     - name: orderId
       value: ""
     - name: economicEventId

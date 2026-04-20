@@ -73,16 +73,29 @@ export class InvestmentMarketService {
     const data = await Promise.all(
       simulations.map(async (sim) => {
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const liveTicks = await this.prisma.productLivePriceTick.findMany({
-          where: {
-            termId,
-            productId: sim.productId,
-            simulatedWeekNo: currentWeek,
-            tickedAt: { gte: oneDayAgo },
-          },
-          orderBy: [{ tickedAt: 'asc' }],
-          take: 500,
-        });
+        const currentWeekTicks =
+          await this.prisma.productLivePriceTick.findMany({
+            where: {
+              termId,
+              productId: sim.productId,
+              simulatedWeekNo: currentWeek,
+              tickedAt: { gte: oneDayAgo },
+            },
+            orderBy: [{ tickedAt: 'asc' }],
+            take: 500,
+          });
+
+        const liveTicks = currentWeekTicks.length
+          ? currentWeekTicks
+          : await this.prisma.productLivePriceTick.findMany({
+              where: {
+                termId,
+                productId: sim.productId,
+                tickedAt: { gte: oneDayAgo },
+              },
+              orderBy: [{ tickedAt: 'asc' }],
+              take: 500,
+            });
 
         let sparkline = liveTicks.map((tick) => this.core.toNumber(tick.price));
 
