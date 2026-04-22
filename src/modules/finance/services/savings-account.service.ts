@@ -105,17 +105,19 @@ export class SavingsAccountService {
       return { success: true, data: account };
     });
 
-    // Trigger interactive quest auto-completion after successful first account open.
-    // This should not block the main banking flow if no matching quest exists.
+    let interactiveQuestCompleted = false;
     try {
-      const questResult = await this.questService.completeInteractiveQuest(
+      await this.questService.completeInteractiveQuest(
         studentProfile.userId,
         'OPENSAVINGACCOUNT',
       );
-      this.logger.debug(`Quest completion result: ${JSON.stringify(questResult)}`);
+      interactiveQuestCompleted = true;
     } catch (error: unknown) {
       if (error instanceof NotFoundException) {
-        return result;
+        return {
+          ...result,
+          interactiveQuestCompleted,
+        };
       }
 
       const message = error instanceof Error ? error.message : String(error);
@@ -124,7 +126,10 @@ export class SavingsAccountService {
       );
     }
 
-    return result;
+    return {
+      ...result,
+      interactiveQuestCompleted,
+    };
   }
 
   /**
