@@ -4,7 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, QuestType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { QuestService } from 'src/modules/quest/quest.service';
 import { CreateSavingsAccountDto } from '../dto/create-savings-account.dto';
@@ -110,7 +110,7 @@ export class SavingsAccountService {
     try {
       const questResult = await this.questService.completeInteractiveQuest(
         studentProfile.userId,
-        QuestType.INTERACTIVE,
+        'OPENSAVINGACCOUNT',
       );
       this.logger.debug(`Quest completion result: ${JSON.stringify(questResult)}`);
     } catch (error: unknown) {

@@ -41,7 +41,7 @@ export class QuestController {
   }
 
   @Get('me')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.USER.VIEW_SELF])
   listMe(@CurrentUser() user: User, @Query() query: ListMyQuestsQueryDto) {
     return this.questService.listMyQuests(user, query);
   }

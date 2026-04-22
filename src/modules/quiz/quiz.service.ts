@@ -430,6 +430,130 @@ export class QuizService {
     return { success: true, data: quiz };
   }
 
+  async getQuizForStudent(quizId: string, user: CurrentUser) {
+    this.assertStudent(user);
+
+    const quiz = await this.prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: {
+        module: {
+          select: { id: true, title: true, termId: true },
+        },
+        questions: {
+          orderBy: { orderNo: 'asc' },
+          include: {
+            choices: {
+              orderBy: { orderNo: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!quiz) {
+      throw new NotFoundException('Quiz not found');
+    }
+
+    const termId = quiz.module?.termId;
+    if (!termId) {
+      throw new BadRequestException('Quiz is not linked to a term context');
+    }
+
+    const classroomMemberships = await this.prisma.classroomStudent.findMany({
+      where: {
+        studentId: user.id,
+        classroom: {
+          termId,
+        },
+      },
+      select: {
+        classroomId: true,
+      },
+    });
+
+    const classroomIds = classroomMemberships.map((item) => item.classroomId);
+    if (!classroomIds.length) {
+      throw new ForbiddenException('Quiz is not assigned to your classroom');
+    }
+
+    const assignedQuest = await this.prisma.quest.findFirst({
+      where: {
+        quizId,
+        termId,
+        status: 'PUBLISHED',
+        classrooms: {
+          some: {
+            classroomId: { in: classroomIds },
+          },
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        rewardCoins: true,
+      },
+    });
+
+    if (!assignedQuest) {
+      throw new ForbiddenException('Quiz is not assigned to your classroom');
+    }
+
+    const studentProfile = await this.prisma.studentProfile.findUnique({
+      where: {
+        userId_termId: {
+          userId: user.id,
+          termId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!studentProfile) {
+      throw new ForbiddenException(
+        'Student profile for this term is not found',
+      );
+    }
+
+    const attempts = await this.prisma.quizAttempt.findMany({
+      where: {
+        quizId,
+        studentProfileId: studentProfile.id,
+      },
+      orderBy: { attemptNo: 'desc' },
+      select: {
+        id: true,
+        attemptNo: true,
+        score: true,
+        isPassed: true,
+        submittedAt: true,
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        id: quiz.id,
+        module: quiz.module,
+        timeLimitSec: quiz.timeLimitSec,
+        passAllRequired: quiz.passAllRequired,
+        quest: assignedQuest,
+        attempts,
+        questions: quiz.questions.map((question) => ({
+          id: question.id,
+          questionText: question.questionText,
+          questionType: question.questionType,
+          orderNo: question.orderNo,
+          points: question.points,
+          choices: question.choices.map((choice) => ({
+            id: choice.id,
+            choiceText: choice.choiceText,
+            orderNo: choice.orderNo,
+          })),
+        })),
+      },
+    };
+  }
+
   async deleteQuiz(quizId: string, user: CurrentUser) {
     this.assertTeacherOrAdmin(user);
 

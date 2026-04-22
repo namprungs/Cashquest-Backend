@@ -30,8 +30,19 @@ type CurrentUser = User & { role?: { name?: string } | null };
 export class QuestService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private normalizeActionType(value: unknown) {
+    return String(value ?? '')
+      .trim()
+      .replace(/[_\s-]+/g, '')
+      .toUpperCase();
+  }
+
+  private getRoleName(user: CurrentUser) {
+    return user?.role?.name?.toUpperCase?.() ?? '';
+  }
+
   private assertTeacherOrAdmin(user: CurrentUser) {
-    const roleName = user?.role?.name?.toUpperCase?.();
+    const roleName = this.getRoleName(user);
     if (!roleName || !['TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(roleName)) {
       throw new ForbiddenException(
         'Only teacher/admin can perform this action',
@@ -40,7 +51,7 @@ export class QuestService {
   }
 
   private assertStudent(user: CurrentUser) {
-    const roleName = user?.role?.name?.toUpperCase?.();
+    const roleName = this.getRoleName(user);
     if (!roleName || roleName !== 'STUDENT') {
       throw new ForbiddenException('Only student can perform this action');
     }
@@ -380,6 +391,21 @@ export class QuestService {
   }
 
   async listMyQuests(user: CurrentUser, query: ListMyQuestsQueryDto) {
+    const roleName = this.getRoleName(user);
+
+    if (['TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(roleName)) {
+      const quests = await this.prisma.quest.findMany({
+        where: {
+          createdById: user.id,
+        },
+        include: this.toQuestInclude(),
+        orderBy: { createdAt: 'desc' },
+        ...(query.limit ? { take: query.limit } : {}),
+      });
+
+      return { success: true, data: quests };
+    }
+
     this.assertStudent(user);
 
     const context = await this.getStudentContext(user);
@@ -829,7 +855,9 @@ export class QuestService {
     }
 
     try {
-      const submission = await this.prisma.questSubmission.findFirst({
+      const requestedActionType = this.normalizeActionType(actionType);
+
+      const pendingSubmissions = await this.prisma.questSubmission.findMany({
         where: {
           status: QuestSubmissionStatus.PENDING,
           studentProfile: {
@@ -864,6 +892,24 @@ export class QuestService {
           },
         },
       });
+
+      const submission = pendingSubmissions.find((item) => {
+        const latestPayload = item.versions[0]?.payloadJson;
+        if (!latestPayload || typeof latestPayload !== 'object') {
+          return true;
+        }
+
+        const payloadActionType = this.normalizeActionType(
+          (latestPayload as Record<string, unknown>).actionType,
+        );
+
+        if (!payloadActionType) {
+          return true;
+        }
+
+        return payloadActionType === requestedActionType;
+      });
+
       if (!submission) {
         throw new NotFoundException(
           'No pending interactive quest submission found for this action',
