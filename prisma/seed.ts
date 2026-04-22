@@ -11,6 +11,8 @@ import {
   PriceGenerationType,
   Prisma,
   PrismaClient,
+  QuizGradingType,
+  QuizQuestionType,
   QuestStatus,
   QuestSubmissionStatus,
   QuestSubmissionType,
@@ -310,6 +312,7 @@ async function main() {
     PERMISSIONS.ACADEMIC.CLASS_MANAGE,
     PERMISSIONS.ACADEMIC.TERM_MANAGE,
     PERMISSIONS.SIMULATION.CONTENT_MANAGE,
+    PERMISSIONS.SIMULATION.PLAY,
     PERMISSIONS.ACADEMIC.CLASSROOM_CREATE,
     PERMISSIONS.ACADEMIC.CLASSROOM_VIEW,
     PERMISSIONS.ACADEMIC.CLASSROOM_EDIT,
@@ -675,6 +678,170 @@ async function main() {
     }
   }
 
+  const learningModules = await prisma.learningModule.findMany({
+    where: {
+      termId: term.id,
+      title: {
+        in: learningModuleSeeds.map((moduleSeed) => moduleSeed.title),
+      },
+    },
+    select: {
+      id: true,
+      title: true,
+    },
+  });
+
+  const moduleByTitle = new Map(
+    learningModules.map((moduleItem) => [moduleItem.title, moduleItem.id]),
+  );
+
+  console.log('🧠 กำลัง seed Quiz สำหรับ flow แบบทดสอบ...');
+
+  const financeModuleId = moduleByTitle.get('Finance Basics') ?? null;
+  const quizSignatureQuestion =
+    'ฝากเงิน 10,000 บาท อัตราดอกเบี้ย 5% ต่อปี แบบดอกเบี้ยทบต้น 2 ปี เมื่อครบ 2 ปี จะมีเงินประมาณเท่าไร?';
+
+  const existingCompoundQuiz = await prisma.quiz.findFirst({
+    where: {
+      moduleId: financeModuleId,
+      questions: {
+        some: {
+          questionText: quizSignatureQuestion,
+        },
+      },
+    },
+    select: { id: true },
+  });
+
+  const compoundInterestQuiz = existingCompoundQuiz
+    ? await prisma.quiz.update({
+        where: { id: existingCompoundQuiz.id },
+        data: {
+          moduleId: financeModuleId,
+          timeLimitSec: 900,
+          passAllRequired: false,
+        },
+        select: { id: true },
+      })
+    : await prisma.quiz.create({
+        data: {
+          moduleId: financeModuleId,
+          timeLimitSec: 900,
+          passAllRequired: false,
+          questions: {
+            create: [
+              {
+                questionText: quizSignatureQuestion,
+                questionType: QuizQuestionType.SINGLE_CHOICE,
+                gradingType: QuizGradingType.AUTO,
+                orderNo: 1,
+                points: 2,
+                choices: {
+                  create: [
+                    { choiceText: '10,500 บาท', isCorrect: false, orderNo: 1 },
+                    { choiceText: '11,000 บาท', isCorrect: false, orderNo: 2 },
+                    { choiceText: '11,025 บาท', isCorrect: true, orderNo: 3 },
+                    { choiceText: '11,500 บาท', isCorrect: false, orderNo: 4 },
+                  ],
+                },
+              },
+              {
+                questionText:
+                  'อธิบายสั้นๆ ว่าทำไมดอกเบี้ยทบต้นจึงช่วยให้เงินออมเติบโตเร็วขึ้น',
+                questionType: QuizQuestionType.SHORT_TEXT,
+                gradingType: QuizGradingType.MANUAL,
+                orderNo: 2,
+                points: 2,
+              },
+              {
+                questionText:
+                  'แนบไฟล์แผนการออมเงินของคุณ (รูปภาพหรือเอกสารก็ได้)',
+                questionType: QuizQuestionType.FILE_UPLOAD,
+                gradingType: QuizGradingType.MANUAL,
+                orderNo: 3,
+                points: 1,
+              },
+              {
+                questionText:
+                  'ดอกเบี้ยทบต้นคือการคิดดอกเบี้ยจากทั้งเงินต้นและดอกเบี้ยสะสมใช่หรือไม่',
+                questionType: QuizQuestionType.TRUEFALSE,
+                gradingType: QuizGradingType.AUTO,
+                orderNo: 4,
+                points: 1,
+                choices: {
+                  create: [
+                    { choiceText: 'ใช่', isCorrect: true, orderNo: 1 },
+                    { choiceText: 'ไม่ใช่', isCorrect: false, orderNo: 2 },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        select: { id: true },
+      });
+
+  const quizQuestTitle = 'แบบทดสอบดอกเบี้ยทบต้น (Quiz)';
+  const existingQuizQuest = await prisma.quest.findFirst({
+    where: {
+      termId: term.id,
+      title: quizQuestTitle,
+    },
+    select: { id: true },
+  });
+
+  const quizQuest = existingQuizQuest
+    ? await prisma.quest.update({
+        where: { id: existingQuizQuest.id },
+        data: {
+          createdById: teacherUser.id,
+          type: QuestType.QUIZ,
+          title: quizQuestTitle,
+          description:
+            'เริ่มทำแบบทดสอบเพื่อไปหน้า Assignment Task และส่งคำตอบผ่านระบบจริง',
+          rewardCoins: 350,
+          status: QuestStatus.PUBLISHED,
+          startAt: term.startDate,
+          deadlineAt: addDays(term.startDate, 30),
+          isSystem: false,
+          submissionType: null,
+          quizId: compoundInterestQuiz.id,
+        },
+        select: { id: true },
+      })
+    : await prisma.quest.create({
+        data: {
+          termId: term.id,
+          createdById: teacherUser.id,
+          type: QuestType.QUIZ,
+          title: quizQuestTitle,
+          description:
+            'เริ่มทำแบบทดสอบเพื่อไปหน้า Assignment Task และส่งคำตอบผ่านระบบจริง',
+          rewardCoins: 350,
+          status: QuestStatus.PUBLISHED,
+          startAt: term.startDate,
+          deadlineAt: addDays(term.startDate, 30),
+          isSystem: false,
+          submissionType: null,
+          quizId: compoundInterestQuiz.id,
+        },
+        select: { id: true },
+      });
+
+  await prisma.questClassroom.upsert({
+    where: {
+      questId_classroomId: {
+        questId: quizQuest.id,
+        classroomId: classroom.id,
+      },
+    },
+    update: {},
+    create: {
+      questId: quizQuest.id,
+      classroomId: classroom.id,
+    },
+  });
+
   console.log('🧭 กำลังสร้างระบบเควส Interactive: เปิดบัญชีครั้งแรก...');
 
   const openAccountQuestTitle = 'เปิดบัญชีครั้งแรก';
@@ -742,6 +909,7 @@ async function main() {
     description: string;
     type: QuestType;
     submissionType: QuestSubmissionType | null;
+    quizId?: string | null;
     rewardCoins: number;
     startAt: Date;
     deadlineAt: Date;
@@ -796,6 +964,18 @@ async function main() {
       isSystem: false,
       status: QuestStatus.PUBLISHED,
     },
+    {
+      title: 'Interactive ภารกิจจำลองการตัดสินใจทางการเงิน',
+      description:
+        'ภารกิจโต้ตอบที่คุณครูสร้างเองสำหรับให้นักเรียนทำกิจกรรมในระบบ',
+      type: QuestType.INTERACTIVE,
+      submissionType: null,
+      rewardCoins: 280,
+      startAt: addDays(term.startDate, 5),
+      deadlineAt: addDays(term.startDate, 33),
+      isSystem: false,
+      status: QuestStatus.PUBLISHED,
+    },
   ];
 
   for (const questSeed of questSeeds) {
@@ -818,6 +998,7 @@ async function main() {
             rewardCoins: questSeed.rewardCoins,
             status: questSeed.status,
             submissionType: questSeed.submissionType,
+            quizId: questSeed.quizId ?? null,
             startAt: questSeed.startAt,
             deadlineAt: questSeed.deadlineAt,
             isSystem: questSeed.isSystem,
@@ -834,6 +1015,7 @@ async function main() {
             rewardCoins: questSeed.rewardCoins,
             status: questSeed.status,
             submissionType: questSeed.submissionType,
+            quizId: questSeed.quizId ?? null,
             startAt: questSeed.startAt,
             deadlineAt: questSeed.deadlineAt,
             isSystem: questSeed.isSystem,

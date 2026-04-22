@@ -50,6 +50,15 @@ export class QuizController {
     return this.quizService.getQuizById(quizId);
   }
 
+  @Get('quizzes/:quizId/me')
+  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  getQuizForStudent(
+    @Param('quizId') quizId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.quizService.getQuizForStudent(quizId, user);
+  }
+
   @Delete('quizzes/:quizId')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
   deleteQuiz(@Param('quizId') quizId: string, @CurrentUser() user: User) {
