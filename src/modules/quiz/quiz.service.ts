@@ -529,6 +529,56 @@ export class QuizService {
       },
     });
 
+    // Fetch the latest submitted attempt answers for pre-filling
+    let latestAttemptAnswers: Array<{
+      questionId: string;
+      selectedChoiceIds: string[];
+      answerText: string | null;
+      answerNumber: number | null;
+      attachmentUrl: string | null;
+    }> = [];
+
+    if (attempts.length > 0) {
+      const latestAttempt = attempts[0];
+      if (latestAttempt.submittedAt) {
+        const answers = await this.prisma.quizAttemptAnswer.findMany({
+          where: { attemptId: latestAttempt.id },
+          select: {
+            questionId: true,
+            answerText: true,
+            answerNumber: true,
+            attachmentUrl: true,
+          },
+        });
+
+        const answerChoices =
+          await this.prisma.quizAttemptAnswerChoice.findMany({
+            where: { attemptId: latestAttempt.id },
+            select: {
+              questionId: true,
+              choiceId: true,
+            },
+          });
+
+        const choiceMap = new Map<string, string[]>();
+        for (const ac of answerChoices) {
+          const existing = choiceMap.get(ac.questionId) ?? [];
+          existing.push(ac.choiceId);
+          choiceMap.set(ac.questionId, existing);
+        }
+
+        latestAttemptAnswers = answers.map((answer) => ({
+          questionId: answer.questionId,
+          selectedChoiceIds: choiceMap.get(answer.questionId) ?? [],
+          answerText: answer.answerText,
+          answerNumber: answer.answerNumber
+            ? Number(answer.answerNumber)
+            : null,
+          attachmentUrl: answer.attachmentUrl,
+        }));
+      }
+    }
+
     return {
       success: true,
       data: {
@@ -538,6 +588,7 @@ export class QuizService {
         passAllRequired: quiz.passAllRequired,
         quest: assignedQuest,
         attempts,
+        latestAttemptAnswers,
         questions: quiz.questions.map((question) => ({
           id: question.id,
           questionText: question.questionText,
