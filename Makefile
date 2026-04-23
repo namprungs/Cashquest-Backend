@@ -42,6 +42,7 @@ runbackend:
 	trap 'trap - EXIT; cleanup; exit 130' INT TERM; \
 	trap cleanup EXIT; \
 	docker compose up -d; \
+	$(PNPM) prisma studio & \
 	$(PNPM) run start:dev
 
 build:

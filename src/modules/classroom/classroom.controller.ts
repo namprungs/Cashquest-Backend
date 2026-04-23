@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { ClassroomService } from './classroom.service';
 import { CreateClassroomDto } from './dto/create-classroom.dto';
 import { AddStudentDto } from './dto/add-student.dto';
@@ -85,5 +93,15 @@ export class ClassroomController {
   @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
   homeOverview(@Param('id') classroomId: string) {
     return this.classroomService.getHomeOverview(classroomId);
+  }
+
+  @Get('classrooms/:classroomId/pending-submissions')
+  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  pendingSubmissions(
+    @Param('classroomId') classroomId: string,
+    @Query('limit') limit?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : 50;
+    return this.classroomService.getPendingSubmissions(classroomId, limitNum);
   }
 }

@@ -397,10 +397,21 @@ export class ClassroomService {
       summary: {
         total_students,
         active_missions,
-        avg_balance_per_student: Math.round(avg_balance_per_student * 100) / 100,
+        avg_balance_per_student:
+          Math.round(avg_balance_per_student * 100) / 100,
       },
       pending_tasks,
       leaderboard,
+    };
+  }
+
+  async getPendingSubmissions(classroomId: string, limit: number = 50) {
+    return {
+      success: true,
+      data: await this.questService.getPendingSubmissionsForClassroom(
+        classroomId,
+        limit,
+      ),
     };
   }
 }
