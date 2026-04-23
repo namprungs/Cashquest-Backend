@@ -17,6 +17,8 @@ import {
   QuestSubmissionStatus,
   QuestSubmissionType,
   QuestType,
+  QuizGradingType,
+  QuizQuestionType,
   ProductType,
   RiskLevel,
   TermEventStatus,
