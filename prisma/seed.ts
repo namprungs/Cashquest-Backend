@@ -1256,58 +1256,244 @@ async function main() {
 
   await prisma.termEvent.deleteMany({ where: { termId: term.id } });
 
-  const event1Start = Math.max(2, Math.floor(marketTotalPoints * 0.2));
-  const event1End = Math.min(marketTotalPoints, event1Start + 2);
-  const event2Start = Math.max(
-    event1End + 1,
-    Math.floor(marketTotalPoints * 0.6),
-  );
-  const event2End = Math.min(marketTotalPoints, event2Start + 3);
+  console.log('🎲 กำลังสร้าง 16 economic events และ randomize assignments...');
 
-  await prisma.termEvent.create({
-    data: {
-      termId: term.id,
-      eventId: shockEvent.id,
-      startWeek: event1Start,
-      endWeek: event1End,
-      applyMode: 'NEXT_TICK',
-      status: TermEventStatus.EXPIRED,
+  // Define 16 economic event configurations
+  const economicEventConfigs = [
+    {
+      title: 'FED Rate Hike Shock',
+      description: 'อัตราดอกเบี้ยขึ้นเร็วกว่าคาด เพิ่มความผันผวนระยะสั้น',
+      eventType: EconomicEventType.VOLATILITY_SHOCK,
+      defaultImpact: {
+        sigmaAdjustment: 0.08,
+        sigmaMultiplier: 1.25,
+        muAdjustment: -0.03,
+      },
     },
-  });
-
-  await prisma.termEvent.create({
-    data: {
-      termId: term.id,
-      eventId: rallyEvent.id,
-      startWeek: event2Start,
-      endWeek: event2End,
-      applyMode: 'NEXT_TICK',
-      status: TermEventStatus.ACTIVE,
+    {
+      title: 'Tech Earnings Rally',
+      description: 'ผลประกอบการกลุ่มเทคออกมาดีกว่าคาด',
+      eventType: EconomicEventType.DRIFT_SHIFT,
+      defaultImpact: {
+        muAdjustment: 0.06,
+        sigmaAdjustment: 0.01,
+      },
     },
-  });
-
-  const seededImmediateEvent = await prisma.termEvent.create({
-    data: {
-      termId: term.id,
-      eventId: flashCrashEvent.id,
-      startWeek: Math.max(1, currentMarketWeek),
-      endWeek: Math.min(term.totalWeeks, currentMarketWeek + 1),
-      applyMode: 'IMMEDIATE',
-      status: TermEventStatus.SCHEDULED,
-      customImpact: {
-        instantShockPct: 2,
+    {
+      title: 'Flash Crash Breaking News',
+      description: 'ข่าวด่วนตลาดผันผวนรุนแรง ทำให้ราคากลุ่มเสี่ยงปรับลงทันที',
+      eventType: EconomicEventType.MARKET_CRASH,
+      defaultImpact: {
+        muAdjustment: -0.25,
+        sigmaAdjustment: 0.2,
+        sigmaMultiplier: 1.5,
+        instantShockPct: -0.16,
+        targetSectors: ['TECH', 'CONSUMER'],
+      },
+    },
+    {
+      title: 'Oil Price Surge',
+      description: 'ราคาน้ำมันพุ่งขึ้นจากสถานการณ์ภูมิรัฐศาสตร์',
+      eventType: EconomicEventType.SECTOR_SPECIFIC,
+      defaultImpact: {
+        muAdjustment: -0.04,
+        sigmaAdjustment: 0.12,
+        targetSectors: ['ENERGY', 'TRANSPORT'],
+      },
+    },
+    {
+      title: 'Earnings Beat Surprise',
+      description: 'บริษัทใหญ่หลายแห่งรายงานผลกำไรสูงกว่าคาด',
+      eventType: EconomicEventType.DRIFT_SHIFT,
+      defaultImpact: {
+        muAdjustment: 0.08,
+        sigmaAdjustment: 0.02,
+      },
+    },
+    {
+      title: 'Inflation Data Release',
+      description: 'ข้อมูลเงินเฟ้อสูงกว่าที่คาดการณ์',
+      eventType: EconomicEventType.VOLATILITY_SHOCK,
+      defaultImpact: {
+        sigmaAdjustment: 0.06,
+        muAdjustment: -0.02,
+      },
+    },
+    {
+      title: 'Corporate Scandal',
+      description: 'บริษัทใหญ่เผชิญกับวิกฤตความเชื่อมั่น',
+      eventType: EconomicEventType.MARKET_CRASH,
+      defaultImpact: {
+        muAdjustment: -0.12,
+        sigmaAdjustment: 0.08,
+      },
+    },
+    {
+      title: 'Interest Rate Cut',
+      description: 'ธนาคารกลางลดอัตราดอกเบี้ยเพื่อเร้าเศรษฐกิจ',
+      eventType: EconomicEventType.DRIFT_SHIFT,
+      defaultImpact: {
+        muAdjustment: 0.05,
+        sigmaAdjustment: -0.01,
+      },
+    },
+    {
+      title: 'Stock Market Correction',
+      description: 'ตลาดหุ้นปรับตัวปกติหลังการขึ้นราคาอย่างรวดเร็ว',
+      eventType: EconomicEventType.VOLATILITY_SHOCK,
+      defaultImpact: {
+        muAdjustment: -0.05,
+        sigmaAdjustment: 0.05,
+      },
+    },
+    {
+      title: 'GDP Growth Announcement',
+      description: 'รายงานการเติบโตทางเศรษฐกิจมีสัญญาณบวก',
+      eventType: EconomicEventType.DRIFT_SHIFT,
+      defaultImpact: {
+        muAdjustment: 0.07,
+        sigmaAdjustment: 0.01,
+      },
+    },
+    {
+      title: 'Tech Buyout Frenzy',
+      description: 'รอบการซื้อกิจการบริษัทเทคโนโลยี',
+      eventType: EconomicEventType.SECTOR_SPECIFIC,
+      defaultImpact: {
+        muAdjustment: 0.09,
         targetSectors: ['TECH'],
-      } as Prisma.InputJsonValue,
+      },
     },
-  });
+    {
+      title: 'Unemployment Report Surge',
+      description: 'อัตราการว่างงานเพิ่มขึ้นอย่างไม่คาดคิด',
+      eventType: EconomicEventType.MARKET_CRASH,
+      defaultImpact: {
+        muAdjustment: -0.08,
+        sigmaAdjustment: 0.07,
+      },
+    },
+    {
+      title: 'Retail Sales Boom',
+      description: 'ยอดขายปลีกเพิ่มขึ้นสะท้อนความเชื่อมั่นผู้บริโภค',
+      eventType: EconomicEventType.DRIFT_SHIFT,
+      defaultImpact: {
+        muAdjustment: 0.06,
+        targetSectors: ['CONSUMER', 'RETAIL'],
+      },
+    },
+    {
+      title: 'Fed Minutes Release',
+      description: 'นาทีการประชุมของธนาคารกลางเปิดเผยมุมมองการนโยบายการเงิน',
+      eventType: EconomicEventType.VOLATILITY_SHOCK,
+      defaultImpact: {
+        sigmaAdjustment: 0.04,
+      },
+    },
+    {
+      title: 'Trade War Escalation',
+      description: 'ความตึงเณรรายศาสตร์การค้าระหว่างประเทศเพิ่มขึ้น',
+      eventType: EconomicEventType.MARKET_CRASH,
+      defaultImpact: {
+        muAdjustment: -0.1,
+        sigmaAdjustment: 0.1,
+      },
+    },
+    {
+      title: 'Housing Data Positive',
+      description: 'ข้อมูลตัวอักษรบ้านและที่ดินออกมาแข็งแกร่ง',
+      eventType: EconomicEventType.DRIFT_SHIFT,
+      defaultImpact: {
+        muAdjustment: 0.04,
+        targetSectors: ['REAL_ESTATE', 'CONSTRUCTION'],
+      },
+    },
+    {
+      title: 'Fed Balance Sheet Shift',
+      description: 'การเปลี่ยนแปลงนโยบายการดำเนินการด้านความสมดุลของธนาคารกลาง',
+      eventType: EconomicEventType.DRIFT_SHIFT,
+      defaultImpact: {
+        muAdjustment: 0.03,
+        sigmaAdjustment: -0.02,
+      },
+    },
+  ];
 
-  const immediateShockAppliedCount = await applyImmediateEventShockForSeed(
-    term.id,
-    seededImmediateEvent.id,
-  );
+  // Create or find all economic events
+  const allEvents: Array<{ id: string }> = [];
+  for (const config of economicEventConfigs) {
+    const existing = await prisma.economicEvent.findFirst({
+      where: { title: config.title },
+      select: { id: true },
+    });
+
+    const event = existing
+      ? await prisma.economicEvent.update({
+          where: { id: existing.id },
+          data: {
+            eventType: config.eventType,
+            defaultImpact: config.defaultImpact as Prisma.InputJsonValue,
+            isRepeatable: true,
+          },
+          select: { id: true },
+        })
+      : await prisma.economicEvent.create({
+          data: {
+            title: config.title,
+            description: config.description,
+            eventType: config.eventType,
+            defaultImpact: config.defaultImpact as Prisma.InputJsonValue,
+            isRepeatable: true,
+          },
+          select: { id: true },
+        });
+
+    allEvents.push(event);
+  }
+
+  // Shuffle events randomly for this term (Fisher-Yates)
+  const shuffledEvents = [...allEvents];
+  for (let i = shuffledEvents.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledEvents[i], shuffledEvents[j]] = [
+      shuffledEvents[j],
+      shuffledEvents[i],
+    ];
+  }
+
+  // Assign events to weeks 1-16
+  const termTotalWeeks = Math.min(16, term.totalWeeks);
+  const eventWeekStart = Math.max(1, currentMarketWeek);
+
+  for (let week = 1; week <= termTotalWeeks; week++) {
+    if (shuffledEvents[week - 1]) {
+      // Determine status based on current week
+      let status: TermEventStatus = TermEventStatus.SCHEDULED;
+      if (week < eventWeekStart) {
+        status = TermEventStatus.EXPIRED;
+      } else if (week === eventWeekStart) {
+        status = TermEventStatus.ANNOUNCED;
+      } else if (week === eventWeekStart + 1) {
+        status = TermEventStatus.ACTIVE;
+      }
+
+      await prisma.termEvent.create({
+        data: {
+          termId: term.id,
+          eventId: shuffledEvents[week - 1].id,
+          startWeek: week,
+          endWeek: week,
+          applyMode: 'NEXT_TICK',
+          status,
+        },
+      });
+    }
+  }
+
   console.log(
-    `⚡ Applied immediate shock ticks from seed: ${immediateShockAppliedCount}`,
+    `✅ สร้างเหตุการณ์ 16 อย่างและกำหนดให้กับสัปดาห์ 1-${termTotalWeeks}`,
   );
+
 
   await prisma.marketRegime.deleteMany({ where: { termId: term.id } });
 

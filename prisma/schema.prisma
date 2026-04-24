@@ -260,12 +260,12 @@ model StudentProfile {
   term   Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
 
   // Relations
-  retirementGoals RetirementGoal[]
-  mainWallet      Wallet?           @relation("MainWallet") // 1-to-1 main wallet
+  retirementGoals  RetirementGoal[]
+  mainWallet       Wallet?           @relation("MainWallet") // 1-to-1 main wallet
   investmentWallet InvestmentWallet? @relation("InvestmentWallet") // 1-to-1 investment wallet
-  savingsAccounts SavingsAccount[]
-  fixedDeposits   FixedDeposit[]
-  studentBadges   StudentBadge[]
+  savingsAccounts  SavingsAccount[]
+  fixedDeposits    FixedDeposit[]
+  studentBadges    StudentBadge[]
 
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
@@ -954,6 +954,7 @@ enum EconomicEventType {
 
 enum TermEventStatus {
   SCHEDULED
+  ANNOUNCED
   ACTIVE
   EXPIRED
 }
@@ -972,17 +973,17 @@ enum MarketRegimeName {
 model Product {
   id String @id @default(uuid()) @db.Uuid
 
-  type      ProductType
-  symbol    String      @unique
-  name      String
-  riskLevel RiskLevel   @map("risk_level")
-  sector    String?
-  metaJson  Json?       @map("meta_json")
-  isDividendEnabled        Boolean  @default(false) @map("is_dividend_enabled")
-  dividendYieldAnnual      Decimal? @map("dividend_yield_annual") @db.Decimal(10, 6)
-  dividendPayoutIntervalWeeks Int   @default(4) @map("dividend_payout_interval_weeks")
-  fixedDividendPerUnit     Decimal? @map("fixed_dividend_per_unit") @db.Decimal(18, 6)
-  isActive  Boolean     @default(true) @map("is_active")
+  type                        ProductType
+  symbol                      String      @unique
+  name                        String
+  riskLevel                   RiskLevel   @map("risk_level")
+  sector                      String?
+  metaJson                    Json?       @map("meta_json")
+  isDividendEnabled           Boolean     @default(false) @map("is_dividend_enabled")
+  dividendYieldAnnual         Decimal?    @map("dividend_yield_annual") @db.Decimal(10, 6)
+  dividendPayoutIntervalWeeks Int         @default(4) @map("dividend_payout_interval_weeks")
+  fixedDividendPerUnit        Decimal?    @map("fixed_dividend_per_unit") @db.Decimal(18, 6)
+  isActive                    Boolean     @default(true) @map("is_active")
 
   simulations     ProductSimulation[]
   prices          ProductPrice[]
@@ -1241,9 +1242,9 @@ model TermEvent {
   startWeek Int @map("start_week")
   endWeek   Int @map("end_week")
 
-  customImpact Json?           @map("custom_impact")
+  customImpact Json?              @map("custom_impact")
   applyMode    TermEventApplyMode @default(NEXT_TICK) @map("apply_mode")
-  status       TermEventStatus @default(SCHEDULED)
+  status       TermEventStatus    @default(SCHEDULED)
 
   createdAt DateTime @default(now()) @map("created_at")
 

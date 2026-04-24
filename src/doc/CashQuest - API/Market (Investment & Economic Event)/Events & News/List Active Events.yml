@@ -5,11 +5,14 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/market/terms/{{marketTermId}}/events/active"
+  url: "{{baseUrl}}/market/terms/:termId/events/active"
   headers:
     - name: Authorization
       value: Bearer {{accessToken}}
   params:
+    - name: termId
+      value: 9ab7ed74-1613-4623-bae3-fcf580685196
+      type: path
     - name: weekNo
       value: "180"
       type: query

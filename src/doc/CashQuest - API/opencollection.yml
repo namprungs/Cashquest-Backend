@@ -23,7 +23,7 @@ request:
     - name: password
       value: Student@1234
     - name: accessToken
-      value: ""
+      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxNDMwOTQyNS1hYjBiLTRlYzktOWQ4MC1mZmJlOTc0NDk3OTciLCJpYXQiOjE3NzY4NTE1MTAsImV4cCI6MTc3Njg1MjQxMH0.qw91WfSY_VPPW2NMou6wwEIPJsUMb4p88Ao0f8HIMjg
     - name: refreshKey
       value: ""
     - name: schoolId
@@ -61,7 +61,7 @@ request:
     - name: expectedUpdatedAt
       value: ""
     - name: marketTermId
-      value: c4a096c3-fc6a-452c-9511-37ad5e32c503
+      value: 9ab7ed74-1613-4623-bae3-fcf580685196
     - name: productId
       value: c158d09b-a660-4f76-934b-be1977b58e23
     - name: orderId

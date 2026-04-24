@@ -71,6 +71,10 @@ export class PermissionsGuard implements CanActivate {
       userPermissions.includes(requiredPerm),
     );
 
+    console.log('Required Permissions:', requiredPermissions);
+    console.log('User Permissions:', userPermissions);
+    console.log('Has Required Permissions?', hasPermission);
+
     if (!hasPermission) {
       throw new ForbiddenException(
         'You do not have permission to access this resource',
