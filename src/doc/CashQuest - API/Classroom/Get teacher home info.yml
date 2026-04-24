@@ -8,7 +8,7 @@ http:
   url: "{{baseUrl}}/academic/classrooms/:id/home-overview"
   params:
     - name: id
-      value: 315904ca-e475-4ab2-bdd6-3f08c1e703fb
+      value: 7e505569-04d4-4a0c-9fa7-cdcd772a514d
       type: path
   auth: inherit
 

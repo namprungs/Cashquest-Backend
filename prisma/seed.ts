@@ -11,8 +11,6 @@ import {
   PriceGenerationType,
   Prisma,
   PrismaClient,
-  QuizGradingType,
-  QuizQuestionType,
   QuestStatus,
   QuestSubmissionStatus,
   QuestSubmissionType,

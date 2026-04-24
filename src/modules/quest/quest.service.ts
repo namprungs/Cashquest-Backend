@@ -1032,11 +1032,10 @@ export class QuestService {
       },
     };
   }
-
-  // -----------------------------
-  // Get pending submissions for classroom
-  // -----------------------------
-  async getPendingSubmissionsForClassroom(classroomId: string, limit: number = 50) {
+  async getPendingSubmissionsForClassroom(
+    classroomId: string,
+    limit: number = 50,
+  ) {
     // Get classroom with students
     const classroom = await this.prisma.classroom.findUnique({
       where: { id: classroomId },
