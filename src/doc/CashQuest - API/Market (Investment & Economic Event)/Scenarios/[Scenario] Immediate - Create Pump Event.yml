@@ -15,8 +15,8 @@ http:
     type: json
     data: |-
       {
-        "title": "Scenario: Immediate TECH Pump",
-        "description": "Immediate positive shock for TECH sector",
+        "title": "tech up",
+        "description": "องค์ยักษ์ลงเพราะช้ำใจ",
         "eventType": "SECTOR_SPECIFIC",
         "defaultImpact": {
           "instantShockPct": 0.55,

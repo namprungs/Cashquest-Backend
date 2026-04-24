@@ -5,17 +5,22 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/market/terms/{{marketTermId}}/products/{{productId}}/prices?fromWeek=300&toWeek=301"
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/products/{{productId}}/prices?range=5d"
   headers:
     - name: Authorization
       value: Bearer {{accessToken}}
   params:
+    - name: range
+      value: 5d
+      type: query
     - name: fromWeek
       value: "300"
       type: query
+      disabled: true
     - name: toWeek
       value: "301"
       type: query
+      disabled: true
   auth: inherit
 
 settings:
