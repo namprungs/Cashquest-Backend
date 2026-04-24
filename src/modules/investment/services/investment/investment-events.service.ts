@@ -97,6 +97,8 @@ export class InvestmentEventsService {
     const statusValues = new Set(Object.values(TermEventStatus));
     const aliases: Record<string, TermEventStatus> = {
       ANNOUNCED: TermEventStatus.ANNOUNCED,
+      ACTIVE: TermEventStatus.ACTIVE,
+      SCHEDULED: TermEventStatus.SCHEDULED,
       EXPIRE: TermEventStatus.EXPIRED,
     };
 
@@ -104,6 +106,7 @@ export class InvestmentEventsService {
       const key = item.toUpperCase();
       return aliases[key] ?? (key as TermEventStatus);
     });
+    console.log('this is status', statuses);
     const invalid = statuses.filter((item) => !statusValues.has(item));
 
     if (invalid.length) {
