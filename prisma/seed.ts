@@ -1453,6 +1453,7 @@ async function main() {
             sigmaMultiplier: 1.25,
             muAdjustment: -0.03,
           } as Prisma.InputJsonValue,
+          tags: ['ดอกเบี้ย', 'ความผันผวน'] as Prisma.InputJsonValue,
           isRepeatable: true,
         },
       })
@@ -1466,6 +1467,7 @@ async function main() {
             sigmaMultiplier: 1.25,
             muAdjustment: -0.03,
           } as Prisma.InputJsonValue,
+          tags: ['ดอกเบี้ย', 'ความผันผวน'] as Prisma.InputJsonValue,
           isRepeatable: true,
         },
       });
@@ -1484,6 +1486,7 @@ async function main() {
             muAdjustment: 0.06,
             sigmaAdjustment: 0.01,
           } as Prisma.InputJsonValue,
+          tags: ['เทคโนโลยี', 'ผลประกอบการ'] as Prisma.InputJsonValue,
           isRepeatable: true,
         },
       })
@@ -1496,6 +1499,7 @@ async function main() {
             muAdjustment: 0.06,
             sigmaAdjustment: 0.01,
           } as Prisma.InputJsonValue,
+          tags: ['เทคโนโลยี', 'ผลประกอบการ'] as Prisma.InputJsonValue,
           isRepeatable: true,
         },
       });
@@ -1517,6 +1521,11 @@ async function main() {
             instantShockPct: -0.16,
             targetSectors: ['TECH', 'CONSUMER'],
           } as Prisma.InputJsonValue,
+          tags: [
+            'ข่าวด่วน',
+            'ผลกระทบ',
+            'หุ้นกลุ่มเทคโนโลยี',
+          ] as Prisma.InputJsonValue,
           isRepeatable: true,
         },
       })
@@ -1533,6 +1542,11 @@ async function main() {
             instantShockPct: -0.16,
             targetSectors: ['TECH', 'CONSUMER'],
           } as Prisma.InputJsonValue,
+          tags: [
+            'ข่าวด่วน',
+            'ผลกระทบ',
+            'หุ้นกลุ่มเทคโนโลยี',
+          ] as Prisma.InputJsonValue,
           isRepeatable: true,
         },
       });
@@ -1552,6 +1566,7 @@ async function main() {
         sigmaMultiplier: 1.25,
         muAdjustment: -0.03,
       },
+      tags: ['ดอกเบี้ย', 'ความผันผวน'],
     },
     {
       title: 'Tech Earnings Rally',
@@ -1561,6 +1576,7 @@ async function main() {
         muAdjustment: 0.06,
         sigmaAdjustment: 0.01,
       },
+      tags: ['เทคโนโลยี', 'ผลประกอบการ'],
     },
     {
       title: 'Flash Crash Breaking News',
@@ -1573,6 +1589,7 @@ async function main() {
         instantShockPct: -0.16,
         targetSectors: ['TECH', 'CONSUMER'],
       },
+      tags: ['ข่าวด่วน', 'ผลกระทบ', 'หุ้นกลุ่มเทคโนโลยี'],
     },
     {
       title: 'Oil Price Surge',
@@ -1583,6 +1600,7 @@ async function main() {
         sigmaAdjustment: 0.12,
         targetSectors: ['ENERGY', 'TRANSPORT'],
       },
+      tags: ['พลังงาน', 'ขนส่ง', 'ภูมิรัฐศาสตร์'],
     },
     {
       title: 'Earnings Beat Surprise',
@@ -1592,6 +1610,7 @@ async function main() {
         muAdjustment: 0.08,
         sigmaAdjustment: 0.02,
       },
+      tags: ['ผลประกอบการ', 'หุ้นกลุ่มบริโภค'],
     },
     {
       title: 'Inflation Data Release',
@@ -1601,6 +1620,7 @@ async function main() {
         sigmaAdjustment: 0.06,
         muAdjustment: -0.02,
       },
+      tags: ['เงินเฟ้อ', 'ข้อมูลเศรษฐกิจ'],
     },
     {
       title: 'Corporate Scandal',
@@ -1610,6 +1630,7 @@ async function main() {
         muAdjustment: -0.12,
         sigmaAdjustment: 0.08,
       },
+      tags: ['วิกฤตความเชื่อมั่น'],
     },
     {
       title: 'Interest Rate Cut',
@@ -1619,6 +1640,7 @@ async function main() {
         muAdjustment: 0.05,
         sigmaAdjustment: -0.01,
       },
+      tags: ['ดอกเบี้ย', 'เศรษฐกิจมหภาค'],
     },
     {
       title: 'Stock Market Correction',
@@ -1628,6 +1650,7 @@ async function main() {
         muAdjustment: -0.05,
         sigmaAdjustment: 0.05,
       },
+      tags: ['ตลาดหุ้น', 'การปรับตัว'],
     },
     {
       title: 'GDP Growth Announcement',
@@ -1637,6 +1660,7 @@ async function main() {
         muAdjustment: 0.07,
         sigmaAdjustment: 0.01,
       },
+      tags: ['เศรษฐกิจมหภาค', 'GDP'],
     },
     {
       title: 'Tech Buyout Frenzy',
@@ -1646,6 +1670,7 @@ async function main() {
         muAdjustment: 0.09,
         targetSectors: ['TECH'],
       },
+      tags: ['เทคโนโลยี', 'การซื้อกิจการ'],
     },
     {
       title: 'Unemployment Report Surge',
@@ -1655,6 +1680,7 @@ async function main() {
         muAdjustment: -0.08,
         sigmaAdjustment: 0.07,
       },
+      tags: ['ตลาดแรงงาน', 'เศรษฐกิจมหภาค'],
     },
     {
       title: 'Retail Sales Boom',
@@ -1664,6 +1690,7 @@ async function main() {
         muAdjustment: 0.06,
         targetSectors: ['CONSUMER', 'RETAIL'],
       },
+      tags: ['หุ้นกลุ่มบริโภค', 'ยอดขายปลีก'],
     },
     {
       title: 'Fed Minutes Release',
@@ -1672,6 +1699,7 @@ async function main() {
       defaultImpact: {
         sigmaAdjustment: 0.04,
       },
+      tags: ['ธนาคารกลาง', 'นโยบายการเงิน'],
     },
     {
       title: 'Trade War Escalation',
@@ -1681,6 +1709,7 @@ async function main() {
         muAdjustment: -0.1,
         sigmaAdjustment: 0.1,
       },
+      tags: ['การค้าระหว่างประเทศ', 'ภูมิรัฐศาสตร์'],
     },
     {
       title: 'Housing Data Positive',
@@ -1690,6 +1719,7 @@ async function main() {
         muAdjustment: 0.04,
         targetSectors: ['REAL_ESTATE', 'CONSTRUCTION'],
       },
+      tags: ['อสังหาริมทรัพย์', 'ก่อสร้าง'],
     },
     {
       title: 'Fed Balance Sheet Shift',
@@ -1699,6 +1729,7 @@ async function main() {
         muAdjustment: 0.03,
         sigmaAdjustment: -0.02,
       },
+      tags: ['ธนาคารกลาง', 'นโยบายการเงิน'],
     },
   ];
 
@@ -1716,6 +1747,9 @@ async function main() {
           data: {
             eventType: config.eventType,
             defaultImpact: config.defaultImpact as Prisma.InputJsonValue,
+            tags: config.tags
+              ? (config.tags as Prisma.InputJsonValue)
+              : undefined,
             isRepeatable: true,
           },
           select: { id: true },
@@ -1726,6 +1760,9 @@ async function main() {
             description: config.description,
             eventType: config.eventType,
             defaultImpact: config.defaultImpact as Prisma.InputJsonValue,
+            tags: config.tags
+              ? (config.tags as Prisma.InputJsonValue)
+              : undefined,
             isRepeatable: true,
           },
           select: { id: true },
@@ -1776,7 +1813,6 @@ async function main() {
   console.log(
     `✅ สร้างเหตุการณ์ 16 อย่างและกำหนดให้กับสัปดาห์ 1-${termTotalWeeks}`,
   );
-
 
   await prisma.marketRegime.deleteMany({ where: { termId: term.id } });
 
