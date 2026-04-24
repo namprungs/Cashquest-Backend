@@ -159,7 +159,7 @@ export class InvestmentController {
   }
 
   @Get('terms/:termId/events/active')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
   activeEvents(
     @Param('termId') termId: string,
     @Query('weekNo') weekNo?: string,

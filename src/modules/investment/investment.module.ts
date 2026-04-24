@@ -7,6 +7,7 @@ import { InvestmentManagementService } from './services/investment/investment-ma
 import { InvestmentMarketService } from './services/investment/investment-market.service';
 import { InvestmentPortfolioService } from './services/investment/investment-portfolio.service';
 import { LivePriceTickScheduler } from './tasks/live-price-tick.scheduler';
+import { EventStatusScheduler } from './tasks/event-status.scheduler';
 
 @Module({
   controllers: [InvestmentController],
@@ -18,6 +19,7 @@ import { LivePriceTickScheduler } from './tasks/live-price-tick.scheduler';
     InvestmentPortfolioService,
     InvestmentService,
     LivePriceTickScheduler,
+    EventStatusScheduler,
   ],
 })
 export class InvestmentModule {}
