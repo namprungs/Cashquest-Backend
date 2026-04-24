@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { TermEventStatus } from '@prisma/client';
+import { Prisma, TermEventStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateEconomicEventDto } from '../../dto/create-economic-event.dto';
 import { CreateMarketRegimeDto } from '../../dto/create-market-regime.dto';
@@ -201,6 +201,8 @@ export class InvestmentManagementService {
       data: {
         title: dto.title,
         description: dto.description,
+        imageUrl: dto.imageUrl,
+        tags: dto.tags as Prisma.InputJsonValue,
         eventType: dto.eventType,
         defaultImpact: this.core.toInputJson(dto.defaultImpact)!,
         isRepeatable: dto.isRepeatable ?? false,
@@ -226,6 +228,10 @@ export class InvestmentManagementService {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
         ...(dto.description !== undefined
           ? { description: dto.description }
+          : {}),
+        ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
+        ...(dto.tags !== undefined
+          ? { tags: dto.tags as Prisma.InputJsonValue }
           : {}),
         ...(dto.eventType ? { eventType: dto.eventType } : {}),
         ...(dto.defaultImpact !== undefined

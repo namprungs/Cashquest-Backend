@@ -1,5 +1,6 @@
 import { EconomicEventType } from '@prisma/client';
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsObject,
@@ -15,6 +16,15 @@ export class UpdateEconomicEventDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 
   @IsOptional()
   @IsEnum(EconomicEventType)
