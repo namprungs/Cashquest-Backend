@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/quizzes/{{quizId}}"
+  url: "{{baseUrl}}/quizzes/{{quizId}}/me"
   headers:
     - name: Authorization
       value: Bearer {{accessToken}}

@@ -15,8 +15,7 @@ http:
     type: json
     data: |-
       {
-        "weekNo": 180,
-        "dividendPerUnit": 0.25
+        "weekNo":6
       }
   auth: inherit
 

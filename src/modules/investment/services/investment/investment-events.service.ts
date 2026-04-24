@@ -95,7 +95,15 @@ export class InvestmentEventsService {
     }
 
     const statusValues = new Set(Object.values(TermEventStatus));
-    const statuses = normalized.map((item) => item as TermEventStatus);
+    const aliases: Record<string, TermEventStatus> = {
+      ANNOUNCED: TermEventStatus.ANNOUNCED,
+      EXPIRE: TermEventStatus.EXPIRED,
+    };
+
+    const statuses = normalized.map((item) => {
+      const key = item.toUpperCase();
+      return aliases[key] ?? (key as TermEventStatus);
+    });
     const invalid = statuses.filter((item) => !statusValues.has(item));
 
     if (invalid.length) {
