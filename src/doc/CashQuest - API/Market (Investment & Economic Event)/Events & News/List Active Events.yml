@@ -11,7 +11,7 @@ http:
       value: Bearer {{accessToken}}
   params:
     - name: termId
-      value: 9ab7ed74-1613-4623-bae3-fcf580685196
+      value: 5f95128b-8273-42b5-a541-ed416a678b57
       type: path
     - name: weekNo
       value: "180"
