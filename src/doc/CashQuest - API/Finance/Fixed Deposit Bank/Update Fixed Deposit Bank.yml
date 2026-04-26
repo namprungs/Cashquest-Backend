@@ -1,0 +1,28 @@
+info:
+  name: Update Fixed Deposit Bank
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/banks/fd-config/{{fixedDepositBankId}}"
+  body:
+    type: json
+    data: |-
+      {
+        "interestRate": 0.07,
+        "fixedDepositWeeks": 52,
+        "principal": 1000000
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: fixedDepositBankId
+      value: b8be0400-85b9-4dcf-a9f5-902038926fa7
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

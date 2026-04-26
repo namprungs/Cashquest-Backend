@@ -16,10 +16,7 @@ http:
     data: |-
       {
         "termId": "{{termId}}",
-        "name": "scb",
-        "interestRate": 0.015,
-        "withdrawLimitPerTerm": 3,
-        "feePerTransaction": 5
+        "name": "scb"
       }
   auth: inherit
 

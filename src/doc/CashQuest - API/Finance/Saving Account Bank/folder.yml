@@ -1,0 +1,7 @@
+info:
+  name: Saving Account Bank
+  type: folder
+  seq: 5
+
+request:
+  auth: inherit

@@ -56,13 +56,13 @@ export class SavingsAccountController {
   }
 
   /**
-   * List savings accounts for a bank (admin only)
-   * GET /savings-accounts/bank/:bankId
+   * List savings accounts for a savings account bank config (admin only)
+   * GET /savings-accounts/bank/:savingsAccountBankId
    */
-  @Get('bank/:bankId')
+  @Get('bank/:savingsAccountBankId')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
-  async listByBank(@Param('bankId') bankId: string) {
-    return this.savingsAccountService.listAccountsByBank(bankId);
+  async listByBank(@Param('savingsAccountBankId') savingsAccountBankId: string) {
+    return this.savingsAccountService.listAccountsByBank(savingsAccountBankId);
   }
 
   /**

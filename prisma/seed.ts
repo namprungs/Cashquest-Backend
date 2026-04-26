@@ -888,20 +888,43 @@ async function main() {
 
   const bankSeeds = [
     {
-      name: 'CashQuest Savings Plus',
-      interestRate: 0.0125,
-      withdrawLimitPerTerm: 4,
-      feePerTransaction: 10,
+      name: 'ธนาคารยินดี',
+      savingsConfig: {
+        interestRate: 0.0075,
+      },
+      fdConfig: {
+        interestRate: 0.0175,
+        fixedDepositWeeks: 3,
+        principal: 500,
+      },
     },
     {
-      name: 'CashQuest Flexi Save',
-      interestRate: 0.008,
-      withdrawLimitPerTerm: null,
-      feePerTransaction: 5,
+      name: 'ธนาควรพอใจ',
+      savingsConfig: {
+        interestRate: 0.01,
+      },
+      fdConfig: {
+        interestRate: 0.02,
+        fixedDepositWeeks: 6,
+        principal: 500,
+      },
+    },
+    {
+      name: 'ธนาคารใจเย็น',
+      savingsConfig: {
+        interestRate: 0.0125,
+      },
+      fdConfig: {
+        interestRate: 0.03,
+        fixedDepositWeeks: 9,
+        principal: 500,
+      },
     },
   ];
 
   for (const bankSeed of bankSeeds) {
+    let bankId: string;
+
     const existingBank = await prisma.bank.findFirst({
       where: {
         termId: term.id,
@@ -911,24 +934,73 @@ async function main() {
     });
 
     if (existingBank) {
+      bankId = existingBank.id;
       await prisma.bank.update({
-        where: { id: existingBank.id },
+        where: { id: bankId },
         data: {
-          interestRate: bankSeed.interestRate,
-          withdrawLimitPerTerm: bankSeed.withdrawLimitPerTerm,
-          feePerTransaction: bankSeed.feePerTransaction,
+          name: bankSeed.name,
         },
       });
     } else {
-      await prisma.bank.create({
+      const bank = await prisma.bank.create({
         data: {
           termId: term.id,
           name: bankSeed.name,
-          interestRate: bankSeed.interestRate,
-          withdrawLimitPerTerm: bankSeed.withdrawLimitPerTerm,
-          feePerTransaction: bankSeed.feePerTransaction,
         },
       });
+      bankId = bank.id;
+    }
+
+    // Create/update savings account bank config
+    if (bankSeed.savingsConfig) {
+      const existingSA = await prisma.savingsAccountBank.findFirst({
+        where: { bankId },
+      });
+      if (existingSA) {
+        await prisma.savingsAccountBank.update({
+          where: { id: existingSA.id },
+          data: {
+            interestRate: bankSeed.savingsConfig.interestRate,
+            withdrawLimitPerTerm: bankSeed.savingsConfig.withdrawLimitPerTerm,
+            feePerTransaction: bankSeed.savingsConfig.feePerTransaction,
+          },
+        });
+      } else {
+        await prisma.savingsAccountBank.create({
+          data: {
+            bankId,
+            interestRate: bankSeed.savingsConfig.interestRate,
+            withdrawLimitPerTerm: bankSeed.savingsConfig.withdrawLimitPerTerm,
+            feePerTransaction: bankSeed.savingsConfig.feePerTransaction,
+          },
+        });
+      }
+    }
+
+    // Create/update fixed deposit bank config
+    if (bankSeed.fdConfig) {
+      const existingFD = await prisma.fixedDepositBank.findFirst({
+        where: { bankId },
+      });
+      if (existingFD) {
+        await prisma.fixedDepositBank.update({
+          where: { id: existingFD.id },
+          data: {
+            interestRate: bankSeed.fdConfig.interestRate,
+            fixedDepositWeeks: bankSeed.fdConfig.fixedDepositWeeks,
+            principal: bankSeed.fdConfig.principal,
+          },
+        });
+      } else {
+        await prisma.fixedDepositBank.create({
+          data: {
+            bankId,
+            interestRate: bankSeed.fdConfig.interestRate,
+            fixedDepositWeeks: bankSeed.fdConfig.fixedDepositWeeks,
+            principal: bankSeed.fdConfig.principal,
+          },
+        });
+      }
     }
   }
 

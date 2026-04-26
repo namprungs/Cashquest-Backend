@@ -1,0 +1,23 @@
+info:
+  name: Create Fixed Deposit Bank
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/banks/{{bankId}}/fd-config"
+  body:
+    type: json
+    data: |-
+      {
+        "interestRate": 0.07,
+        "fixedDepositWeeks": 2,
+        "principal": 1000000
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

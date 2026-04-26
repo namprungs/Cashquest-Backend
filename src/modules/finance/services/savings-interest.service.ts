@@ -49,7 +49,7 @@ export class SavingsInterestService {
       const accounts = await this.prisma.savingsAccount.findMany({
         where: { status: 'ACTIVE' },
         include: {
-          bank: {
+          savingsAccountBank: {
             select: {
               id: true,
               interestRate: true,
@@ -101,7 +101,7 @@ export class SavingsInterestService {
     rateDivisor: number,
   ): Promise<{ interestAmount: Prisma.Decimal } | null> {
     const balance = new Prisma.Decimal(account.balance);
-    const rate = new Prisma.Decimal(account.bank.interestRate);
+    const rate = new Prisma.Decimal(account.savingsAccountBank.interestRate);
 
     // Skip if balance is zero or negative, or rate is zero
     if (balance.lte(0) || rate.lte(0)) {
@@ -183,7 +183,7 @@ export class SavingsInterestService {
       const accounts = await this.prisma.savingsAccount.findMany({
         where: { status: 'ACTIVE' },
         include: {
-          bank: {
+          savingsAccountBank: {
             select: {
               id: true,
               interestRate: true,

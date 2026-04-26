@@ -1,0 +1,15 @@
+info:
+  name: Get bank by ID
+  type: http
+  seq: 13
+
+http:
+  method: GET
+  url: "{{baseUrl}}/banks/{{bankId}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,22 +1,17 @@
 info:
-  name: Withdraw from Savings
+  name: Withdraw Funds
   type: http
-  seq: 6
+  seq: 3
 
 http:
   method: POST
   url: "{{baseUrl}}/savings-accounts/withdraw"
-  headers:
-    - name: Authorization
-      value: Bearer {{accessToken}}
-    - name: Content-Type
-      value: application/json
   body:
     type: json
     data: |-
       {
         "savingsAccountId": "{{savingsAccountId}}",
-        "amount": 10000
+        "amount": 200.00
       }
   auth: inherit
 

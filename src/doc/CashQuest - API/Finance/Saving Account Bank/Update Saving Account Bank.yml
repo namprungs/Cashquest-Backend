@@ -1,0 +1,26 @@
+info:
+  name: Update Saving Account Bank
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/banks/savings-config/{{configId}}"
+  body:
+    type: json
+    data: |-
+      { "interestRate": "4", 
+        "withdrawLimitPerTerm": "2000", 
+        "feePerTransaction": "0"}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: configId
+      value: fbb078ed-5e9f-42ac-8176-514863af564b
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

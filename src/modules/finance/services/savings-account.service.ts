@@ -32,6 +32,7 @@ export class SavingsAccountService {
       select: {
         id: true,
         userId: true,
+        termId: true,
         mainWallet: { select: { id: true, balance: true } },
       },
     });
@@ -40,22 +41,28 @@ export class SavingsAccountService {
       throw new NotFoundException('Student profile not found');
     }
 
-    // Verify bank exists
-    const bank = await this.prisma.bank.findUnique({
-      where: { id: dto.bankId },
-      select: { id: true },
+    // Verify savings account bank config exists
+    const savingsAccountBank = await this.prisma.savingsAccountBank.findUnique({
+      where: { id: dto.savingsAccountBankId },
+      select: {
+        id: true,
+        interestRate: true,
+        withdrawLimitPerTerm: true,
+        feePerTransaction: true,
+        bank: { select: { id: true, termId: true, name: true } },
+      },
     });
 
-    if (!bank) {
-      throw new NotFoundException('Bank not found');
+    if (!savingsAccountBank) {
+      throw new NotFoundException('Savings account bank config not found');
     }
 
-    // Check if account already exists for this student + bank combination
+    // Check if account already exists for this student + bank config combination
     const existingAccount = await this.prisma.savingsAccount.findUnique({
       where: {
-        studentProfileId_bankId: {
+        studentProfileId_savingsAccountBankId: {
           studentProfileId: dto.studentProfileId,
-          bankId: dto.bankId,
+          savingsAccountBankId: dto.savingsAccountBankId,
         },
       },
     });
@@ -66,16 +73,21 @@ export class SavingsAccountService {
       );
     }
 
+    // Get current week number
+    const currentWeekNo = await this.getCurrentWeekNo(studentProfile.termId);
+
     // Create account with optional initial deposit
     const result = await this.prisma.$transaction(async (tx) => {
       const account = await tx.savingsAccount.create({
         data: {
           studentProfileId: dto.studentProfileId,
-          bankId: dto.bankId,
+          savingsAccountBankId: dto.savingsAccountBankId,
           balance: new Prisma.Decimal(dto.initialDeposit ?? 0),
           status: 'ACTIVE',
+          weekNo: currentWeekNo,
+          interestAmount: new Prisma.Decimal(0),
         },
-        include: { bank: true },
+        include: { savingsAccountBank: { include: { bank: true } } },
       });
 
       // If there's an initial deposit, record the transaction
@@ -93,7 +105,6 @@ export class SavingsAccountService {
       return { success: true, data: account };
     });
 
-    console.log('hahahahahah araiwaaaaa');
     // Trigger interactive quest auto-completion after successful first account open.
     // This should not block the main banking flow if no matching quest exists.
     try {
@@ -101,7 +112,7 @@ export class SavingsAccountService {
         studentProfile.userId,
         QuestType.INTERACTIVE,
       );
-      console.log('this is ', questResult);
+      this.logger.debug(`Quest completion result: ${JSON.stringify(questResult)}`);
     } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         return result;
@@ -125,7 +136,10 @@ export class SavingsAccountService {
     // Verify savings account exists
     const savingsAccount = await this.prisma.savingsAccount.findUnique({
       where: { id: dto.savingsAccountId },
-      include: { studentProfile: { select: { mainWallet: true } }, bank: true },
+      include: {
+        studentProfile: { select: { mainWallet: true } },
+        savingsAccountBank: { include: { bank: true } },
+      },
     });
 
     if (!savingsAccount) {
@@ -168,7 +182,7 @@ export class SavingsAccountService {
           amount: depositAmount,
           balanceBefore: wallet.balance,
           balanceAfter: updatedWallet.balance,
-          description: `Deposit to savings account at ${savingsAccount.bank.name}`,
+          description: `Deposit to savings account at ${savingsAccount.savingsAccountBank.bank.name}`,
           metadata: {
             source: 'SAVINGS_DEPOSIT',
             refId: dto.savingsAccountId,
@@ -208,7 +222,7 @@ export class SavingsAccountService {
     const savingsAccount = await this.prisma.savingsAccount.findUnique({
       where: { id: dto.savingsAccountId },
       include: {
-        bank: {
+        savingsAccountBank: {
           select: { withdrawLimitPerTerm: true, feePerTransaction: true },
         },
         studentProfile: {
@@ -235,19 +249,19 @@ export class SavingsAccountService {
     }
 
     // Check withdraw limit
-    if (savingsAccount.bank.withdrawLimitPerTerm) {
+    if (savingsAccount.savingsAccountBank.withdrawLimitPerTerm) {
       if (
-        savingsAccount.withdrawCount >= savingsAccount.bank.withdrawLimitPerTerm
+        savingsAccount.withdrawCount >= savingsAccount.savingsAccountBank.withdrawLimitPerTerm
       ) {
         throw new BadRequestException(
-          `Withdrawal limit of ${savingsAccount.bank.withdrawLimitPerTerm} per term reached`,
+          `Withdrawal limit of ${savingsAccount.savingsAccountBank.withdrawLimitPerTerm} per term reached`,
         );
       }
     }
 
     // Calculate fee
     const feeAmount = new Prisma.Decimal(
-      String((savingsAccount.bank.feePerTransaction ?? 0) as unknown),
+      String((savingsAccount.savingsAccountBank.feePerTransaction ?? 0) as unknown),
     );
     const totalDeduction = withdrawAmount.plus(feeAmount);
     // Verify sufficient balance for amount + fee
@@ -328,8 +342,8 @@ export class SavingsAccountService {
           savingsAccount: updatedAccount,
           wallet: updatedWallet,
           fee: feeAmount,
-          remainingWithdrawals: savingsAccount.bank.withdrawLimitPerTerm
-            ? savingsAccount.bank.withdrawLimitPerTerm -
+          remainingWithdrawals: savingsAccount.savingsAccountBank.withdrawLimitPerTerm
+            ? savingsAccount.savingsAccountBank.withdrawLimitPerTerm -
               (savingsAccount.withdrawCount + 1)
             : 'unlimited',
         },
@@ -344,7 +358,7 @@ export class SavingsAccountService {
     const account = await this.prisma.savingsAccount.findUnique({
       where: { id: accountId },
       include: {
-        bank: true,
+        savingsAccountBank: { include: { bank: true } },
         studentProfile: { select: { id: true, userId: true } },
         interestLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
         transactions: { orderBy: { createdAt: 'desc' }, take: 20 },
@@ -365,7 +379,7 @@ export class SavingsAccountService {
     const accounts = await this.prisma.savingsAccount.findMany({
       where: { studentProfileId },
       include: {
-        bank: true,
+        savingsAccountBank: { include: { bank: true } },
         transactions: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
       orderBy: { createdAt: 'desc' },
@@ -379,16 +393,16 @@ export class SavingsAccountService {
   }
 
   /**
-   * Get all savings accounts for a bank
+   * Get all savings accounts for a savings account bank config
    */
-  async listAccountsByBank(bankId: string) {
+  async listAccountsByBank(savingsAccountBankId: string) {
     const accounts = await this.prisma.savingsAccount.findMany({
-      where: { bankId },
+      where: { savingsAccountBankId },
       include: {
         studentProfile: {
           select: { user: { select: { username: true, email: true } } },
         },
-        bank: true,
+        savingsAccountBank: { include: { bank: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -425,5 +439,58 @@ export class SavingsAccountService {
     });
 
     return { success: true, data: closed };
+  }
+
+  // ============================================================
+  // HELPER METHODS
+  // ============================================================
+
+  /**
+   * Get current week number for a term
+   */
+  private async getCurrentWeekNo(termId: string): Promise<number | null> {
+    const now = new Date();
+    const term = await this.prisma.term.findUnique({
+      where: { id: termId },
+      include: {
+        termWeeks: {
+          orderBy: { weekNo: 'asc' },
+        },
+      },
+    });
+
+    if (!term || !term.termWeeks?.length) {
+      return null;
+    }
+
+    const currentDateString = this.formatLocalDate(now);
+    const currentWeek = term.termWeeks.find((week) => {
+      const startDateString = this.formatLocalDate(new Date(week.startDate));
+      const endDateString = this.formatLocalDate(new Date(week.endDate));
+      return (
+        currentDateString >= startDateString &&
+        currentDateString <= endDateString
+      );
+    });
+
+    if (currentWeek) {
+      return currentWeek.weekNo;
+    }
+
+    if (now < term.termWeeks[0].startDate) {
+      return 1;
+    }
+
+    return term.termWeeks[term.termWeeks.length - 1].weekNo;
+  }
+
+  /**
+   * Format date as YYYY-MM-DD
+   */
+  private formatLocalDate(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+      date.getDate(),
+    )}`;
   }
 }

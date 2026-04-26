@@ -1,0 +1,20 @@
+info:
+  name: Get Accounts by Bank
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{baseUrl}}/savings-accounts/bank/{{savingsAccountBankId}}"
+  auth: inherit
+
+runtime:
+  variables:
+    - name: savingsAccountBankId
+      value: fbb078ed-5e9f-42ac-8176-514863af564b
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

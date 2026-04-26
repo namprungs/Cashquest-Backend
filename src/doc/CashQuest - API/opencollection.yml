@@ -29,7 +29,7 @@ request:
     - name: schoolId
       value: ""
     - name: termId
-      value: b73f6003-4394-40dd-a903-b8336a0d5ee3
+      value: b2cf02e0-a591-4ea8-93a3-5085955cabd5
     - name: lifeStageId
       value: ""
     - name: termStageRuleId
@@ -43,7 +43,7 @@ request:
     - name: userId
       value: ""
     - name: studentProfileId
-      value: d29f3b29-37fb-4114-beff-d6a7bcf93ef3
+      value: 270efb58-3b69-443f-9e76-70d01827be62
     - name: retirementGoalId
       value: ""
     - name: badgeId
@@ -73,17 +73,23 @@ request:
     - name: regimeId
       value: ""
     - name: bankId
-      value: a1f92123-d6d9-4913-a567-fa00e9c21d36
+      value: d1e9b928-ff36-404e-b5e5-bb9aa4325da7
     - name: walletId
-      value: 87dd51fb-3e46-4836-978a-2a386c785a18
-    - name: savingsAccountId
-      value: 890e0f59-2034-4a8d-a81c-9eb37d89931e
+      value: baa96b6d-53c0-4ae1-95eb-41a328adf230
     - name: transactionType
       value: ""
     - name: page
       value: "1"
     - name: limit
       value: "20"
+    - name: fixedDepositBankId
+      value: b8be0400-85b9-4dcf-a9f5-902038926fa7
+    - name: fixedDepositId
+      value: 35214399-9098-443c-a118-38e2f9467f58
+    - name: savingsAccountBankId
+      value: fbb078ed-5e9f-42ac-8176-514863af564b
+    - name: savingsAccountId
+      value: 71338077-c1e1-4e31-8dae-3b6da5e2a043
 
 docs:
   content: Academic / School / Term / LifeStage / TermStageRule / Classroom / Finance APIs

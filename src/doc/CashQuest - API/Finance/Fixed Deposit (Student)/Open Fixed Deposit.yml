@@ -1,0 +1,28 @@
+info:
+  name: Open Fixed Deposit
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/fixed-deposits/open"
+  body:
+    type: json
+    data: |-
+      {
+        "studentProfileId": "{{studentProfileId}}",
+        "fixedDepositBankId": "{{fixedDepositBankId}}",
+        "principal": 10000
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: fixedDepositBankId
+      value: 71338077-c1e1-4e31-8dae-3b6da5e2a043
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

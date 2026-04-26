@@ -1,0 +1,22 @@
+info:
+  name: Delete Fixed Deposit Bank
+  type: http
+  seq: 5
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/banks/fd-config/{{fixedDepositBankId}}"
+  auth: inherit
+
+runtime:
+  variables:
+    - name: configId
+      value: 462e3c45-72ad-49a6-a4b6-cacf2dede8cc
+    - name: fixedDepositBankId
+      value: 478d2223-f848-4256-ab2b-3eb35da72b03
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

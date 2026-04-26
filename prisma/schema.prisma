@@ -435,18 +435,54 @@ model Bank {
 
   name String
 
-  // Rules
-  interestRate         Decimal @db.Decimal(5, 4) // เช่น 0.0150 (1.5%)
-  withdrawLimitPerTerm Int? // null = unlimited
-  feePerTransaction    Decimal @default(0) @db.Decimal(10, 2)
-
-  savingsAccounts SavingsAccount[]
-  fixedDeposits   FixedDeposit[]
+  // Relations to service-specific bank configs (1-to-1 each)
+  savingsAccountBank SavingsAccountBank?
+  fixedDepositBank   FixedDepositBank?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("banks")
+}
+
+// --- SAVINGS ACCOUNT BANK SERVICE CONFIG ---
+model SavingsAccountBank {
+  id     String @id @default(uuid()) @db.Uuid
+  bankId String @unique @db.Uuid
+  bank   Bank   @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  // Savings-specific configuration
+  interestRate         Decimal @db.Decimal(5, 4) // e.g., 0.0150 (1.5%)
+  withdrawLimitPerTerm Int     @default(2000)
+  feePerTransaction    Decimal @default(0) @db.Decimal(10, 2)
+
+  // Relations
+  savingsAccounts SavingsAccount[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("savings_account_banks")
+}
+
+// --- FIXED DEPOSIT BANK SERVICE CONFIG ---
+model FixedDepositBank {
+  id     String @id @default(uuid()) @db.Uuid
+  bankId String @unique @db.Uuid
+  bank   Bank   @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  // Fixed deposit-specific configuration
+  interestRate      Decimal @db.Decimal(5, 4) // e.g., 0.0250 (2.5%)
+  fixedDepositWeeks Int // Fixed maturity period in weeks (e.g., 3 weeks for all users)
+  principal         Decimal @db.Decimal(12, 2) // Minimum principal required for FD
+
+  // Relations
+  fixedDeposits FixedDeposit[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("fixed_deposit_banks")
 }
 
 model SavingsAccount {
@@ -455,12 +491,16 @@ model SavingsAccount {
   studentProfileId String         @db.Uuid
   studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
 
-  bankId String @db.Uuid
-  bank   Bank   @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  savingsAccountBankId String             @db.Uuid
+  savingsAccountBank   SavingsAccountBank @relation(fields: [savingsAccountBankId], references: [id], onDelete: Cascade)
 
   balance       Decimal @default(0) @db.Decimal(12, 2)
   withdrawCount Int     @default(0)
   status        String  @default("ACTIVE") // ACTIVE, CLOSED
+
+  // Student-specific savings details
+  weekNo         Int? // week number when account was created/updated
+  interestAmount Decimal @default(0) @db.Decimal(12, 2) // accumulated interest
 
   interestLogs SavingsInterestLog[]
   // ✅ เพิ่ม Transaction ของธนาคารด้วย
@@ -469,7 +509,7 @@ model SavingsAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([studentProfileId, bankId]) // 1 คนมีได้ 1 บัญชีต่อ 1 ธนาคาร
+  @@unique([studentProfileId, savingsAccountBankId]) // 1 คนมีได้ 1 บัญชีต่อ 1 ธนาคาร
   @@map("savings_accounts")
 }
 
@@ -506,12 +546,12 @@ model FixedDeposit {
   studentProfileId String         @db.Uuid
   studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
 
-  bankId String @db.Uuid
-  bank   Bank   @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  fixedDepositBankId String           @db.Uuid
+  fixedDepositBank   FixedDepositBank @relation(fields: [fixedDepositBankId], references: [id], onDelete: Cascade)
 
   principal      Decimal @db.Decimal(12, 2) // เงินต้น
   interestRate   Decimal @db.Decimal(5, 4) // ดอกเบี้ยตามตกลง
-  startWeekNo    Int
+  startWeekNo    Int // สัปดาห์ที่เริ่มฝาก
   maturityWeekNo Int // สัปดาห์ที่ครบกำหนด
 
   status String @default("ACTIVE") // ACTIVE, MATURED, WITHDRAWN_EARLY

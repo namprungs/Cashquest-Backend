@@ -1,16 +1,11 @@
 info:
-  name: List Savings Accounts by Student
+  name: Get Accounts by Student
   type: http
-  seq: 8
-
+  seq: 5
 http:
   method: GET
   url: "{{baseUrl}}/savings-accounts/student/{{studentProfileId}}"
-  headers:
-    - name: Authorization
-      value: Bearer {{accessToken}}
   auth: inherit
-
 settings:
   encodeUrl: true
   timeout: 0

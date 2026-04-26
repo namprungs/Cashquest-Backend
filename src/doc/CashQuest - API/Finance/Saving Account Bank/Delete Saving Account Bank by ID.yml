@@ -1,0 +1,20 @@
+info:
+  name: Delete Saving Account Bank
+  type: http
+  seq: 5
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/banks/savings-config/{{configId}}"
+  auth: inherit
+
+runtime:
+  variables:
+    - name: configId
+      value: 0f0a6ce3-29fa-4942-92fa-0d169a94f8e0
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
