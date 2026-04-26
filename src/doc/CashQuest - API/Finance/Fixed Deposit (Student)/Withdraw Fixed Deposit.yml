@@ -1,0 +1,28 @@
+info:
+  name: Withdraw Fixed Deposit
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/fixed-deposits/withdraw"
+  body:
+    type: json
+    data: |-
+      {
+        "fixedDepositId": "{{fixedDepositId}}"
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: fixedDepositBankId
+      value: 71338077-c1e1-4e31-8dae-3b6da5e2a043
+    - name: fixedDepositId
+      value: 35214399-9098-443c-a118-38e2f9467f58
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

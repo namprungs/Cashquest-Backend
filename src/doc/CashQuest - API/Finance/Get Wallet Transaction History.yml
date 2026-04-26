@@ -1,7 +1,7 @@
 info:
   name: Get Wallet Transaction History
   type: http
-  seq: 11
+  seq: 1
 
 http:
   method: GET

@@ -1,0 +1,20 @@
+info:
+  name: Close-Delete Account
+  type: http
+  seq: 7
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/savings-accounts/{{accountId}}"
+  auth: inherit
+
+runtime:
+  variables:
+    - name: accountId
+      value: a6c74d09-1697-44be-bdf8-45100564241c
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

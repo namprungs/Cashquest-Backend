@@ -2,6 +2,8 @@
 import { Module } from '@nestjs/common';
 import { WalletService } from './services/wallet.service';
 import { BankService } from './services/bank.service';
+import { SavingsAccountBankService } from './services/savings-account-bank.service';
+import { FixedDepositBankService } from './services/fixed-deposit-bank.service';
 import { SavingsAccountService } from './services/savings-account.service';
 import { FixedDepositService } from './services/fixed-deposit.service';
 import { BankController } from './controllers/bank.controller';
@@ -28,6 +30,8 @@ import { QuestModule } from '../quest/quest.module';
   providers: [
     WalletService,
     BankService,
+    SavingsAccountBankService,
+    FixedDepositBankService,
     SavingsAccountService,
     FixedDepositService,
     SavingsInterestService,
@@ -36,6 +40,8 @@ import { QuestModule } from '../quest/quest.module';
   exports: [
     WalletService,
     BankService,
+    SavingsAccountBankService,
+    FixedDepositBankService,
     SavingsAccountService,
     FixedDepositService,
   ], // Export services if other modules need them

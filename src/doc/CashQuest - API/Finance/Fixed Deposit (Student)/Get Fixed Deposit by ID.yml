@@ -1,0 +1,22 @@
+info:
+  name: Get Fixed Deposit by ID
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/fixed-deposits/{{fixedDepositId}}"
+  auth: inherit
+
+runtime:
+  variables:
+    - name: fixedDepositBankId
+      value: b8be0400-85b9-4dcf-a9f5-902038926fa7
+    - name: fixedDepositId
+      value: 35214399-9098-443c-a118-38e2f9467f58
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

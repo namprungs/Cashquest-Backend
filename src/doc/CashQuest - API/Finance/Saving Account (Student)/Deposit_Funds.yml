@@ -1,22 +1,17 @@
 info:
-  name: Deposit to Savings
+  name: Deposit Funds
   type: http
-  seq: 5
+  seq: 2
 
 http:
   method: POST
   url: "{{baseUrl}}/savings-accounts/deposit"
-  headers:
-    - name: Authorization
-      value: Bearer {{accessToken}}
-    - name: Content-Type
-      value: application/json
   body:
     type: json
     data: |-
       {
         "savingsAccountId": "{{savingsAccountId}}",
-        "amount": 40000
+        "amount": 500.00
       }
   auth: inherit
 

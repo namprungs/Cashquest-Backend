@@ -5,7 +5,7 @@ export class CreateSavingsAccountDto {
   studentProfileId!: string;
 
   @IsUUID()
-  bankId!: string;
+  savingsAccountBankId!: string;
 
   @IsOptional()
   @IsNumber()

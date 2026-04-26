@@ -1,7 +1,7 @@
 info:
-  name: fixed deposit
+  name: Bank
   type: folder
-  seq: 14
+  seq: 4
 
 request:
   auth: inherit

@@ -21,19 +21,14 @@ export class FixedDepositService {
   ) {}
 
   async openFixedDeposit(dto: CreateFixedDepositDto) {
-    if (dto.maturityWeekNo <= dto.startWeekNo) {
-      throw new BadRequestException(
-        'maturityWeekNo must be greater than startWeekNo',
-      );
-    }
-
-    const [studentProfile, bank] = await Promise.all([
+    const [studentProfile, fdBank] = await Promise.all([
       this.prisma.studentProfile.findUnique({
         where: { id: dto.studentProfileId },
         include: { term: true, mainWallet: true },
       }),
-      this.prisma.bank.findUnique({
-        where: { id: dto.bankId },
+      this.prisma.fixedDepositBank.findUnique({
+        where: { id: dto.fixedDepositBankId },
+        include: { bank: true },
       }),
     ]);
 
@@ -41,28 +36,31 @@ export class FixedDepositService {
       throw new NotFoundException('Student profile not found');
     }
 
-    if (!bank) {
-      throw new NotFoundException('Bank not found');
+    if (!fdBank) {
+      throw new NotFoundException('Fixed deposit bank config not found');
     }
 
-    if (bank.termId !== studentProfile.termId) {
+    if (fdBank.bank.termId !== studentProfile.termId) {
       throw new BadRequestException(
         'Bank and student profile must belong to the same term',
       );
     }
 
-    const term = await this.prisma.term.findUnique({
-      where: { id: studentProfile.termId },
-      select: { totalWeeks: true },
-    });
-
-    if (!term) {
-      throw new NotFoundException('Term not found for student profile');
+    // Auto-calculate startWeekNo from current week
+    const startWeekNo = await this.getCurrentWeekNo(studentProfile.termId);
+    if (startWeekNo === null) {
+      throw new BadRequestException(
+        'Unable to determine current week number for this term',
+      );
     }
 
-    if (dto.startWeekNo < 1 || dto.maturityWeekNo > term.totalWeeks) {
+    // Auto-calculate maturityWeekNo from startWeekNo + fixedDepositWeeks
+    const maturityWeekNo = startWeekNo + fdBank.fixedDepositWeeks;
+
+    if (maturityWeekNo > 16) {
       throw new BadRequestException(
-        `Week numbers must be between 1 and ${term.totalWeeks} for this term`,
+        `Cannot create fixed deposit: maturity week (${maturityWeekNo}) would exceed week 16. ` +
+        `Current week: ${startWeekNo}, deposit duration: ${fdBank.fixedDepositWeeks} weeks`,
       );
     }
 
@@ -83,11 +81,11 @@ export class FixedDepositService {
       const fixedDeposit = await tx.fixedDeposit.create({
         data: {
           studentProfileId: dto.studentProfileId,
-          bankId: dto.bankId,
+          fixedDepositBankId: dto.fixedDepositBankId,
           principal: depositAmount,
-          interestRate: bank.interestRate,
-          startWeekNo: dto.startWeekNo,
-          maturityWeekNo: dto.maturityWeekNo,
+          interestRate: fdBank.interestRate,
+          startWeekNo,
+          maturityWeekNo,
           status: 'ACTIVE',
         },
       });
@@ -106,7 +104,7 @@ export class FixedDepositService {
           amount: depositAmount,
           balanceBefore: wallet.balance,
           balanceAfter: updatedWallet.balance,
-          description: `Opened fixed deposit at bank ${bank.name}`,
+          description: `Opened fixed deposit at bank ${fdBank.bank.name}`,
           metadata: {
             source: 'FIXED_DEPOSIT_OPEN',
             refId: fixedDeposit.id,
@@ -134,7 +132,7 @@ export class FixedDepositService {
       where: { id: dto.fixedDepositId },
       include: {
         studentProfile: { select: { mainWallet: true, termId: true } },
-        bank: { select: { interestRate: true, name: true } },
+        fixedDepositBank: { include: { bank: { select: { name: true } } } },
       },
     });
 
@@ -192,7 +190,7 @@ export class FixedDepositService {
             amount: payoutAmount,
             balanceBefore: wallet.balance,
             balanceAfter: updatedWallet.balance,
-            description: `Matured fixed deposit payout from bank ${fixedDeposit.bank.name}`,
+            description: `Matured fixed deposit payout from bank ${fixedDeposit.fixedDepositBank.bank.name}`,
             metadata: {
               source: 'FIXED_DEPOSIT_MATURITY',
               refId: fixedDeposit.id,
@@ -245,7 +243,7 @@ export class FixedDepositService {
           amount: new Prisma.Decimal(fixedDeposit.principal),
           balanceBefore: wallet.balance,
           balanceAfter: updatedWallet.balance,
-          description: `Early withdrawal of fixed deposit from bank ${fixedDeposit.bank.name}`,
+          description: `Early withdrawal of fixed deposit from bank ${fixedDeposit.fixedDepositBank.bank.name}`,
           metadata: {
             source: 'FIXED_DEPOSIT_EARLY_WITHDRAWAL',
             refId: fixedDeposit.id,
@@ -280,7 +278,7 @@ export class FixedDepositService {
     const deposit = await this.prisma.fixedDeposit.findUnique({
       where: { id: fixedDepositId },
       include: {
-        bank: true,
+        fixedDepositBank: { include: { bank: true } },
         studentProfile: true,
         transactions: { orderBy: { createdAt: 'desc' } },
       },
@@ -296,16 +294,16 @@ export class FixedDepositService {
   async listByStudent(studentProfileId: string) {
     const deposits = await this.prisma.fixedDeposit.findMany({
       where: { studentProfileId },
-      include: { bank: true, transactions: { orderBy: { createdAt: 'desc' } } },
+      include: { fixedDepositBank: { include: { bank: true } }, transactions: { orderBy: { createdAt: 'desc' } } },
       orderBy: { createdAt: 'desc' },
     });
 
     return { success: true, data: deposits };
   }
 
-  async listByBank(bankId: string) {
+  async listByBank(fixedDepositBankId: string) {
     const deposits = await this.prisma.fixedDeposit.findMany({
-      where: { bankId },
+      where: { fixedDepositBankId },
       include: {
         studentProfile: true,
         transactions: { orderBy: { createdAt: 'desc' } },
@@ -371,7 +369,7 @@ export class FixedDepositService {
       },
       include: {
         studentProfile: { select: { mainWallet: true, termId: true } },
-        bank: { select: { name: true, interestRate: true } },
+        fixedDepositBank: { include: { bank: { select: { name: true } } } },
       },
     });
 
@@ -426,7 +424,7 @@ export class FixedDepositService {
               amount: payoutAmount,
               balanceBefore: wallet.balance,
               balanceAfter: updatedWallet.balance,
-              description: `Matured fixed deposit payout from bank ${deposit.bank.name}`,
+              description: `Matured fixed deposit payout from bank ${deposit.fixedDepositBank.bank.name}`,
               metadata: {
                 source: 'FIXED_DEPOSIT_MATURITY',
                 refId: deposit.id,
@@ -526,5 +524,77 @@ export class FixedDepositService {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
       date.getDate(),
     )}`;
+  }
+
+  // ============================================================
+  // ADDITIONAL CRUD OPERATIONS
+  // ============================================================
+
+  /**
+   * Get all fixed deposits for a fixed deposit bank config
+   */
+  async listAllByBank(fixedDepositBankId: string) {
+    const deposits = await this.prisma.fixedDeposit.findMany({
+      where: { fixedDepositBankId },
+      include: {
+        studentProfile: { select: { id: true, user: { select: { username: true } } } },
+        fixedDepositBank: { include: { bank: true } },
+        transactions: { orderBy: { createdAt: 'desc' } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { success: true, data: deposits };
+  }
+
+  /**
+   * Get fixed deposit statistics for a fixed deposit bank config
+   */
+  async getBankStatistics(fixedDepositBankId: string) {
+    const fdBank = await this.prisma.fixedDepositBank.findUnique({
+      where: { id: fixedDepositBankId },
+      include: {
+        bank: true,
+        fixedDeposits: true,
+      },
+    });
+
+    if (!fdBank) {
+      throw new NotFoundException('Fixed deposit bank config not found');
+    }
+
+    const stats = {
+      totalDeposits: fdBank.fixedDeposits.length,
+      activeDeposits: fdBank.fixedDeposits.filter((d) => d.status === 'ACTIVE').length,
+      maturedDeposits: fdBank.fixedDeposits.filter((d) => d.status === 'MATURED').length,
+      earlyWithdrawals: fdBank.fixedDeposits.filter((d) => d.status === 'WITHDRAWN_EARLY').length,
+      totalPrincipal: fdBank.fixedDeposits.reduce((sum, d) => sum.plus(d.principal), new Prisma.Decimal(0)),
+    };
+
+    return { success: true, data: { bank: { id: fdBank.bank.id, name: fdBank.bank.name }, statistics: stats } };
+  }
+
+  /**
+   * Close an active fixed deposit (mark as closed, not early withdrawal)
+   */
+  async closeFixedDeposit(fixedDepositId: string) {
+    const deposit = await this.prisma.fixedDeposit.findUnique({
+      where: { id: fixedDepositId },
+    });
+
+    if (!deposit) {
+      throw new NotFoundException('Fixed deposit not found');
+    }
+
+    if (deposit.status !== 'ACTIVE') {
+      throw new BadRequestException('Can only close active fixed deposits');
+    }
+
+    const closed = await this.prisma.fixedDeposit.update({
+      where: { id: fixedDepositId },
+      data: { status: 'WITHDRAWN_EARLY' },
+    });
+
+    return { success: true, data: closed };
   }
 }

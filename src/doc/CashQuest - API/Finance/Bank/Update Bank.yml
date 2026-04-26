@@ -1,7 +1,7 @@
 info:
   name: Update Bank
   type: http
-  seq: 2
+  seq: 1
 
 http:
   method: PUT
@@ -15,10 +15,7 @@ http:
     type: json
     data: |-
       {
-        "name": "CashQuest Main Bank",
-        "interestRate": 0.02,
-        "withdrawLimitPerTerm": 5,
-        "feePerTransaction": 10
+        "name": "CashQuest Main Bank"
       }
   auth: inherit
 

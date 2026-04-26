@@ -32,8 +32,8 @@ export class FixedDepositController {
     return this.fixedDepositService.listByStudent(studentProfileId);
   }
 
-  @Get('bank/:bankId')
-  async listByBank(@Param('bankId') bankId: string) {
-    return this.fixedDepositService.listByBank(bankId);
+  @Get('bank/:fixedDepositBankId')
+  async listByBank(@Param('fixedDepositBankId') fixedDepositBankId: string) {
+    return this.fixedDepositService.listByBank(fixedDepositBankId);
   }
 }
