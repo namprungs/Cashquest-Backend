@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: /quests/submissions/3818a1f7-1bc4-4b4f-8cbc-0fe8d340a1be
+  url: "{{baseUrl}}/quizzes/6cee673f-9290-4fb7-9b33-e8c005aca29e/me"
   auth: inherit
 
 settings:

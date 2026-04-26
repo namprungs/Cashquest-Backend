@@ -256,7 +256,8 @@ export class SavingsAccountService {
     // Check withdraw limit
     if (savingsAccount.savingsAccountBank.withdrawLimitPerTerm) {
       if (
-        savingsAccount.withdrawCount >= savingsAccount.savingsAccountBank.withdrawLimitPerTerm
+        savingsAccount.withdrawCount >=
+        savingsAccount.savingsAccountBank.withdrawLimitPerTerm
       ) {
         throw new BadRequestException(
           `Withdrawal limit of ${savingsAccount.savingsAccountBank.withdrawLimitPerTerm} per term reached`,
@@ -266,7 +267,9 @@ export class SavingsAccountService {
 
     // Calculate fee
     const feeAmount = new Prisma.Decimal(
-      String((savingsAccount.savingsAccountBank.feePerTransaction ?? 0) as unknown),
+      String(
+        (savingsAccount.savingsAccountBank.feePerTransaction ?? 0) as unknown,
+      ),
     );
     const totalDeduction = withdrawAmount.plus(feeAmount);
     // Verify sufficient balance for amount + fee
@@ -347,7 +350,8 @@ export class SavingsAccountService {
           savingsAccount: updatedAccount,
           wallet: updatedWallet,
           fee: feeAmount,
-          remainingWithdrawals: savingsAccount.savingsAccountBank.withdrawLimitPerTerm
+          remainingWithdrawals: savingsAccount.savingsAccountBank
+            .withdrawLimitPerTerm
             ? savingsAccount.savingsAccountBank.withdrawLimitPerTerm -
               (savingsAccount.withdrawCount + 1)
             : 'unlimited',

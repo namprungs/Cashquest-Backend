@@ -1,0 +1,22 @@
+info:
+  name: Get Current Week Expenses
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/expenses/current-week?termId={{termId}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: termId
+      value: "{{termId}}"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

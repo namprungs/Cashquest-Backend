@@ -799,10 +799,23 @@ export class QuestService {
           });
         }
 
+        // If submission already exists and is APPROVED, don't allow editing
         if (existing.status === QuestSubmissionStatus.APPROVED) {
           throw new BadRequestException(
             'Submission already approved and cannot be edited',
           );
+        }
+
+        // If submission already exists and is PENDING, just return it (no duplicate)
+        if (existing.status === QuestSubmissionStatus.PENDING) {
+          return tx.questSubmission.findUnique({
+            where: { id: existing.id },
+            include: {
+              versions: {
+                orderBy: { versionNo: 'desc' },
+              },
+            },
+          });
         }
 
         if (
@@ -852,6 +865,35 @@ export class QuestService {
           },
         });
       });
+
+      // Auto-complete interactive quests if the action is already done
+      if (
+        quest.type === QuestType.INTERACTIVE &&
+        result?.status === QuestSubmissionStatus.PENDING
+      ) {
+        const payload = result.versions?.[0]?.payloadJson as
+          | Record<string, unknown>
+          | undefined
+          | null;
+        const actionType = this.normalizeActionType(payload?.actionType);
+
+        if (actionType === 'OPENSAVINGACCOUNT') {
+          const existingAccount = await this.prisma.savingsAccount.findFirst({
+            where: {
+              studentProfileId: studentProfile.id,
+              status: 'ACTIVE',
+            },
+            select: { id: true },
+          });
+
+          if (existingAccount) {
+            await this.completeInteractiveQuest(
+              user.id,
+              'OPENSAVINGACCOUNT',
+            );
+          }
+        }
+      }
 
       return { success: true, data: result };
     } catch (error: unknown) {
@@ -1205,15 +1247,37 @@ export class QuestService {
         );
       }
 
-      const updated = await this.prisma.$transaction((tx) =>
-        this.approveSubmissionAndReward(tx, {
-          submissionId: submission.id,
-          studentProfileId: submission.studentProfile.id,
-          quest: submission.quest,
-          includeQuest: true,
-          extraMetadata: { actionType },
-        }),
-      );
+      const updated = await this.prisma.$transaction(async (tx) => {
+        // Only approve the submission — do NOT reward yet.
+        // The student will claim coins manually via the quest page (claimQuestReward).
+        const approvedSubmission = await tx.questSubmission.update({
+          where: { id: submission.id },
+          data: {
+            status: QuestSubmissionStatus.APPROVED,
+            rejectReason: null,
+          },
+          include: {
+            versions: {
+              orderBy: { versionNo: 'desc' },
+              take: 1,
+            },
+            ...(true
+              ? {
+                  quest: {
+                    select: {
+                      id: true,
+                      title: true,
+                      type: true,
+                      description: true,
+                    },
+                  },
+                }
+              : {}),
+          },
+        });
+
+        return approvedSubmission;
+      });
 
       return { success: true, data: updated };
     } catch (error: unknown) {
@@ -1321,6 +1385,106 @@ export class QuestService {
       },
     };
   }
+
+  async getInteractiveQuestStatus(questId: string, user: CurrentUser) {
+    this.assertStudent(user);
+
+    const quest = await this.prisma.quest.findUnique({
+      where: { id: questId },
+      select: {
+        id: true,
+        type: true,
+        title: true,
+        content: true,
+        description: true,
+        rewardCoins: true,
+      },
+    });
+
+    if (!quest) {
+      throw new NotFoundException('Quest not found');
+    }
+
+    if (quest.type !== QuestType.INTERACTIVE) {
+      throw new BadRequestException('Quest is not an interactive quest');
+    }
+
+    const profile = await this.prisma.studentProfile.findFirst({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    if (!profile) {
+      return {
+        success: true,
+        data: {
+          isCompleted: false,
+          isClaimed: false,
+          status: 'NOT_STARTED',
+        },
+      };
+    }
+
+    const submission = await this.prisma.questSubmission.findUnique({
+      where: {
+        questId_studentProfileId: {
+          questId,
+          studentProfileId: profile.id,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        versions: {
+          orderBy: { versionNo: 'desc' },
+          take: 1,
+          select: {
+            payloadJson: true,
+          },
+        },
+      },
+    });
+
+    if (!submission) {
+      return {
+        success: true,
+        data: {
+          isCompleted: false,
+          isClaimed: false,
+          status: 'NOT_STARTED',
+        },
+      };
+    }
+
+    const isApproved = submission.status === QuestSubmissionStatus.APPROVED;
+
+    // Check if reward was already claimed (has a wallet transaction for this submission)
+    const walletTransaction = await this.prisma.walletTransaction.findFirst({
+      where: {
+        wallet: {
+          studentProfileId: profile.id,
+        },
+        type: TransactionType.QUEST_REWARD,
+        metadata: {
+          path: ['refId'],
+          equals: submission.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    const isClaimed = !!walletTransaction;
+
+    return {
+      success: true,
+      data: {
+        isCompleted: isApproved,
+        isClaimed,
+        status: submission.status,
+      },
+    };
+  }
+
   async getPendingSubmissionsForClassroom(
     classroomId: string,
     limit: number = 50,
@@ -1475,5 +1639,155 @@ export class QuestService {
       .slice(0, limit);
 
     return allResults;
+  }
+
+  async claimQuestReward(questId: string, user: CurrentUser) {
+    this.assertStudent(user);
+
+    const quest = await this.ensureQuestMembership(questId, user.id);
+    if (quest.status !== QuestStatus.PUBLISHED) {
+      throw new BadRequestException('Quest is not published');
+    }
+    if (quest.rewardCoins <= 0) {
+      throw new BadRequestException('Quest has no reward');
+    }
+
+    const studentProfile = await this.getStudentProfileInQuestTerm(
+      quest,
+      user.id,
+    );
+
+    if (quest.type === QuestType.QUIZ) {
+      if (!quest.quizId) {
+        throw new BadRequestException('Quiz quest is missing quizId');
+      }
+
+      const passedAttempt = await this.prisma.quizAttempt.findFirst({
+        where: {
+          quizId: quest.quizId,
+          studentProfileId: studentProfile.id,
+          isPassed: true,
+        },
+      });
+
+      if (!passedAttempt) {
+        throw new BadRequestException(
+          'You must pass the quiz to claim the reward',
+        );
+      }
+
+      // Check for manual questions
+      const manualQuestionsCount = await this.prisma.quizQuestion.count({
+        where: {
+          quizId: quest.quizId,
+          gradingType: 'MANUAL',
+        },
+      });
+
+      if (manualQuestionsCount > 0) {
+        throw new BadRequestException(
+          'This quiz requires manual grading before reward can be claimed',
+        );
+      }
+    } else if (quest.type === QuestType.INTERACTIVE) {
+      // For interactive quests, the submission must already be APPROVED
+      // (auto-approved via completeInteractiveQuest when the action is done)
+      const submission = await this.prisma.questSubmission.findUnique({
+        where: {
+          questId_studentProfileId: {
+            questId,
+            studentProfileId: studentProfile.id,
+          },
+        },
+      });
+
+      if (!submission || submission.status !== QuestSubmissionStatus.APPROVED) {
+        throw new BadRequestException(
+          'Interactive quest must be completed before claiming the reward',
+        );
+      }
+    } else {
+      throw new BadRequestException(
+        'Only QUIZ and INTERACTIVE quests can be claimed via this endpoint',
+      );
+    }
+
+    return await this.prisma.$transaction(async (tx) => {
+      const existingSubmission = await tx.questSubmission.findUnique({
+        where: {
+          questId_studentProfileId: {
+            questId,
+            studentProfileId: studentProfile.id,
+          },
+        },
+      });
+
+      // For interactive quests, the submission is already APPROVED from completeInteractiveQuest
+      // Check if reward was already given by looking for a wallet transaction
+      if (existingSubmission) {
+        const existingTx = await tx.walletTransaction.findFirst({
+          where: {
+            type: TransactionType.QUEST_REWARD,
+            metadata: {
+              path: ['refId'],
+              equals: existingSubmission.id,
+            },
+          },
+          select: { id: true },
+        });
+
+        if (existingTx) {
+          throw new BadRequestException('Reward already claimed');
+        }
+
+        // Submission exists (APPROVED for interactive, or any status for quiz)
+        // Ensure it's APPROVED and reward it
+        const submission = await tx.questSubmission.update({
+          where: { id: existingSubmission.id },
+          data: {
+            status: QuestSubmissionStatus.APPROVED,
+            rejectReason: null,
+          },
+        });
+
+        await this.rewardQuestToWallet(
+          tx,
+          submission.id,
+          studentProfile.id,
+          quest,
+        );
+
+        return { success: true, data: submission };
+      }
+
+      // No submission exists yet (shouldn't happen for interactive, but handle for quiz)
+      const submission = await tx.questSubmission.upsert({
+        where: {
+          questId_studentProfileId: {
+            questId,
+            studentProfileId: studentProfile.id,
+          },
+        },
+        create: {
+          questId,
+          studentProfileId: studentProfile.id,
+          status: QuestSubmissionStatus.APPROVED,
+          latestVersionNo: 1,
+        },
+        update: {
+          status: QuestSubmissionStatus.APPROVED,
+          rejectReason: null,
+        },
+      });
+
+      await this.rewardQuestToWallet(
+        tx,
+        submission.id,
+        studentProfile.id,
+        quest,
+      );
+
+      return { success: true, data: submission };
+    });
   }
 }

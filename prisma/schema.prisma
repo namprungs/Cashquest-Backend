@@ -154,6 +154,8 @@ model Term {
   marketRegimes         MarketRegime[]
   badges                Badge[]
   investmentWallets     InvestmentWallet[]
+  expenseEvents         ExpenseEvent[]
+  studentExpenses       StudentExpense[]
 
   @@map("terms")
 }
@@ -227,6 +229,7 @@ model LifeStage {
 
   // Relations
   termStageRules TermStageRule[]
+  expenseEvents  ExpenseEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -275,6 +278,7 @@ model StudentProfile {
   orders                  Order[]
   holdings                Holding[]
   dividendPayouts         DividendPayout[]
+  studentExpenses         StudentExpense[]
 
   @@unique([userId, termId])
   @@map("student_profiles")
@@ -1330,4 +1334,91 @@ model MarketRegime {
 
   @@index([termId, startWeek, endWeek])
   @@map("market_regimes")
+}
+
+// ---------------------------------------------------------
+// 8. RANDOM WEEKLY EXPENSE SYSTEM
+// ---------------------------------------------------------
+
+enum StudentExpenseStatus {
+  UNPAID
+  PAID
+  PARTIAL
+}
+
+enum ExpensePaymentSourceType {
+  WALLET
+  SAVINGS
+  LIQUIDATION
+}
+
+model ExpenseEvent {
+  id String @id @default(uuid()) @db.Uuid
+
+  termId      String @db.Uuid
+  term        Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
+  lifeStageId String @db.Uuid
+  lifeStage   LifeStage @relation(fields: [lifeStageId], references: [id], onDelete: Cascade)
+
+  title       String  // e.g., "เรียกรถกลับบ้าน"
+  description String? // e.g., "ฝนตก ไม่สามารถเดินทางตามปกติได้"
+  baseAmount  Decimal @db.Decimal(12, 2)
+  iconUrl     String? @map("icon_url")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  studentExpenses StudentExpense[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([termId, lifeStageId])
+  @@map("expense_events")
+}
+
+model StudentExpense {
+  id String @id @default(uuid()) @db.Uuid
+
+  studentProfileId String         @db.Uuid
+  studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  termId         String        @db.Uuid
+  term           Term          @relation(fields: [termId], references: [id], onDelete: Cascade)
+  expenseEventId String        @db.Uuid
+  expenseEvent   ExpenseEvent  @relation(fields: [expenseEventId], references: [id], onDelete: Cascade)
+
+  weekNo          Int
+  amount          Decimal              @db.Decimal(12, 2)
+  remainingAmount Decimal              @db.Decimal(12, 2) @map("remaining_amount")
+  status          StudentExpenseStatus @default(UNPAID)
+
+  acknowledgedAt DateTime? @map("acknowledged_at")
+
+  payments ExpensePayment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([studentProfileId, expenseEventId, weekNo])
+  @@index([studentProfileId, status])
+  @@index([termId, weekNo])
+  @@map("student_expenses")
+}
+
+model ExpensePayment {
+  id String @id @default(uuid()) @db.Uuid
+
+  studentExpenseId String              @db.Uuid
+  studentExpense   StudentExpense      @relation(fields: [studentExpenseId], references: [id], onDelete: Cascade)
+
+  sourceType ExpensePaymentSourceType @map("source_type")
+  amount     Decimal                   @db.Decimal(12, 2)
+
+  // Optional reference to the source (wallet_id, savings_account_id, etc.)
+  sourceRef String? @map("source_ref") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([studentExpenseId])
+  @@map("expense_payments")
 }
