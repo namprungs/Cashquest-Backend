@@ -145,12 +145,46 @@ export class QuestService {
           status: true,
         },
       },
+      parent: {
+        select: {
+          id: true,
+          title: true,
+          orderNo: true,
+        },
+      },
+      children: {
+        include: {
+          classrooms: {
+            include: {
+              classroom: {
+                select: {
+                  id: true,
+                  name: true,
+                  termId: true,
+                },
+              },
+            },
+          },
+          quiz: {
+            select: {
+              id: true,
+              moduleId: true,
+            },
+          },
+          _count: {
+            select: {
+              submissions: true,
+            },
+          },
+        },
+        orderBy: { orderNo: 'asc' as const },
+      },
       _count: {
         select: {
           submissions: true,
         },
       },
-    } satisfies Prisma.QuestInclude;
+    } as Prisma.QuestInclude;
   }
 
   async createQuest(user: CurrentUser, dto: CreateQuestDto) {
@@ -162,6 +196,27 @@ export class QuestService {
     });
     if (!term) {
       throw new NotFoundException('Term not found');
+    }
+
+    // Validate parentId if provided
+    if (dto.parentId) {
+      const parentQuest = await this.prisma.quest.findUnique({
+        where: { id: dto.parentId },
+        select: { id: true, termId: true, parentId: true },
+      });
+      if (!parentQuest) {
+        throw new NotFoundException('Parent quest not found');
+      }
+      if (parentQuest.termId !== dto.termId) {
+        throw new BadRequestException(
+          'Parent quest must belong to the same term',
+        );
+      }
+      if (parentQuest.parentId) {
+        throw new BadRequestException(
+          'Cannot nest quests more than one level deep',
+        );
+      }
     }
 
     await this.validateQuestQuizConsistency({
@@ -179,11 +234,16 @@ export class QuestService {
           quizId: dto.quizId,
           title: dto.title,
           description: dto.description,
+          content: dto.content,
+          isSystem: dto.isSystem ?? false,
           rewardCoins: dto.rewardCoins,
+          difficulty: dto.difficulty ?? 'EASY',
           status: dto.status,
           startAt: dto.startAt,
           deadlineAt: dto.deadlineAt,
           createdById: user.id,
+          parentId: dto.parentId ?? null,
+          orderNo: dto.orderNo ?? null,
         },
         select: { id: true },
       });
@@ -217,6 +277,7 @@ export class QuestService {
         termId: true,
         type: true,
         quizId: true,
+        parentId: true,
       },
     });
 
@@ -244,6 +305,38 @@ export class QuestService {
       }
     }
 
+    // Validate parentId if being changed
+    if (dto.parentId !== undefined) {
+      if (dto.parentId !== null) {
+        // Check for circular reference
+        if (dto.parentId === questId) {
+          throw new BadRequestException('A quest cannot be its own parent');
+        }
+        const parentQuest = await this.prisma.quest.findUnique({
+          where: { id: dto.parentId },
+          select: { id: true, termId: true, parentId: true },
+        });
+        if (!parentQuest) {
+          throw new NotFoundException('Parent quest not found');
+        }
+        const effectiveTermId = dto.termId ?? existing.termId;
+        if (parentQuest.termId !== effectiveTermId) {
+          throw new BadRequestException(
+            'Parent quest must belong to the same term',
+          );
+        }
+        if (parentQuest.parentId) {
+          throw new BadRequestException(
+            'Cannot nest quests more than one level deep',
+          );
+        }
+      }
+      // Prevent parent quest from having its own parentId set
+      if (dto.parentId === null && existing.parentId === null) {
+        // This quest is already a root quest, no issue
+      }
+    }
+
     await this.validateQuestQuizConsistency({
       type: nextType,
       quizId: nextQuizId,
@@ -265,14 +358,21 @@ export class QuestService {
           ...(dto.description !== undefined
             ? { description: dto.description }
             : {}),
+          ...(dto.content !== undefined ? { content: dto.content } : {}),
+          ...(dto.isSystem !== undefined ? { isSystem: dto.isSystem } : {}),
           ...(dto.rewardCoins !== undefined
             ? { rewardCoins: dto.rewardCoins }
+            : {}),
+          ...(dto.difficulty !== undefined
+            ? { difficulty: dto.difficulty }
             : {}),
           ...(dto.status ? { status: dto.status } : {}),
           ...(dto.startAt !== undefined ? { startAt: dto.startAt } : {}),
           ...(dto.deadlineAt !== undefined
             ? { deadlineAt: dto.deadlineAt }
             : {}),
+          ...(dto.parentId !== undefined ? { parentId: dto.parentId } : {}),
+          ...(dto.orderNo !== undefined ? { orderNo: dto.orderNo } : {}),
         },
       });
 
@@ -312,12 +412,18 @@ export class QuestService {
             ],
           }
         : {}),
+      ...(query.parentId === 'null'
+        ? { parentId: null }
+        : query.parentId
+          ? { parentId: query.parentId }
+          : {}),
+      ...(query.isSystem !== undefined ? { isSystem: query.isSystem } : {}),
     };
 
     const quests = await this.prisma.quest.findMany({
       where,
       include: this.toQuestInclude(),
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ parentId: 'asc' }, { orderNo: 'asc' }, { createdAt: 'desc' }],
     });
 
     return { success: true, data: quests };
@@ -399,7 +505,11 @@ export class QuestService {
           createdById: user.id,
         },
         include: this.toQuestInclude(),
-        orderBy: { createdAt: 'desc' },
+        orderBy: [
+          { parentId: 'asc' },
+          { orderNo: 'asc' },
+          { createdAt: 'desc' },
+        ],
         ...(query.limit ? { take: query.limit } : {}),
       });
 
@@ -435,7 +545,7 @@ export class QuestService {
           : {}),
       },
       include: this.toQuestInclude(),
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ parentId: 'asc' }, { orderNo: 'asc' }, { createdAt: 'desc' }],
       ...(query.limit ? { take: query.limit } : {}),
     });
 

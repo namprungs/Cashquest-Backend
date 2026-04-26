@@ -808,6 +808,12 @@ enum QuestSubmissionType {
   FILE
 }
 
+enum QuestDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
 model Quest {
   id String @id @default(uuid()) @db.Uuid
 
@@ -827,13 +833,23 @@ model Quest {
 
   title          String
   description    String?
+  content        String?                        // เนื้อหา/บทความของเควส (รองรับบรรทัดใหม่)
   isSystem       Boolean              @default(false) @map("is_system")
   rewardCoins    Int                  @default(0) @map("reward_coins")
+  difficulty     QuestDifficulty      @default(EASY) @map("difficulty")
   submissionType QuestSubmissionType? @map("submission_type")
   status         QuestStatus          @default(DRAFT)
 
   startAt    DateTime? @map("start_at")
   deadlineAt DateTime? @map("deadline_at")
+
+  // ── Hierarchical quest support ──
+  // A "parent" quest (parentId = null) acts as a heading/topic.
+  // A "child" quest has parentId set and orderNo for display (1.1, 1.2, etc.)
+  parentId String?  @db.Uuid
+  parent   Quest?   @relation("QuestHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Quest[]  @relation("QuestHierarchy")
+  orderNo  Int?     @map("order_no")
 
   classrooms  QuestClassroom[]
   submissions QuestSubmission[]
@@ -845,6 +861,7 @@ model Quest {
   @@index([termId, status])
   @@index([quizId])
   @@index([learningModuleId])
+  @@index([parentId, orderNo])
   @@map("quests")
 }
 

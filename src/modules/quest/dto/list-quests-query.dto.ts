@@ -1,5 +1,6 @@
 import { QuestStatus, QuestType } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class ListQuestsQueryDto {
   @IsOptional()
@@ -17,4 +18,16 @@ export class ListQuestsQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  // ── Hierarchical quest filters ──
+  /** Filter by parentId. Use "null" (string) to get root/parent quests only. */
+  @IsOptional()
+  @IsString()
+  parentId?: string;
+
+  /** Filter by isSystem flag */
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isSystem?: boolean;
 }

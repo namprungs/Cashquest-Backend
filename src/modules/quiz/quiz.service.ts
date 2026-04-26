@@ -455,7 +455,17 @@ export class QuizService {
       throw new NotFoundException('Quiz not found');
     }
 
-    const termId = quiz.module?.termId;
+    let termId = quiz.module?.termId;
+
+    // Fallback: if quiz has no module, resolve termId from the quest that references this quiz
+    if (!termId) {
+      const linkedQuest = await this.prisma.quest.findFirst({
+        where: { quizId },
+        select: { termId: true },
+      });
+      termId = linkedQuest?.termId;
+    }
+
     if (!termId) {
       throw new BadRequestException('Quiz is not linked to a term context');
     }
@@ -647,7 +657,17 @@ export class QuizService {
       throw new NotFoundException('Quiz not found');
     }
 
-    const termId = quiz.module?.termId;
+    let termId = quiz.module?.termId;
+
+    // Fallback: if quiz has no module, resolve termId from the quest that references this quiz
+    if (!termId) {
+      const linkedQuest = await this.prisma.quest.findFirst({
+        where: { quizId },
+        select: { termId: true },
+      });
+      termId = linkedQuest?.termId;
+    }
+
     if (!termId) {
       throw new BadRequestException('Quiz is not linked to a term context');
     }
