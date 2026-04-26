@@ -487,28 +487,6 @@ export class QuizService {
       throw new ForbiddenException('Quiz is not assigned to your classroom');
     }
 
-    const assignedQuest = await this.prisma.quest.findFirst({
-      where: {
-        quizId,
-        termId,
-        status: 'PUBLISHED',
-        classrooms: {
-          some: {
-            classroomId: { in: classroomIds },
-          },
-        },
-      },
-      select: {
-        id: true,
-        title: true,
-        rewardCoins: true,
-      },
-    });
-
-    if (!assignedQuest) {
-      throw new ForbiddenException('Quiz is not assigned to your classroom');
-    }
-
     const studentProfile = await this.prisma.studentProfile.findUnique({
       where: {
         userId_termId: {
@@ -524,6 +502,35 @@ export class QuizService {
         'Student profile for this term is not found',
       );
     }
+
+    const assignedQuest = await this.prisma.quest.findFirst({
+      where: {
+        quizId,
+        termId,
+        status: 'PUBLISHED',
+        classrooms: {
+          some: {
+            classroomId: { in: classroomIds },
+          },
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        rewardCoins: true,
+        submissions: {
+          where: { studentProfileId: studentProfile.id },
+          select: { status: true },
+        },
+      },
+    });
+
+    if (!assignedQuest) {
+      throw new ForbiddenException('Quiz is not assigned to your classroom');
+    }
+
+    const isClaimed =
+      assignedQuest.submissions?.[0]?.status === 'APPROVED';
 
     const attempts = await this.prisma.quizAttempt.findMany({
       where: {
@@ -547,6 +554,7 @@ export class QuizService {
       answerText: string | null;
       answerNumber: number | null;
       attachmentUrl: string | null;
+      isCorrect: boolean | null;
     }> = [];
 
     if (attempts.length > 0) {
@@ -559,6 +567,7 @@ export class QuizService {
             answerText: true,
             answerNumber: true,
             attachmentUrl: true,
+            isCorrect: true,
           },
         });
 
@@ -586,6 +595,7 @@ export class QuizService {
             ? Number(answer.answerNumber)
             : null,
           attachmentUrl: answer.attachmentUrl,
+          isCorrect: answer.isCorrect,
         }));
       }
     }
@@ -597,7 +607,10 @@ export class QuizService {
         module: quiz.module,
         timeLimitSec: quiz.timeLimitSec,
         passAllRequired: quiz.passAllRequired,
-        quest: assignedQuest,
+        quest: {
+          ...assignedQuest,
+          isClaimed,
+        },
         attempts,
         latestAttemptAnswers,
         questions: quiz.questions.map((question) => ({

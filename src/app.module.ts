@@ -15,6 +15,7 @@ import { QuestModule } from './modules/quest/quest.module';
 import { LearningModuleModule } from './modules/learning-module/learning-module.module';
 import { InvestmentModule } from './modules/investment/investment.module';
 import { GamificationModule } from './modules/gamification/gamification.module';
+import { RandomExpenseModule } from './modules/random-expense/random-expense.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { GamificationModule } from './modules/gamification/gamification.module';
     LearningModuleModule,
     InvestmentModule,
     GamificationModule,
+    RandomExpenseModule,
   ],
   controllers: [AppController],
   providers: [AppService, HealthService],

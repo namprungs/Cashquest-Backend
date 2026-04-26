@@ -52,6 +52,15 @@ export class QuestController {
     return this.questService.getMyQuestDetail(questId, user);
   }
 
+  @Get(':questId/interactive-status')
+  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  getInteractiveStatus(
+    @Param('questId') questId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.questService.getInteractiveQuestStatus(questId, user);
+  }
+
   @Get('classrooms/:classroomId/pending-submissions')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
   getPendingSubmissions(
@@ -59,7 +68,10 @@ export class QuestController {
     @Query('limit') limit?: string,
   ) {
     const limitNum = limit ? parseInt(limit, 10) : 50;
-    return this.questService.getPendingSubmissionsForClassroom(classroomId, limitNum);
+    return this.questService.getPendingSubmissionsForClassroom(
+      classroomId,
+      limitNum,
+    );
   }
 
   @Get(':questId')
@@ -114,5 +126,10 @@ export class QuestController {
     @Body() dto: RejectSubmissionDto,
   ) {
     return this.questService.rejectSubmission(submissionId, user, dto);
+  }
+  @Post(':questId/claim')
+  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  claim(@Param('questId') questId: string, @CurrentUser() user: User) {
+    return this.questService.claimQuestReward(questId, user);
   }
 }

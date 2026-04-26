@@ -1,0 +1,31 @@
+info:
+  name: Pay Expense
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{baseUrl}}/expenses/pay"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "studentExpenseId": "{{studentExpenseId}}",
+        "sourceType": "WALLET",
+        "sourceRef": null
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: studentExpenseId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

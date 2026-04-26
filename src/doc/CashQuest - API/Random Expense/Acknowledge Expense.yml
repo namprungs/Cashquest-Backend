@@ -1,0 +1,27 @@
+info:
+  name: Acknowledge Expense
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{baseUrl}}/expenses/{{studentExpenseId}}/acknowledge?termId={{termId}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: termId
+      value: "{{termId}}"
+      type: query
+  auth: inherit
+
+runtime:
+  variables:
+    - name: studentExpenseId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

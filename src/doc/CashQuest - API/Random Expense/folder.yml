@@ -1,0 +1,7 @@
+info:
+  name: Random Expense
+  type: folder
+  seq: 20
+
+request:
+  auth: inherit

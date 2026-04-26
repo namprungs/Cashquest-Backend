@@ -1456,8 +1456,7 @@ async function main() {
 
   const savingsSub1 = await upsertQuest({
     title: '1.1 เปิดบัญชีออมทรัพย์ครั้งแรก',
-    description:
-      'ทำภารกิจเปิดบัญชีออมทรัพย์ครั้งแรกให้สำเร็จ (actionType: opensavingaccount)',
+    description: 'ทำภารกิจเปิดบัญชีออมทรัพย์ครั้งแรกให้สำเร็จ',
     content:
       'บัญชีออมทรัพย์ (Savings Account) คือ บัญชีธนาคารพื้นฐานที่ใช้สำหรับเก็บเงิน\n' +
       'และรับดอกเบี้ยจากธนาคารในอัตราที่ต่ำแต่มีความปลอดภัยสูง\n\n' +
@@ -1465,10 +1464,17 @@ async function main() {
       '- ปลอดภัยกว่าเก็บเงินสดไว้ที่บ้าน\n' +
       '- ได้รับดอกเบี้ย (แม้จะน้อย) แต่เงินจะเติบโตได้เอง\n' +
       '- ฝึกวินัยทางการเงินตั้งแต่ยังไม่มีรายได้มาก\n\n' +
-      '💡 สิ่งที่ควรรู้ก่อนเปิดบัญชี\n' +
-      '1. เปรียบเทียบอัตราดอกเบี้ยของแต่ละธนาคาร\n' +
-      '2. ตรวจสอบค่าธรรมเนียมและเงื่อนไขการถอน\n' +
-      '3. เลือกบัญชีที่เหมาะกับเป้าหมายของเรา',
+      'STEP: ไปที่หน้า Portfolio\n' +
+      'กดที่แถบเมนูด้านล่าง แล้วเลือก "Portfolio"\n\n' +
+      'STEP: เลือก "ยอดเงินสินทรัพย์"\n' +
+      'ที่หน้า Portfolio ให้เลือกแท็บ "ยอดเงินสินทรัพย์"\n' +
+      'จะเห็นรายการธนาคารที่สามารถเปิดบัญชีได้\n\n' +
+      'STEP: กด "เปิดบัญชีธนาคาร"\n' +
+      'เลือกธนาคารที่ต้องการ แล้วกดปุ่ม "เปิดบัญชีธนาคาร"\n' +
+      'ระบบจะสร้างบัญชีออมทรัพย์ให้คุณอัตโนมัติ\n\n' +
+      'STEP: กลับมารับ coin ที่หน้านี้\n' +
+      'เมื่อเปิดบัญชีสำเร็จแล้ว ให้กลับมาที่หน้านี้\n' +
+      'ปุ่ม "รับ coin" จะสว่างขึ้น กดเพื่อรับรางวัลได้เลย!',
     type: QuestType.INTERACTIVE,
     rewardCoins: 100,
     difficulty: 'EASY',
@@ -1924,6 +1930,8 @@ async function main() {
       name: 'ธนาคารยินดี',
       savingsConfig: {
         interestRate: 0.0075,
+        withdrawLimitPerTerm: 3,
+        feePerTransaction: 10,
       },
       fdConfig: {
         interestRate: 0.0175,
@@ -3063,6 +3071,223 @@ async function main() {
 
   // 3. แสดงผล
   console.log(JSON.stringify(prettyRoles, null, 2));
+
+  // ──────────────────────────────────────────────
+  // SEED: Random Expense Events
+  // ──────────────────────────────────────────────
+  console.log('🎲 กำลัง seed Expense Events...');
+
+  // Find life stages with enableRandomExpense = true
+  const randomExpenseStages = lifeStages.filter(async (ls) => {
+    const full = await prisma.lifeStage.findUnique({
+      where: { id: ls.id },
+      select: { enableRandomExpense: true },
+    });
+    return full?.enableRandomExpense;
+  });
+
+  // Get all life stages (we need IDs)
+  const stageStudent = lifeStages.find((ls) => ls.orderNo === 1); // วัยนักเรียน (no random expense)
+  const stageCollege = lifeStages.find((ls) => ls.orderNo === 2); // วัยนักศึกษา
+  const stageWorking = lifeStages.find((ls) => ls.orderNo === 3); // วัยทำงาน
+  const stageRetired = lifeStages.find((ls) => ls.orderNo === 4); // วัยเกษียณ
+
+  // Expense events for วัยนักศึกษา (college) - smaller amounts
+  const collegeExpenseEvents = [
+    {
+      title: 'ซื้อปากกาใหม่',
+      description: 'ปากกาหมดหมึกพอดี ต้องซื้อใหม่เพื่อใช้เรียน',
+      baseAmount: 50,
+    },
+    {
+      title: 'เรียกรถกลับบ้าน',
+      description: 'ฝนตกหนัก ไม่สามารถเดินทางตามปกติได้ ต้องเรียกรถ',
+      baseAmount: 150,
+    },
+    {
+      title: 'ซื้ออุปกรณ์ทำโปรเจกต์',
+      description: 'ต้องซื้ออุปกรณ์เพิ่มเติมสำหรับทำโปรเจกต์กลุ่ม',
+      baseAmount: 200,
+    },
+    {
+      title: 'ซ่อมรองเท้า',
+      description: 'รองเท้าผ้าฉีก ต้องซ่อมหรือซื้อใหม่',
+      baseAmount: 300,
+    },
+    {
+      title: 'ค่าอาหารเลี้ยงวันเกิดเพื่อน',
+      description: 'วันเกิดเพื่อนสนิท ต้องร่วมฉลอง',
+      baseAmount: 250,
+    },
+    {
+      title: 'ค่าสอบ TOEIC',
+      description: 'ต้องสมัครสอบ TOEIC เพื่อใช้ในการสมัครงาน',
+      baseAmount: 500,
+    },
+    {
+      title: 'ค่าหนังสือเรียนเพิ่มเติม',
+      description: 'อาจารย์แนะนำหนังสือเล่มเพิ่มสำหรับเรียนรู้เพิ่มเติม',
+      baseAmount: 350,
+    },
+    {
+      title: 'ค่าส่งพัสดุ',
+      description: 'ต้องส่งเอกสารสำคัญทางไปรษณีย์ด่วน',
+      baseAmount: 80,
+    },
+  ];
+
+  // Expense events for วัยทำงาน (working) - medium amounts
+  const workingExpenseEvents = [
+    {
+      title: 'ซ่อมรถยนต์',
+      description: 'รถยนต์มีปัญหา ต้องเข้าอู่ซ่อมแซม',
+      baseAmount: 2000,
+    },
+    {
+      title: 'ค่ารักษาพยาบาล',
+      description: 'ป่วยจนต้องไปหาหมอ มีค่ายาและค่าตรวจ',
+      baseAmount: 500,
+    },
+    {
+      title: 'ซื้อของขวัญให้ครอบครัว',
+      description: 'วันพ่อแม่ ต้องซื้อของขวัญให้พ่อแม่',
+      baseAmount: 800,
+    },
+    {
+      title: 'ค่าซ่อมแซมบ้าน',
+      description: 'ท่อน้ำรั่ว ต้องเรียกช่างมาซ่อม',
+      baseAmount: 1500,
+    },
+    {
+      title: 'ค่าประกันภัยรถยนต์',
+      description: 'ประกันภัยรถยนต์หมดอายุ ต้องต่ออายุ',
+      baseAmount: 3000,
+    },
+    {
+      title: 'ค่าเลี้ยงฉลองเลื่อนตำแหน่ง',
+      description: 'เพื่อนร่วมงานเลื่อนตำแหน่ง ต้องร่วมเลี้ยงฉลอง',
+      baseAmount: 600,
+    },
+    {
+      title: 'ซื้อชุดสูทใหม่',
+      description: 'ต้องซื้อชุดสูทสำหรับไปประชุมสำคัญ',
+      baseAmount: 2500,
+    },
+    {
+      title: 'ค่าจอดรถเกินเวลา',
+      description: 'จอดรถเกินเวลาที่กำหนด ต้องจ่ายค่าปรับ',
+      baseAmount: 400,
+    },
+  ];
+
+  // Expense events for วัยเกษียณ (retired) - mixed amounts
+  const retiredExpenseEvents = [
+    {
+      title: 'ค่าตรวจสุขภาพประจำปี',
+      description: 'ต้องตรวจสุขภาพประจำปี ตามที่หมอแนะนำ',
+      baseAmount: 3000,
+    },
+    {
+      title: 'ค่ายาประจำ',
+      description: 'ต้องซื้อยาประจำตัวที่หมอสั่ง',
+      baseAmount: 1000,
+    },
+    {
+      title: 'ซ่อมแซมบ้าน',
+      description: 'หลังคารั่ว ต้องเรียกช่างมาซ่อม',
+      baseAmount: 5000,
+    },
+    {
+      title: 'ค่าเดินทางไปท่องเที่ยว',
+      description: 'ท่องเที่ยวต่างจังหวัดกับเพื่อนสมาคมผู้สูงอายุ',
+      baseAmount: 2000,
+    },
+    {
+      title: 'ซื้ออุปกรณ์ออกกำลังกาย',
+      description: 'ซื้อรองเท้าวิ่งใหม่เพื่อสุขภาพ',
+      baseAmount: 800,
+    },
+    {
+      title: 'ค่าสาธารณูปโภคเพิ่ม',
+      description: 'ค่าไฟเดือนนี้แพงกว่าปกติเพราะอากาศร้อน',
+      baseAmount: 500,
+    },
+  ];
+
+  const allExpenseEventSeeds: {
+    title: string;
+    description: string;
+    baseAmount: number;
+    lifeStageId: string;
+  }[] = [];
+
+  // Add college events
+  if (stageCollege) {
+    for (const event of collegeExpenseEvents) {
+      allExpenseEventSeeds.push({
+        ...event,
+        lifeStageId: stageCollege.id,
+      });
+    }
+  }
+
+  // Add working events
+  if (stageWorking) {
+    for (const event of workingExpenseEvents) {
+      allExpenseEventSeeds.push({
+        ...event,
+        lifeStageId: stageWorking.id,
+      });
+    }
+  }
+
+  // Add retired events
+  if (stageRetired) {
+    for (const event of retiredExpenseEvents) {
+      allExpenseEventSeeds.push({
+        ...event,
+        lifeStageId: stageRetired.id,
+      });
+    }
+  }
+
+  // Upsert expense events
+  for (const eventData of allExpenseEventSeeds) {
+    const existing = await prisma.expenseEvent.findFirst({
+      where: {
+        termId: term.id,
+        title: eventData.title,
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await prisma.expenseEvent.update({
+        where: { id: existing.id },
+        data: {
+          description: eventData.description,
+          baseAmount: eventData.baseAmount,
+          lifeStageId: eventData.lifeStageId,
+          isActive: true,
+        },
+      });
+    } else {
+      await prisma.expenseEvent.create({
+        data: {
+          termId: term.id,
+          lifeStageId: eventData.lifeStageId,
+          title: eventData.title,
+          description: eventData.description,
+          baseAmount: eventData.baseAmount,
+          isActive: true,
+        },
+      });
+    }
+  }
+
+  console.log(
+    `✅ Seeded ${allExpenseEventSeeds.length} expense events across life stages`,
+  );
 }
 
 // 4. การจัดการ Process และปิด Connection (สำคัญมากสำหรับ Driver Adapter)
