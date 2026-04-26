@@ -90,6 +90,12 @@ export class QuestController {
     return this.questService.submitMyQuest(questId, user, dto);
   }
 
+  @Get('submissions/:submissionId')
+  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  getSubmissionDetail(@Param('submissionId') submissionId: string) {
+    return this.questService.getSubmissionDetail(submissionId);
+  }
+
   @Post('submissions/:submissionId/approve')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
   approve(

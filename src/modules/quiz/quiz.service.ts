@@ -8,6 +8,7 @@ import {
   Prisma,
   QuizGradingType,
   QuizQuestionType,
+  QuestSubmissionStatus,
   type User,
 } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -978,6 +979,51 @@ export class QuizService {
           isPassed,
         },
       });
+
+      // Find quest linked to this quiz
+      const linkedQuest = await tx.quest.findFirst({
+        where: { quizId: attempt.quizId },
+        select: {
+          id: true,
+          type: true,
+          rewardCoins: true,
+          title: true,
+          deadlineAt: true,
+        },
+      });
+
+      if (linkedQuest) {
+        // Check if there are manually-graded questions (LONG_TEXT / FILE_UPLOAD)
+        const hasManualQuestions = attempt.quiz.questions.some(
+          (q) =>
+            q.questionType === QuizQuestionType.LONG_TEXT ||
+            q.questionType === QuizQuestionType.FILE_UPLOAD,
+        );
+
+        // Create/update QuestSubmission when manual grading is needed or quiz not passed
+        if (hasManualQuestions || !isPassed) {
+          const profileId = attempt.studentProfile.id;
+
+          await tx.questSubmission.upsert({
+            where: {
+              questId_studentProfileId: {
+                questId: linkedQuest.id,
+                studentProfileId: profileId,
+              },
+            },
+            create: {
+              questId: linkedQuest.id,
+              studentProfileId: profileId,
+              status: QuestSubmissionStatus.PENDING,
+              latestVersionNo: 1,
+            },
+            update: {
+              status: QuestSubmissionStatus.PENDING,
+              rejectReason: null,
+            },
+          });
+        }
+      }
     });
 
     return {

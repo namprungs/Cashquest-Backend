@@ -759,6 +759,185 @@ export class QuestService {
     }
   }
 
+  async getSubmissionDetail(submissionId: string) {
+    const submission = await this.prisma.questSubmission.findUnique({
+      where: { id: submissionId },
+      select: {
+        id: true,
+        status: true,
+        latestVersionNo: true,
+        createdAt: true,
+        updatedAt: true,
+        rejectReason: true,
+        quest: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            type: true,
+            rewardCoins: true,
+            deadlineAt: true,
+            quizId: true,
+          },
+        },
+        studentProfile: {
+          select: {
+            id: true,
+            user: {
+              select: { id: true, username: true },
+            },
+          },
+        },
+        reviewedBy: {
+          select: { id: true, username: true },
+        },
+        versions: {
+          orderBy: { versionNo: 'desc' },
+          select: {
+            id: true,
+            versionNo: true,
+            payloadJson: true,
+            attachmentUrl: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    const latestVersion = submission.versions[0] ?? null;
+    const isLate = submission.quest.deadlineAt
+      ? submission.createdAt > submission.quest.deadlineAt
+      : false;
+
+    // For QUIZ-type quests, fetch quiz questions + student answers
+    let quizData: unknown = null;
+    if (submission.quest.type === 'QUIZ' && submission.quest.quizId) {
+      const quizId = submission.quest.quizId;
+
+      // Get the latest submitted attempt for this student
+      const latestAttempt = await this.prisma.quizAttempt.findFirst({
+        where: {
+          quizId,
+          studentProfileId: submission.studentProfile.id,
+          submittedAt: { not: null },
+        },
+        orderBy: { attemptNo: 'desc' },
+        select: {
+          id: true,
+          score: true,
+          isPassed: true,
+          submittedAt: true,
+        },
+      });
+
+      if (latestAttempt) {
+        // Get all questions with choices
+        const questions = await this.prisma.quizQuestion.findMany({
+          where: { quizId },
+          include: { choices: true },
+          orderBy: { orderNo: 'asc' },
+        });
+
+        // Get student answers for this attempt
+        const answers = await this.prisma.quizAttemptAnswer.findMany({
+          where: { attemptId: latestAttempt.id },
+        });
+
+        // Get selected choice IDs per question for this attempt
+        const answerChoices =
+          await this.prisma.quizAttemptAnswerChoice.findMany({
+            where: { attemptId: latestAttempt.id },
+            select: { questionId: true, choiceId: true },
+          });
+
+        const choiceIdsByQuestion = new Map<string, string[]>();
+        for (const ac of answerChoices) {
+          const list = choiceIdsByQuestion.get(ac.questionId) ?? [];
+          list.push(ac.choiceId);
+          choiceIdsByQuestion.set(ac.questionId, list);
+        }
+
+        const answerByQuestionId = new Map(
+          answers.map((a) => [a.questionId, a]),
+        );
+
+        quizData = {
+          attemptId: latestAttempt.id,
+          attemptScore: latestAttempt.score,
+          isPassed: latestAttempt.isPassed,
+          questions: questions.map((q) => {
+            const answer = answerByQuestionId.get(q.id);
+            const selectedChoiceIds = choiceIdsByQuestion.get(q.id) ?? [];
+
+            return {
+              id: q.id,
+              questionText: q.questionText,
+              questionType: q.questionType,
+              orderNo: q.orderNo,
+              points: q.points,
+              gradingType: q.gradingType,
+              choices: q.choices.map((c) => ({
+                id: c.id,
+                text: c.choiceText,
+                isCorrect: c.isCorrect,
+                orderNo: c.orderNo,
+              })),
+              studentAnswer: answer
+                ? {
+                    answerText: answer.answerText,
+                    answerNumber: answer.answerNumber
+                      ? Number(answer.answerNumber)
+                      : null,
+                    attachmentUrl: answer.attachmentUrl,
+                    selectedChoiceIds,
+                    isCorrect: answer.isCorrect,
+                    awardedPoints: answer.awardedPoints,
+                  }
+                : null,
+            };
+          }),
+        };
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        id: submission.id,
+        status: submission.status,
+        isLate,
+        createdAt: submission.createdAt.toISOString(),
+        updatedAt: submission.updatedAt.toISOString(),
+        rejectReason: submission.rejectReason,
+        quest: submission.quest,
+        student: {
+          id: submission.studentProfile.id,
+          name: submission.studentProfile.user.username,
+        },
+        latestVersion: latestVersion
+          ? {
+              id: latestVersion.id,
+              versionNo: latestVersion.versionNo,
+              payloadJson: latestVersion.payloadJson,
+              attachmentUrl: latestVersion.attachmentUrl,
+              submittedAt: latestVersion.createdAt.toISOString(),
+            }
+          : null,
+        versions: submission.versions.map((v) => ({
+          id: v.id,
+          versionNo: v.versionNo,
+          attachmentUrl: v.attachmentUrl,
+          submittedAt: v.createdAt.toISOString(),
+        })),
+        quiz: quizData,
+      },
+    };
+  }
+
   async approveSubmission(
     submissionId: string,
     user: CurrentUser,
@@ -1082,12 +1261,109 @@ export class QuestService {
       take: limit,
     });
 
-    return submissions.map((s) => ({
+    const submissionResults = submissions.map((s) => ({
       id: s.id,
       task_name: s.quest.title,
       student_name: userNameByProfileId.get(s.studentProfileId) || 'Unknown',
       submitted_at: s.createdAt.toISOString(),
       is_late: s.createdAt > (s.quest.deadlineAt || new Date()),
     }));
+
+    // Also find pending quiz attempts that need manual grading (LONG_TEXT/FILE_UPLOAD)
+    // or failed attempts for quests in this classroom
+    const classroomQuests = await this.prisma.quest.findMany({
+      where: {
+        classrooms: { some: { classroomId } },
+        quizId: { not: null },
+        status: QuestStatus.PUBLISHED,
+      },
+      select: {
+        id: true,
+        title: true,
+        quizId: true,
+        deadlineAt: true,
+      },
+    });
+
+    const pendingQuizItems: Array<{
+      id: string;
+      task_name: string;
+      student_name: string;
+      submitted_at: string;
+      is_late: boolean;
+    }> = [];
+
+    for (const quest of classroomQuests) {
+      if (!quest.quizId) continue;
+
+      // Find latest submitted (but not yet auto-passed) attempts from students in this classroom
+      const attempts = await this.prisma.quizAttempt.findMany({
+        where: {
+          quizId: quest.quizId,
+          studentProfileId: { in: profileIds },
+          submittedAt: { not: null },
+          isPassed: false,
+        },
+        select: {
+          id: true,
+          studentProfileId: true,
+          submittedAt: true,
+          quiz: {
+            select: {
+              questions: {
+                where: {
+                  questionType: { in: ['LONG_TEXT', 'FILE_UPLOAD'] },
+                },
+                select: { id: true },
+              },
+            },
+          },
+        },
+        orderBy: { submittedAt: 'desc' },
+        // Only latest attempt per student
+        distinct: ['studentProfileId'],
+      });
+
+      for (const attempt of attempts) {
+        // Skip if already has a QuestSubmission for this quest+student
+        const alreadyHasSubmission =
+          await this.prisma.questSubmission.findUnique({
+            where: {
+              questId_studentProfileId: {
+                questId: quest.id,
+                studentProfileId: attempt.studentProfileId,
+              },
+            },
+            select: { id: true },
+          });
+
+        if (alreadyHasSubmission) continue;
+
+        // Only include if there are manual-graded questions
+        if (attempt.quiz.questions.length === 0) continue;
+
+        const submittedAt = attempt.submittedAt!;
+
+        pendingQuizItems.push({
+          id: `quiz-attempt:${attempt.id}`,
+          task_name: quest.title,
+          student_name:
+            userNameByProfileId.get(attempt.studentProfileId) || 'Unknown',
+          submitted_at: submittedAt.toISOString(),
+          is_late: quest.deadlineAt ? submittedAt > quest.deadlineAt : false,
+        });
+      }
+    }
+
+    // Merge and sort by submitted_at desc
+    const allResults = [...submissionResults, ...pendingQuizItems]
+      .sort(
+        (a, b) =>
+          new Date(b.submitted_at).getTime() -
+          new Date(a.submitted_at).getTime(),
+      )
+      .slice(0, limit);
+
+    return allResults;
   }
 }
