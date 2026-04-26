@@ -5,32 +5,40 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/market/terms/{{marketTermId}}/events?limit=20&includeUpcoming=false&includePast=true&publishedOnly=true&sort=desc"
+  url: "{{baseUrl}}/market/terms/{{marketTermId}}/events?limit=30&includePast=true&statuses=ACTIVE"
   headers:
     - name: Authorization
       value: Bearer {{accessToken}}
   params:
-    - name: weekNo
-      value: ""
-      type: query
     - name: limit
-      value: "20"
+      value: "30"
       type: query
     - name: includeUpcoming
       value: "false"
       type: query
+      disabled: true
     - name: includePast
       value: "true"
       type: query
     - name: publishedOnly
+      value: "false"
+      type: query
+      disabled: true
+    - name: statuses
+      value: ACTIVE
+      type: query
+    - name: includeUpcoming
       value: "true"
       type: query
-    - name: statuses
-      value: ""
+      disabled: true
+    - name: includePast
+      value: "true"
       type: query
-    - name: sort
-      value: "desc"
+      disabled: true
+    - name: publishedOnly
+      value: "false"
       type: query
+      disabled: true
   auth: inherit
 
 settings:
