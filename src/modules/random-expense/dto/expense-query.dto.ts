@@ -69,6 +69,12 @@ export class TriggerWeeklyExpenseDto {
   @IsInt()
   @Min(1)
   weekNo?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  dayOfWeek?: number; // 1=Mon .. 5=Fri (auto-detected if omitted)
 }
 
 export class CreateExpenseEventDto {
