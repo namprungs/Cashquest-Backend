@@ -1930,8 +1930,9 @@ async function main() {
       name: 'ธนาคารยินดี',
       savingsConfig: {
         interestRate: 0.0075,
-        withdrawLimitPerTerm: 3,
-        feePerTransaction: 10,
+        withdrawLimitPerTerm: 2000,
+        feePerTransaction: 0,
+
       },
       fdConfig: {
         interestRate: 0.0175,
@@ -1943,8 +1944,8 @@ async function main() {
       name: 'ธนาควรพอใจ',
       savingsConfig: {
         interestRate: 0.01,
-        withdrawLimitPerTerm: 4,
-        feePerTransaction: 10,
+        withdrawLimitPerTerm: 2000,
+        feePerTransaction: 0,
       },
       fdConfig: {
         interestRate: 0.02,
@@ -1956,8 +1957,8 @@ async function main() {
       name: 'ธนาคารใจเย็น',
       savingsConfig: {
         interestRate: 0.0125,
-        withdrawLimitPerTerm: 4,
-        feePerTransaction: 10,
+        withdrawLimitPerTerm: 2000,
+        feePerTransaction: 0,
       },
       fdConfig: {
         interestRate: 0.03,
