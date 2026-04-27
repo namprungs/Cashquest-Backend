@@ -731,7 +731,9 @@ export class QuestService {
     this.assertStudent(user);
 
     const quest = await this.ensureQuestMembership(questId, user.id);
-    if (quest.type === QuestType.QUIZ) {
+    // System-generated QUIZ quests use the quiz attempt auto-grading flow.
+    // Teacher-created QUIZ quests are submitted here for manual teacher review.
+    if (quest.type === QuestType.QUIZ && quest.isSystem) {
       throw new BadRequestException(
         'QUIZ quest submission must be done via quiz attempts',
       );
@@ -887,10 +889,7 @@ export class QuestService {
           });
 
           if (existingAccount) {
-            await this.completeInteractiveQuest(
-              user.id,
-              'OPENSAVINGACCOUNT',
-            );
+            await this.completeInteractiveQuest(user.id, 'OPENSAVINGACCOUNT');
           }
         }
       }
