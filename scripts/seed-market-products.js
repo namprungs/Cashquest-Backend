@@ -1,5 +1,5 @@
 /**
- * Seed Market Products
+ * Seed Market Products (FIXED VERSION - same logic as seed.ts)
  */
 
 const { ProductType, RiskLevel } = require('@prisma/client');
@@ -9,14 +9,14 @@ async function seedMarketProducts(prisma, academicData) {
 
   const { term, demoStudentProfile } = academicData;
 
-  // Update wallet balance for market activity
+  // Update wallet balance
   await prisma.wallet.update({
     where: { studentProfileId: demoStudentProfile.id },
     data: { balance: 250000 },
   });
 
   const productSeeds = [
-    // === LOW RISK (L1, L2) ===
+    // === LOW RISK ===
     {
       type: ProductType.STOCK,
       symbol: 'SCHMART',
@@ -41,7 +41,8 @@ async function seedMarketProducts(prisma, academicData) {
       dividendPayoutIntervalWeeks: 4,
       simulation: { initialPrice: 95, mu: 0.04, sigma: 0.1, dt: 1 / 52 },
     },
-    // === MEDIUM RISK (M1, M2) ===
+
+    // === MEDIUM RISK ===
     {
       type: ProductType.STOCK,
       symbol: 'GRNPWR',
@@ -65,7 +66,8 @@ async function seedMarketProducts(prisma, academicData) {
       dividendPayoutIntervalWeeks: 4,
       simulation: { initialPrice: 75, mu: 0.075, sigma: 0.22, dt: 1 / 52 },
     },
-    // === HIGH RISK (H1, H2) ===
+
+    // === HIGH RISK ===
     {
       type: ProductType.STOCK,
       symbol: 'TWAV',
@@ -95,28 +97,51 @@ async function seedMarketProducts(prisma, academicData) {
   for (const seed of productSeeds) {
     const { simulation, ...productData } = seed;
 
-    const existing = await prisma.product.findFirst({
+    // ✅ 1. upsert product (เหมือน seed.ts)
+    const product = await prisma.product.upsert({
       where: { symbol: seed.symbol },
-      select: { id: true },
+      update: {
+        ...productData,
+      },
+      create: {
+        symbol: seed.symbol,
+        ...productData,
+      },
+      select: {
+        id: true,
+        symbol: true,
+      },
     });
 
-    let productId;
-    if (existing) {
-      const updated = await prisma.product.update({
-        where: { id: existing.id },
-        data: productData,
-      });
-      productId = updated.id;
-    } else {
-      const created = await prisma.product.create({
-        data: productData,
-      });
-      productId = created.id;
-    }
+    const productId = product.id;
+
+    // ✅ 2. upsert productSimulation (สำคัญสุด)
+    await prisma.productSimulation.upsert({
+      where: {
+        termId_productId: {
+          termId: term.id,
+          productId: productId,
+        },
+      },
+      update: {
+        initialPrice: simulation.initialPrice,
+        mu: simulation.mu,
+        sigma: simulation.sigma,
+        dt: simulation.dt,
+      },
+      create: {
+        termId: term.id,
+        productId: productId,
+        initialPrice: simulation.initialPrice,
+        mu: simulation.mu,
+        sigma: simulation.sigma,
+        dt: simulation.dt,
+      },
+    });
 
     products.push({
       id: productId,
-      symbol: seed.symbol,
+      symbol: product.symbol,
       simulation,
     });
   }
