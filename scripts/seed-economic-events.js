@@ -11,160 +11,182 @@ async function seedEconomicEvents(prisma, academicData) {
 
   const economicEventConfigs = [
     {
-      title: 'FED Rate Hike Shock',
-      description: 'อัตราดอกเบี้ยขึ้นเร็วกว่าคาด เพิ่มความผันผวนระยะสั้น',
+      title: 'CPI Surge Shock',
+      description: `CPI พุ่ง 5.2% สูงกว่าคาด เงินเฟ้อกดกำลังซื้อ ตลาดคาดขึ้นดอกเบี้ย
+Insight: ลงทุนในสินทรัพย์ที่เอาชนะเงินเฟ้อ อย่าถือเงินสดมากเกิน`,
       eventType: EconomicEventType.VOLATILITY_SHOCK,
       defaultImpact: {
-        sigmaAdjustment: 0.08,
-        sigmaMultiplier: 1.25,
-        muAdjustment: -0.03,
+        global: { muAdjustment: -0.02, sigmaAdjustment: 0.05 },
+        assets: {
+          L1: { mu: 0.0 },
+          L2: { mu: 0.0 },
+          M1: { mu: 0.02 },
+          M2: { mu: 0.0, sigma: 0.02 },
+          H1: { mu: -0.05, sigma: 0.05 },
+          H2: { mu: -0.04 },
+          B1: { mu: -0.03 },
+        },
       },
     },
+
     {
-      title: 'Tech Earnings Rally',
-      description: 'ผลประกอบการกลุ่มเทคออกมาดีกว่าคาด',
-      eventType: EconomicEventType.DRIFT_SHIFT,
-      defaultImpact: {
-        muAdjustment: 0.06,
-        sigmaAdjustment: 0.01,
-      },
-    },
-    {
-      title: 'Flash Crash Breaking News',
-      description: 'ข่าวด่วนตลาดผันผวนรุนแรง ทำให้ราคากลุ่มเสี่ยงปรับลงทันที',
+      title: 'Rate Hike Policy',
+      description: `กนง. ขึ้นดอกเบี้ย หุ้นลง bond yield ขึ้น
+Insight: DCA ต่อ อย่า panic sell`,
       eventType: EconomicEventType.MARKET_CRASH,
       defaultImpact: {
-        muAdjustment: -0.25,
-        sigmaAdjustment: 0.2,
-        sigmaMultiplier: 1.5,
-        instantShockPct: -0.16,
-        targetSectors: ['TECH', 'CONSUMER'],
+        global: { muAdjustment: -0.08, sigmaAdjustment: 0.1 },
+        assets: {
+          L1: { mu: -0.02 },
+          L2: { mu: -0.02 },
+          M1: { mu: -0.03 },
+          M2: { mu: 0.0, sigma: 0.03 },
+          H1: { mu: -0.12, sigma: 0.1 },
+          H2: { mu: -0.12, sigma: 0.1 },
+          B1: { mu: -0.05 },
+        },
       },
     },
+
+    {
+      title: 'Tech Earnings Beat',
+      description: `TechWave กำไร +40% เงินไหลเข้า growth stocks
+Insight: ระวัง FOMO`,
+      eventType: EconomicEventType.DRIFT_SHIFT,
+      defaultImpact: {
+        global: { muAdjustment: 0.05 },
+        assets: {
+          H1: { mu: 0.15 },
+          H2: { mu: 0.12 },
+          M2: { mu: 0.02 },
+          B1: { mu: -0.02 },
+        },
+      },
+    },
+
+    {
+      title: 'GDP Growth Positive',
+      description: `GDP โต 4.8% เงินไหลเข้าตลาดหุ้น
+Insight: ถือหุ้นต่อ`,
+      eventType: EconomicEventType.DRIFT_SHIFT,
+      defaultImpact: {
+        global: { muAdjustment: 0.07, sigmaAdjustment: -0.02 },
+        assets: {
+          L1: { mu: 0.02 },
+          L2: { mu: 0.02 },
+          M1: { mu: 0.04 },
+          M2: { mu: 0.04 },
+          H1: { mu: 0.08 },
+          H2: { mu: 0.05 },
+          B1: { mu: -0.02 },
+        },
+      },
+    },
+
+    {
+      title: 'THB Weakening',
+      description: `เงินบาทอ่อนค่า บริษัท export ได้ประโยชน์
+Insight: ถือสินทรัพย์ที่มีรายได้ USD`,
+      eventType: EconomicEventType.SECTOR_SPECIFIC,
+      defaultImpact: {
+        assets: {
+          H1: { mu: 0.04 },
+          H2: { mu: 0.04 },
+          M2: { mu: -0.02 },
+        },
+      },
+    },
+
     {
       title: 'Oil Price Surge',
-      description: 'ราคาน้ำมันพุ่งขึ้นจากสถานการณ์ภูมิรัฐศาสตร์',
+      description: `ราคาน้ำมันพุ่ง 25%
+Insight: หุ้นพลังงานได้ประโยชน์`,
       eventType: EconomicEventType.SECTOR_SPECIFIC,
       defaultImpact: {
-        muAdjustment: -0.04,
-        sigmaAdjustment: 0.12,
-        targetSectors: ['ENERGY', 'TRANSPORT'],
+        assets: {
+          M1: { mu: 0.08 },
+          H2: { mu: -0.04 },
+          L1: { mu: -0.02 },
+        },
       },
     },
+
     {
-      title: 'Earnings Beat Surprise',
-      description: 'บริษัทใหญ่หลายแห่งรายงานผลกำไรสูงกว่าคาด',
-      eventType: EconomicEventType.DRIFT_SHIFT,
-      defaultImpact: {
-        muAdjustment: 0.08,
-        sigmaAdjustment: 0.02,
-      },
-    },
-    {
-      title: 'Inflation Data Release',
-      description: 'ข้อมูลเงินเฟ้อสูงกว่าที่คาดการณ์',
+      title: 'Minimum Wage Increase',
+      description: `ค่าแรงขึ้น 15%
+Insight: ระวัง margin บริษัท`,
       eventType: EconomicEventType.VOLATILITY_SHOCK,
       defaultImpact: {
-        sigmaAdjustment: 0.06,
-        muAdjustment: -0.02,
+        assets: {
+          L1: { mu: -0.02 },
+          L2: { mu: -0.03 },
+        },
       },
     },
+
     {
-      title: 'Corporate Scandal',
-      description: 'บริษัทใหญ่เผชิญกับวิกฤตความเชื่อมั่น',
+      title: 'Rate Cut Stimulus',
+      description: `กนง. ลดดอกเบี้ย ตลาดหุ้นขึ้น
+Insight: เพิ่ม equity`,
+      eventType: EconomicEventType.DRIFT_SHIFT,
+      defaultImpact: {
+        global: { muAdjustment: 0.08 },
+        assets: {
+          H1: { mu: 0.12 },
+          H2: { mu: 0.1 },
+          M2: { mu: 0.05 },
+          B1: { mu: 0.04 },
+        },
+      },
+    },
+
+    {
+      title: 'Rate Hold Surprise',
+      description: `คงดอกเบี้ยแบบ surprise
+Insight: relief rally`,
+      eventType: EconomicEventType.DRIFT_SHIFT,
+      defaultImpact: {
+        assets: {
+          H1: { mu: 0.05 },
+          B1: { mu: 0.04 },
+        },
+      },
+    },
+
+    {
+      title: 'GameHub Loss Shock',
+      description: `GameHub ขาดทุนหนัก
+Insight: diversify`,
       eventType: EconomicEventType.MARKET_CRASH,
       defaultImpact: {
-        muAdjustment: -0.12,
-        sigmaAdjustment: 0.08,
+        assets: {
+          H2: { mu: -0.15, sigma: 0.1 },
+          H1: { mu: -0.03 },
+        },
       },
     },
+
     {
-      title: 'Interest Rate Cut',
-      description: 'ธนาคารกลางลดอัตราดอกเบี้ยเพื่อเร้าเศรษฐกิจ',
+      title: 'HealthPlus Telehealth Approval',
+      description: `HealthPlus ได้อนุมัติ Telehealth
+Insight: catalyst เฉพาะตัว`,
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
-        muAdjustment: 0.05,
-        sigmaAdjustment: -0.01,
+        assets: {
+          L2: { mu: 0.12, sigma: -0.02 },
+        },
       },
     },
+
     {
-      title: 'Stock Market Correction',
-      description: 'ตลาดหุ้นปรับตัวปกติหลังการขึ้นราคาอย่างรวดเร็ว',
-      eventType: EconomicEventType.VOLATILITY_SHOCK,
-      defaultImpact: {
-        muAdjustment: -0.05,
-        sigmaAdjustment: 0.05,
-      },
-    },
-    {
-      title: 'GDP Growth Announcement',
-      description: 'รายงานการเติบโตทางเศรษฐกิจมีสัญญาณบวก',
+      title: 'GreenPower Solar Win',
+      description: `GreenPower ได้โครงการ 20 ปี
+Insight: เหมาะ long-term`,
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
-        muAdjustment: 0.07,
-        sigmaAdjustment: 0.01,
-      },
-    },
-    {
-      title: 'Tech Buyout Frenzy',
-      description: 'รอบการซื้อกิจการบริษัทเทคโนโลยี',
-      eventType: EconomicEventType.SECTOR_SPECIFIC,
-      defaultImpact: {
-        muAdjustment: 0.09,
-        targetSectors: ['TECH'],
-      },
-    },
-    {
-      title: 'Unemployment Report Surge',
-      description: 'อัตราการว่างงานเพิ่มขึ้นอย่างไม่คาดคิด',
-      eventType: EconomicEventType.MARKET_CRASH,
-      defaultImpact: {
-        muAdjustment: -0.08,
-        sigmaAdjustment: 0.07,
-      },
-    },
-    {
-      title: 'Retail Sales Boom',
-      description: 'ยอดขายปลีกเพิ่มขึ้นสะท้อนความเชื่อมั่นผู้บริโภค',
-      eventType: EconomicEventType.DRIFT_SHIFT,
-      defaultImpact: {
-        muAdjustment: 0.06,
-        targetSectors: ['CONSUMER', 'RETAIL'],
-      },
-    },
-    {
-      title: 'Fed Minutes Release',
-      description: 'นาทีการประชุมของธนาคารกลางเปิดเผยมุมมองการนโยบายการเงิน',
-      eventType: EconomicEventType.VOLATILITY_SHOCK,
-      defaultImpact: {
-        sigmaAdjustment: 0.04,
-      },
-    },
-    {
-      title: 'Trade War Escalation',
-      description: 'ความตึงเณรรายศาสตร์การค้าระหว่างประเทศเพิ่มขึ้น',
-      eventType: EconomicEventType.MARKET_CRASH,
-      defaultImpact: {
-        muAdjustment: -0.1,
-        sigmaAdjustment: 0.1,
-      },
-    },
-    {
-      title: 'Housing Data Positive',
-      description: 'ข้อมูลตัวอักษรบ้านและที่ดินออกมาแข็งแกร่ง',
-      eventType: EconomicEventType.DRIFT_SHIFT,
-      defaultImpact: {
-        muAdjustment: 0.04,
-        targetSectors: ['REAL_ESTATE', 'CONSTRUCTION'],
-      },
-    },
-    {
-      title: 'Fed Balance Sheet Shift',
-      description: 'การเปลี่ยนแปลงนโยบายการดำเนินการด้านความสมดุลของธนาคารกลาง',
-      eventType: EconomicEventType.DRIFT_SHIFT,
-      defaultImpact: {
-        muAdjustment: 0.03,
-        sigmaAdjustment: -0.02,
+        assets: {
+          M1: { mu: 0.1, sigma: -0.03 },
+        },
       },
     },
   ];
@@ -208,7 +230,10 @@ async function seedEconomicEvents(prisma, academicData) {
   const shuffledEvents = [...allEvents];
   for (let i = shuffledEvents.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffledEvents[i], shuffledEvents[j]] = [shuffledEvents[j], shuffledEvents[i]];
+    [shuffledEvents[i], shuffledEvents[j]] = [
+      shuffledEvents[j],
+      shuffledEvents[i],
+    ];
   }
 
   // Assign events to weeks 1-16
@@ -226,7 +251,9 @@ async function seedEconomicEvents(prisma, academicData) {
     });
   }
 
-  console.log(`✅ สร้างเหตุการณ์ 16 อย่างและกำหนดให้กับสัปดาห์ 1-${termTotalWeeks}`);
+  console.log(
+    `✅ สร้างเหตุการณ์ 16 อย่างและกำหนดให้กับสัปดาห์ 1-${termTotalWeeks}`,
+  );
 }
 
 module.exports = { seedEconomicEvents };

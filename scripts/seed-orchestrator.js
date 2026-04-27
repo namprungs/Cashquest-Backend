@@ -13,12 +13,15 @@ const { seedUsers } = require('./seed-users');
 const { seedAcademic } = require('./seed-academic');
 const { seedLearningModules } = require('./seed-learning-modules');
 const { seedQuests } = require('./seed-quests');
+const { seedQuizzes } = require('./seed-quizzes');
 const { seedBanks } = require('./seed-banks');
 const { seedBadges } = require('./seed-badges');
 const { seedMarketProducts } = require('./seed-market-products');
 const { seedEconomicEvents } = require('./seed-economic-events');
 const { seedMarketRegimes } = require('./seed-market-regimes');
 const { seedTermSimulation, seedProductPrices } = require('./seed-product-prices');
+const { seedMarketStudents } = require('./seed-market-students');
+const { seedExpenseEvents } = require('./seed-expense-events');
 
 // Setup Prisma with PostgreSQL adapter
 const connectionString = process.env.DATABASE_URL;
@@ -54,33 +57,45 @@ async function main() {
     console.log('\n=== 5️⃣  QUESTS ===');
     await seedQuests(prisma, academicData, users);
 
-    // 6. Banks
-    console.log('\n=== 6️⃣  BANKS ===');
+    // 6. Quizzes
+    console.log('\n=== 6️⃣  QUIZZES ===');
+    await seedQuizzes(prisma, academicData, users.teacherUser, academicData.classroom);
+
+    // 7. Banks
+    console.log('\n=== 7️⃣  BANKS ===');
     await seedBanks(prisma, academicData);
 
-    // 7. Badges
-    console.log('\n=== 7️⃣  BADGES ===');
+    // 8. Badges
+    console.log('\n=== 8️⃣  BADGES ===');
     await seedBadges(prisma, academicData);
 
-    // 8. Market Products
-    console.log('\n=== 8️⃣  MARKET PRODUCTS ===');
+    // 9. Market Products
+    console.log('\n=== 9️⃣  MARKET PRODUCTS ===');
     const products = await seedMarketProducts(prisma, academicData);
 
-    // 9. Economic Events
-    console.log('\n=== 9️⃣  ECONOMIC EVENTS ===');
+    // 10. Economic Events
+    console.log('\n=== 🔟  ECONOMIC EVENTS ===');
     await seedEconomicEvents(prisma, academicData);
 
-    // 10. Market Regimes
-    console.log('\n=== 🔟 MARKET REGIMES ===');
+    // 11. Market Regimes
+    console.log('\n=== 1️⃣1️⃣  MARKET REGIMES ===');
     await seedMarketRegimes(prisma, academicData);
 
-    // 11. Term Simulation
-    console.log('\n=== 1️⃣1️⃣  TERM SIMULATION ===');
+    // 12. Term Simulation
+    console.log('\n=== 1️⃣2️⃣  TERM SIMULATION ===');
     await seedTermSimulation(prisma, academicData);
 
-    // 12. Product Prices
-    console.log('\n=== 1️⃣2️⃣  PRODUCT PRICES ===');
+    // 13. Product Prices
+    console.log('\n=== 1️⃣3️⃣  PRODUCT PRICES ===');
     await seedProductPrices(prisma, academicData, products);
+
+    // 14. Market Students
+    console.log('\n=== 1️⃣4️⃣  MARKET STUDENTS ===');
+    await seedMarketStudents(prisma, academicData, products, academicData.classroom, roles);
+
+    // 15. Expense Events
+    console.log('\n=== 1️⃣5️⃣  EXPENSE EVENTS ===');
+    await seedExpenseEvents(prisma, academicData, academicData.lifeStages);
 
     console.log('\n✨ Seeding Completed!\n');
     console.log('📧 Admin Email: admin@school.com');
