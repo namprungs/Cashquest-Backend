@@ -637,7 +637,7 @@ export class RandomExpenseService {
    * These are auto-paid expenses the student hasn't been notified about.
    */
   async getUnacknowledgedExpenses(studentProfileId: string, termId: string) {
-    return this.prisma.studentExpense.findMany({
+    return await this.prisma.studentExpense.findMany({
       where: {
         studentProfileId,
         termId,
@@ -663,10 +663,7 @@ export class RandomExpenseService {
    * Acknowledge (mark as seen) a specific expense.
    * Returns the wallet balance after acknowledging.
    */
-  async acknowledgeExpense(
-    studentProfileId: string,
-    studentExpenseId: string,
-  ) {
+  async acknowledgeExpense(studentProfileId: string, studentExpenseId: string) {
     const expense = await this.prisma.studentExpense.findUnique({
       where: { id: studentExpenseId },
     });
