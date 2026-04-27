@@ -38,7 +38,7 @@ export class RandomExpenseService {
     unpaid: number;
     errors: string[];
   }> {
-    const { termId, weekNo } = dto;
+    const { termId, weekNo, dayOfWeek } = dto;
 
     // Determine the current week number if not provided
     const week = weekNo ?? (await this.getCurrentWeekNo(termId));
@@ -48,8 +48,18 @@ export class RandomExpenseService {
       );
     }
 
+    // Determine the Bangkok day-of-week if not provided (1=Mon..5=Fri)
+    let dow = dayOfWeek;
+    if (!dow) {
+      const nowBangkok = new Date(
+        new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }),
+      );
+      const jsDay = nowBangkok.getDay(); // 0=Sun..6=Sat
+      dow = jsDay === 0 ? 7 : jsDay; // ISO: 1=Mon..7=Sun
+    }
+
     this.logger.log(
-      `Triggering weekly expenses for term ${termId}, week ${week}`,
+      `Triggering daily expense for term ${termId}, week ${week}, dayOfWeek ${dow}`,
     );
 
     // Get the current life stage rule for this week
@@ -105,11 +115,12 @@ export class RandomExpenseService {
 
     for (const profile of studentProfiles) {
       try {
-        // Check which events this student already has this week (avoid duplicates)
+        // Check which events this student already has this week-day (avoid duplicates)
         const existingExpenses = await this.prisma.studentExpense.findMany({
           where: {
             studentProfileId: profile.id,
             weekNo: week,
+            dayOfWeek: dow,
           },
           select: { expenseEventId: true },
         });
@@ -125,7 +136,7 @@ export class RandomExpenseService {
 
         if (availableEvents.length === 0) {
           this.logger.debug(
-            `Student profile ${profile.id}: all events already assigned for week ${week}. Skipping.`,
+            `Student profile ${profile.id}: all events already assigned for week ${week} day ${dow}. Skipping.`,
           );
           continue;
         }
@@ -145,6 +156,7 @@ export class RandomExpenseService {
           termId,
           selectedEvent.id,
           week,
+          dow,
           amount,
         );
 
@@ -162,7 +174,7 @@ export class RandomExpenseService {
     }
 
     this.logger.log(
-      `Weekly expenses completed: processed=${processed}, paid=${paid}, unpaid=${unpaid}`,
+      `Daily expense completed: processed=${processed}, paid=${paid}, unpaid=${unpaid}`,
     );
 
     return { processed, paid, unpaid, errors };
@@ -177,6 +189,7 @@ export class RandomExpenseService {
     termId: string,
     expenseEventId: string,
     weekNo: number,
+    dayOfWeek: number,
     amount: Prisma.Decimal,
   ): Promise<{
     id: string;
@@ -191,6 +204,7 @@ export class RandomExpenseService {
           termId,
           expenseEventId,
           weekNo,
+          dayOfWeek,
           amount,
           remainingAmount: amount,
           status: 'UNPAID',
@@ -746,7 +760,7 @@ export class RandomExpenseService {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ dayOfWeek: 'asc' }, { createdAt: 'asc' }],
     });
 
     return { weekNo: currentWeekNo, items };

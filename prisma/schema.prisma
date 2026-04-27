@@ -1388,6 +1388,7 @@ model StudentExpense {
   expenseEvent   ExpenseEvent  @relation(fields: [expenseEventId], references: [id], onDelete: Cascade)
 
   weekNo          Int
+  dayOfWeek       Int                   @map("day_of_week") // 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri
   amount          Decimal              @db.Decimal(12, 2)
   remainingAmount Decimal              @db.Decimal(12, 2) @map("remaining_amount")
   status          StudentExpenseStatus @default(UNPAID)
@@ -1399,9 +1400,10 @@ model StudentExpense {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([studentProfileId, expenseEventId, weekNo])
+  @@unique([studentProfileId, expenseEventId, weekNo, dayOfWeek])
   @@index([studentProfileId, status])
   @@index([termId, weekNo])
+  @@index([termId, weekNo, dayOfWeek])
   @@map("student_expenses")
 }
 
