@@ -1943,6 +1943,8 @@ async function main() {
       name: 'ธนาควรพอใจ',
       savingsConfig: {
         interestRate: 0.01,
+        withdrawLimitPerTerm: 4,
+        feePerTransaction: 10,
       },
       fdConfig: {
         interestRate: 0.02,
@@ -1954,6 +1956,8 @@ async function main() {
       name: 'ธนาคารใจเย็น',
       savingsConfig: {
         interestRate: 0.0125,
+        withdrawLimitPerTerm: 4,
+        feePerTransaction: 10,
       },
       fdConfig: {
         interestRate: 0.03,
@@ -2161,39 +2165,77 @@ async function main() {
       dt: number;
     };
   }[] = [
+    // === LOW RISK (L1, L2) ===
     {
       type: ProductType.STOCK,
-      symbol: 'CQTECH',
-      name: 'CashQuest Hyper Growth',
+      symbol: 'SCHMART',
+      name: 'SchoolMart',
+      riskLevel: RiskLevel.LOW,
+      sector: 'CONSUMER',
+      isActive: true,
+      isDividendEnabled: true,
+      dividendYieldAnnual: 0.03,
+      dividendPayoutIntervalWeeks: 4,
+      simulation: { initialPrice: 85, mu: 0.035, sigma: 0.09, dt: 1 / 52 },
+    },
+    {
+      type: ProductType.STOCK,
+      symbol: 'HLTHPLS',
+      name: 'HealthPlus',
+      riskLevel: RiskLevel.LOW,
+      sector: 'HEALTHCARE',
+      isActive: true,
+      isDividendEnabled: true,
+      dividendYieldAnnual: 0.025,
+      dividendPayoutIntervalWeeks: 4,
+      simulation: { initialPrice: 95, mu: 0.04, sigma: 0.1, dt: 1 / 52 },
+    },
+    // === MEDIUM RISK (M1, M2) ===
+    {
+      type: ProductType.STOCK,
+      symbol: 'GRNPWR',
+      name: 'GreenPower',
+      riskLevel: RiskLevel.MED,
+      sector: 'ENERGY',
+      isActive: true,
+      isDividendEnabled: true,
+      dividendYieldAnnual: 0.04,
+      dividendPayoutIntervalWeeks: 4,
+      simulation: { initialPrice: 110, mu: 0.07, sigma: 0.18, dt: 1 / 52 },
+    },
+    {
+      type: ProductType.STOCK,
+      symbol: 'FSTFIN',
+      name: 'FastFinance',
+      riskLevel: RiskLevel.MED,
+      sector: 'FINANCIAL',
+      isActive: true,
+      isDividendEnabled: false,
+      dividendPayoutIntervalWeeks: 4,
+      simulation: { initialPrice: 75, mu: 0.075, sigma: 0.22, dt: 1 / 52 },
+    },
+    // === HIGH RISK (H1, H2) ===
+    {
+      type: ProductType.STOCK,
+      symbol: 'TWAV',
+      name: 'TechWave',
       riskLevel: RiskLevel.HIGH,
       sector: 'TECH',
       isActive: true,
       isDividendEnabled: false,
       dividendPayoutIntervalWeeks: 4,
-      simulation: { initialPrice: 120, mu: 0.14, sigma: 0.33, dt: 1 / 52 },
+      simulation: { initialPrice: 130, mu: 0.12, sigma: 0.3, dt: 1 / 52 },
     },
     {
       type: ProductType.STOCK,
-      symbol: 'CQGROW',
-      name: 'CashQuest Growth Select',
-      riskLevel: RiskLevel.MED,
-      sector: 'CONSUMER',
+      symbol: 'GHUB',
+      name: 'GameHub',
+      riskLevel: RiskLevel.HIGH,
+      sector: 'GAMING',
       isActive: true,
       isDividendEnabled: false,
       dividendPayoutIntervalWeeks: 4,
-      simulation: { initialPrice: 95, mu: 0.1, sigma: 0.2, dt: 1 / 52 },
-    },
-    {
-      type: ProductType.STOCK,
-      symbol: 'CQDIV',
-      name: 'CashQuest Dividend Shield',
-      riskLevel: RiskLevel.LOW,
-      sector: 'UTILITY',
-      isActive: true,
-      isDividendEnabled: true,
-      dividendYieldAnnual: 0.055,
-      dividendPayoutIntervalWeeks: 4,
-      simulation: { initialPrice: 102, mu: 0.055, sigma: 0.1, dt: 1 / 52 },
+      simulation: { initialPrice: 60, mu: 0.14, sigma: 0.38, dt: 1 / 52 },
     },
   ];
 
@@ -2849,8 +2891,8 @@ async function main() {
       mainWalletBalance: 250000,
       investmentCash: 90000,
       holdings: [
-        { symbol: 'CQTECH', units: 180, avgCost: 118 },
-        { symbol: 'CQGROW', units: 220, avgCost: 94 },
+        { symbol: 'SCHMART', units: 200, avgCost: 84 },
+        { symbol: 'GRNPWR', units: 150, avgCost: 108 },
       ],
     },
     {
@@ -2859,8 +2901,8 @@ async function main() {
       mainWalletBalance: 200000,
       investmentCash: 120000,
       holdings: [
-        { symbol: 'CQTECH', units: 110, avgCost: 121 },
-        { symbol: 'CQDIV', units: 320, avgCost: 101.2 },
+        { symbol: 'TWAV', units: 100, avgCost: 128 },
+        { symbol: 'HLTHPLS', units: 300, avgCost: 94 },
       ],
     },
     {
@@ -2869,8 +2911,8 @@ async function main() {
       mainWalletBalance: 180000,
       investmentCash: 70000,
       holdings: [
-        { symbol: 'CQGROW', units: 380, avgCost: 93.4 },
-        { symbol: 'CQDIV', units: 240, avgCost: 100.8 },
+        { symbol: 'FSTFIN', units: 350, avgCost: 74 },
+        { symbol: 'GHUB', units: 280, avgCost: 59 },
       ],
     },
   ];
