@@ -41,9 +41,32 @@ export class InvestmentEventsService {
       ...(limit ? { take: limit } : {}),
     });
 
+    const weekNos = Array.from(new Set(data.map((item) => item.startWeek)));
+    const termWeeks = weekNos.length
+      ? await this.prisma.termWeek.findMany({
+          where: {
+            termId,
+            weekNo: { in: weekNos },
+          },
+          select: {
+            weekNo: true,
+            startDate: true,
+            endDate: true,
+          },
+        })
+      : [];
+    const weekByNo = new Map(termWeeks.map((week) => [week.weekNo, week]));
+
     return {
       success: true,
-      data,
+      data: data.map((item) => {
+        const startWeek = weekByNo.get(item.startWeek);
+        return {
+          ...item,
+          startWeekStartDate: startWeek?.startDate ?? null,
+          startWeekEndDate: startWeek?.endDate ?? null,
+        };
+      }),
       meta: {
         weekNo: targetWeek,
         includeUpcoming,

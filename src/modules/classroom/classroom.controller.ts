@@ -86,6 +86,21 @@ export class ClassroomController {
     return this.classroomService.listStudents(classroomId);
   }
 
+  @Get('classrooms/:classroomId/students/overview')
+  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  studentOverview(@Param('classroomId') classroomId: string) {
+    return this.classroomService.getStudentOverview(classroomId);
+  }
+
+  @Get('classrooms/:classroomId/students/:studentId/detail')
+  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  studentDetail(
+    @Param('classroomId') classroomId: string,
+    @Param('studentId') studentId: string,
+  ) {
+    return this.classroomService.getStudentDetail(classroomId, studentId);
+  }
+
   // -----------------------------
   // Home overview
   // -----------------------------
