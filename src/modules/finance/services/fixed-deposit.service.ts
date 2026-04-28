@@ -60,7 +60,7 @@ export class FixedDepositService {
     if (maturityWeekNo > 16) {
       throw new BadRequestException(
         `Cannot create fixed deposit: maturity week (${maturityWeekNo}) would exceed week 16. ` +
-        `Current week: ${startWeekNo}, deposit duration: ${fdBank.fixedDepositWeeks} weeks`,
+          `Current week: ${startWeekNo}, deposit duration: ${fdBank.fixedDepositWeeks} weeks`,
       );
     }
 
@@ -294,7 +294,10 @@ export class FixedDepositService {
   async listByStudent(studentProfileId: string) {
     const deposits = await this.prisma.fixedDeposit.findMany({
       where: { studentProfileId },
-      include: { fixedDepositBank: { include: { bank: true } }, transactions: { orderBy: { createdAt: 'desc' } } },
+      include: {
+        fixedDepositBank: { include: { bank: true } },
+        transactions: { orderBy: { createdAt: 'desc' } },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -537,7 +540,9 @@ export class FixedDepositService {
     const deposits = await this.prisma.fixedDeposit.findMany({
       where: { fixedDepositBankId },
       include: {
-        studentProfile: { select: { id: true, user: { select: { username: true } } } },
+        studentProfile: {
+          select: { id: true, user: { select: { username: true } } },
+        },
         fixedDepositBank: { include: { bank: true } },
         transactions: { orderBy: { createdAt: 'desc' } },
       },
@@ -565,13 +570,27 @@ export class FixedDepositService {
 
     const stats = {
       totalDeposits: fdBank.fixedDeposits.length,
-      activeDeposits: fdBank.fixedDeposits.filter((d) => d.status === 'ACTIVE').length,
-      maturedDeposits: fdBank.fixedDeposits.filter((d) => d.status === 'MATURED').length,
-      earlyWithdrawals: fdBank.fixedDeposits.filter((d) => d.status === 'WITHDRAWN_EARLY').length,
-      totalPrincipal: fdBank.fixedDeposits.reduce((sum, d) => sum.plus(d.principal), new Prisma.Decimal(0)),
+      activeDeposits: fdBank.fixedDeposits.filter((d) => d.status === 'ACTIVE')
+        .length,
+      maturedDeposits: fdBank.fixedDeposits.filter(
+        (d) => d.status === 'MATURED',
+      ).length,
+      earlyWithdrawals: fdBank.fixedDeposits.filter(
+        (d) => d.status === 'WITHDRAWN_EARLY',
+      ).length,
+      totalPrincipal: fdBank.fixedDeposits.reduce(
+        (sum, d) => sum.plus(d.principal),
+        new Prisma.Decimal(0),
+      ),
     };
 
-    return { success: true, data: { bank: { id: fdBank.bank.id, name: fdBank.bank.name }, statistics: stats } };
+    return {
+      success: true,
+      data: {
+        bank: { id: fdBank.bank.id, name: fdBank.bank.name },
+        statistics: stats,
+      },
+    };
   }
 
   /**

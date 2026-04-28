@@ -136,7 +136,9 @@ export class QuestService {
       iconKey: dto.iconKey ?? '',
       iconColorHex: dto.iconColorHex ?? '',
       rewardCoins: dto.rewardCoins ?? 0,
-      deadlineAt: dto.deadlineAt ? new Date(dto.deadlineAt).toISOString() : null,
+      deadlineAt: dto.deadlineAt
+        ? new Date(dto.deadlineAt).toISOString()
+        : null,
       questions: dto.questions ?? [],
     });
   }
@@ -223,9 +225,7 @@ export class QuestService {
       }
 
       if (!['text', 'file'].includes(question.type)) {
-        throw new BadRequestException(
-          `ชนิดคำถามที่ ${index + 1} ไม่ถูกต้อง`,
-        );
+        throw new BadRequestException(`ชนิดคำถามที่ ${index + 1} ไม่ถูกต้อง`);
       }
     });
   }
@@ -830,8 +830,7 @@ export class QuestService {
         existing.description ??
         undefined,
       iconKey: (draft?.iconKey as string | undefined) ?? undefined,
-      iconColorHex:
-        (draft?.iconColorHex as string | undefined) ?? undefined,
+      iconColorHex: (draft?.iconColorHex as string | undefined) ?? undefined,
       rewardCoins:
         typeof draft?.rewardCoins === 'number'
           ? draft.rewardCoins
@@ -1008,12 +1007,12 @@ export class QuestService {
     });
 
     const maxScore = quest.quizId
-      ? (
+      ? ((
           await this.prisma.quizQuestion.aggregate({
             where: { quizId: quest.quizId },
             _sum: { points: true },
           })
-        )._sum.points ?? 0
+        )._sum.points ?? 0)
       : 0;
 
     const latestAttempts = quest.quizId
@@ -1063,25 +1062,22 @@ export class QuestService {
         typeof payload === 'object' &&
         !Array.isArray(payload) &&
         Array.isArray((payload as Record<string, unknown>).answers)
-          ? ((payload as Record<string, unknown>).answers as unknown[]).reduce<number>(
-              (sum, rawAnswer) => {
-                if (
-                  !rawAnswer ||
-                  typeof rawAnswer !== 'object' ||
-                  Array.isArray(rawAnswer)
-                ) {
-                  return sum;
-                }
+          ? (
+              (payload as Record<string, unknown>).answers as unknown[]
+            ).reduce<number>((sum, rawAnswer) => {
+              if (
+                !rawAnswer ||
+                typeof rawAnswer !== 'object' ||
+                Array.isArray(rawAnswer)
+              ) {
+                return sum;
+              }
 
-                const awardedPoints = Number(
-                  (rawAnswer as Record<string, unknown>).awardedPoints ?? 0,
-                );
-                return Number.isFinite(awardedPoints)
-                  ? sum + awardedPoints
-                  : sum;
-              },
-              0,
-            )
+              const awardedPoints = Number(
+                (rawAnswer as Record<string, unknown>).awardedPoints ?? 0,
+              );
+              return Number.isFinite(awardedPoints) ? sum + awardedPoints : sum;
+            }, 0)
           : null;
       const userInfo = submission.studentProfile.user;
       rowsByUserId.set(userInfo.id, {
@@ -1095,9 +1091,10 @@ export class QuestService {
             : submittedAt && quest.deadlineAt && submittedAt > quest.deadlineAt
               ? 'late'
               : 'pending',
-        score: submission.status === QuestSubmissionStatus.APPROVED
-          ? payloadScore
-          : null,
+        score:
+          submission.status === QuestSubmissionStatus.APPROVED
+            ? payloadScore
+            : null,
       });
     }
 
@@ -1114,7 +1111,9 @@ export class QuestService {
         studentCode: userInfo.email,
         submittedAt: attempt.submittedAt?.toISOString() ?? null,
         status:
-          attempt.submittedAt && quest.deadlineAt && attempt.submittedAt > quest.deadlineAt
+          attempt.submittedAt &&
+          quest.deadlineAt &&
+          attempt.submittedAt > quest.deadlineAt
             ? 'late'
             : 'checked',
         score: attempt.score,

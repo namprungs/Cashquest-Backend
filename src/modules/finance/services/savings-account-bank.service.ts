@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateSavingsAccountBankDto } from '../dto/create-savings-account-bank.dto';
@@ -143,6 +147,9 @@ export class SavingsAccountBankService {
       where: { id },
     });
 
-    return { success: true, message: 'Savings account bank config deleted successfully' };
+    return {
+      success: true,
+      message: 'Savings account bank config deleted successfully',
+    };
   }
 }

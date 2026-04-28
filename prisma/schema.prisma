@@ -978,6 +978,8 @@ enum RiskLevel {
 enum PriceGenerationType {
   GBM
   GBM_EVENT_ADJUSTED
+  VASICEK
+  VASICEK_EVENT_ADJUSTED
   LIVE_TICK
   LIVE_FINALIZED
   MANUAL
@@ -1068,9 +1070,19 @@ model ProductSimulation {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   initialPrice Decimal @map("initial_price") @db.Decimal(18, 6)
+  model        String  @default("GBM")
   mu           Decimal @db.Decimal(10, 6)
   sigma        Decimal @db.Decimal(10, 6)
   dt           Decimal @db.Decimal(10, 6)
+
+  faceValue          Decimal? @map("face_value") @db.Decimal(18, 6)
+  couponRate         Decimal? @map("coupon_rate") @db.Decimal(10, 6)
+  initialYield       Decimal? @map("initial_yield") @db.Decimal(10, 6)
+  modifiedDuration   Decimal? @map("modified_duration") @db.Decimal(10, 6)
+  kappa              Decimal? @db.Decimal(10, 6)
+  theta              Decimal? @db.Decimal(10, 6)
+  sigmaYield         Decimal? @map("sigma_yield") @db.Decimal(10, 6)
+  yieldFloor         Decimal  @default(0.001) @map("yield_floor") @db.Decimal(10, 6)
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -1112,6 +1124,8 @@ model ProductPrice {
 
   muUsed    Decimal? @map("mu_used") @db.Decimal(10, 6)
   sigmaUsed Decimal? @map("sigma_used") @db.Decimal(10, 6)
+  yieldOpen Decimal? @map("yield_open") @db.Decimal(10, 6)
+  yieldClose Decimal? @map("yield_close") @db.Decimal(10, 6)
 
   eventId        String?             @map("event_id") @db.Uuid
   event          EconomicEvent?      @relation(fields: [eventId], references: [id], onDelete: SetNull)
@@ -1141,6 +1155,7 @@ model ProductLivePriceTick {
 
   muUsed    Decimal? @map("mu_used") @db.Decimal(10, 6)
   sigmaUsed Decimal? @map("sigma_used") @db.Decimal(10, 6)
+  yieldValue Decimal? @map("yield_value") @db.Decimal(10, 6)
 
   eventId        String?             @map("event_id") @db.Uuid
   event          EconomicEvent?      @relation(fields: [eventId], references: [id], onDelete: SetNull)
@@ -1240,6 +1255,7 @@ model BondPosition {
   holdingId String  @map("holding_id") @db.Uuid
   holding   Holding @relation(fields: [holdingId], references: [id], onDelete: Cascade)
 
+  units               Decimal @default(1) @db.Decimal(18, 6)
   faceValue           Decimal @map("face_value") @db.Decimal(18, 6)
   couponRate          Decimal @map("coupon_rate") @db.Decimal(10, 6)
   couponIntervalWeeks Int     @map("coupon_interval_weeks")

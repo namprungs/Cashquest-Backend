@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { BankService } from '../services/bank.service';
 import { SavingsAccountBankService } from '../services/savings-account-bank.service';
 import { FixedDepositBankService } from '../services/fixed-deposit-bank.service';
@@ -62,7 +70,10 @@ export class BankController {
 
   @Post(':bankId/savings-config')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
-  createSavingsConfig(@Param('bankId') bankId: string, @Body() dto: CreateSavingsAccountBankDto) {
+  createSavingsConfig(
+    @Param('bankId') bankId: string,
+    @Body() dto: CreateSavingsAccountBankDto,
+  ) {
     return this.savingsAccountBankService.create(bankId, dto);
   }
 
@@ -78,7 +89,10 @@ export class BankController {
 
   @Put('savings-config/:configId')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
-  updateSavingsConfig(@Param('configId') configId: string, @Body() dto: UpdateSavingsAccountBankDto) {
+  updateSavingsConfig(
+    @Param('configId') configId: string,
+    @Body() dto: UpdateSavingsAccountBankDto,
+  ) {
     return this.savingsAccountBankService.update(configId, dto);
   }
 
@@ -94,7 +108,10 @@ export class BankController {
 
   @Post(':bankId/fd-config')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
-  createFdConfig(@Param('bankId') bankId: string, @Body() dto: CreateFixedDepositBankDto) {
+  createFdConfig(
+    @Param('bankId') bankId: string,
+    @Body() dto: CreateFixedDepositBankDto,
+  ) {
     return this.fixedDepositBankService.create(bankId, dto);
   }
 
@@ -110,7 +127,10 @@ export class BankController {
 
   @Put('fd-config/:configId')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
-  updateFdConfig(@Param('configId') configId: string, @Body() dto: UpdateFixedDepositBankDto) {
+  updateFdConfig(
+    @Param('configId') configId: string,
+    @Body() dto: UpdateFixedDepositBankDto,
+  ) {
     return this.fixedDepositBankService.update(configId, dto);
   }
 

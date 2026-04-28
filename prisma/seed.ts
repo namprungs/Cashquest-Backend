@@ -1932,7 +1932,6 @@ async function main() {
         interestRate: 0.0075,
         withdrawLimitPerTerm: 2000,
         feePerTransaction: 0,
-
       },
       fdConfig: {
         interestRate: 0.0175,
@@ -2154,16 +2153,26 @@ async function main() {
     name: string;
     riskLevel: RiskLevel;
     sector: string;
+    metaJson?: Prisma.InputJsonValue;
     isActive: boolean;
     isDividendEnabled: boolean;
     dividendYieldAnnual?: number;
     dividendPayoutIntervalWeeks?: number;
     fixedDividendPerUnit?: number;
     simulation: {
+      model?: string;
       initialPrice: number;
-      mu: number;
-      sigma: number;
+      mu?: number;
+      sigma?: number;
       dt: number;
+      faceValue?: number;
+      couponRate?: number;
+      initialYield?: number;
+      modifiedDuration?: number;
+      kappa?: number;
+      theta?: number;
+      sigmaYield?: number;
+      yieldFloor?: number;
     };
   }[] = [
     // === LOW RISK (L1, L2) ===
@@ -2238,16 +2247,115 @@ async function main() {
       dividendPayoutIntervalWeeks: 4,
       simulation: { initialPrice: 60, mu: 0.14, sigma: 0.38, dt: 1 / 52 },
     },
+    {
+      type: ProductType.BOND,
+      symbol: 'TGBSHORT',
+      name: 'ThaiGovBond Short',
+      riskLevel: RiskLevel.LOW,
+      sector: 'GOVERNMENT_BOND',
+      metaJson: {
+        tag: 'B1',
+        durationYears: 2,
+        maturityWeeks: 16,
+        weeklyPriceVolPct: 0.26,
+      },
+      isActive: true,
+      isDividendEnabled: true,
+      dividendPayoutIntervalWeeks: 4,
+      simulation: {
+        model: 'VASICEK',
+        initialPrice: 1000,
+        mu: 0,
+        sigma: 0,
+        dt: 1 / 52,
+        faceValue: 1000,
+        couponRate: 0.02,
+        initialYield: 0.02,
+        modifiedDuration: 1.96,
+        kappa: 0.8,
+        theta: 0.02,
+        sigmaYield: 0.006,
+      },
+    },
+    {
+      type: ProductType.BOND,
+      symbol: 'TGBMED',
+      name: 'ThaiGovBond Medium',
+      riskLevel: RiskLevel.LOW,
+      sector: 'GOVERNMENT_BOND',
+      metaJson: {
+        tag: 'B2',
+        durationYears: 5,
+        maturityWeeks: 16,
+        weeklyPriceVolPct: 0.53,
+      },
+      isActive: true,
+      isDividendEnabled: true,
+      dividendPayoutIntervalWeeks: 4,
+      simulation: {
+        model: 'VASICEK',
+        initialPrice: 1000,
+        mu: 0,
+        sigma: 0,
+        dt: 1 / 52,
+        faceValue: 1000,
+        couponRate: 0.025,
+        initialYield: 0.025,
+        modifiedDuration: 4.76,
+        kappa: 0.5,
+        theta: 0.025,
+        sigmaYield: 0.008,
+      },
+    },
+    {
+      type: ProductType.BOND,
+      symbol: 'TGBLONG',
+      name: 'ThaiGovBond Long',
+      riskLevel: RiskLevel.MED,
+      sector: 'GOVERNMENT_BOND',
+      metaJson: {
+        tag: 'B3',
+        durationYears: 10,
+        maturityWeeks: 16,
+        weeklyPriceVolPct: 1.27,
+      },
+      isActive: true,
+      isDividendEnabled: true,
+      dividendPayoutIntervalWeeks: 4,
+      simulation: {
+        model: 'VASICEK',
+        initialPrice: 1000,
+        mu: 0,
+        sigma: 0,
+        dt: 1 / 52,
+        faceValue: 1000,
+        couponRate: 0.03,
+        initialYield: 0.03,
+        modifiedDuration: 9.17,
+        kappa: 0.3,
+        theta: 0.03,
+        sigmaYield: 0.01,
+      },
+    },
   ];
 
   const products: {
     id: string;
     symbol: string;
     simulation: {
+      model?: string;
       initialPrice: number;
-      mu: number;
-      sigma: number;
+      mu?: number;
+      sigma?: number;
       dt: number;
+      faceValue?: number;
+      couponRate?: number;
+      initialYield?: number;
+      modifiedDuration?: number;
+      kappa?: number;
+      theta?: number;
+      sigmaYield?: number;
+      yieldFloor?: number;
     };
   }[] = [];
 
@@ -2264,11 +2372,13 @@ async function main() {
         dividendPayoutIntervalWeeks: seed.dividendPayoutIntervalWeeks ?? 4,
         fixedDividendPerUnit: seed.fixedDividendPerUnit,
         isActive: seed.isActive,
-        metaJson: {
-          source: 'seed',
-          market: 'demo',
-          category: 'price-chart',
-        } as Prisma.InputJsonValue,
+        metaJson:
+          seed.metaJson ??
+          ({
+            source: 'seed',
+            market: 'demo',
+            category: 'price-chart',
+          } as Prisma.InputJsonValue),
       },
       create: {
         type: seed.type,
@@ -2281,11 +2391,13 @@ async function main() {
         dividendPayoutIntervalWeeks: seed.dividendPayoutIntervalWeeks ?? 4,
         fixedDividendPerUnit: seed.fixedDividendPerUnit,
         isActive: seed.isActive,
-        metaJson: {
-          source: 'seed',
-          market: 'demo',
-          category: 'price-chart',
-        } as Prisma.InputJsonValue,
+        metaJson:
+          seed.metaJson ??
+          ({
+            source: 'seed',
+            market: 'demo',
+            category: 'price-chart',
+          } as Prisma.InputJsonValue),
       },
       select: {
         id: true,
@@ -2302,17 +2414,35 @@ async function main() {
       },
       update: {
         initialPrice: seed.simulation.initialPrice,
-        mu: seed.simulation.mu,
-        sigma: seed.simulation.sigma,
+        model: seed.simulation.model ?? 'GBM',
+        mu: seed.simulation.mu ?? 0,
+        sigma: seed.simulation.sigma ?? 0,
         dt: seed.simulation.dt,
+        faceValue: seed.simulation.faceValue,
+        couponRate: seed.simulation.couponRate,
+        initialYield: seed.simulation.initialYield,
+        modifiedDuration: seed.simulation.modifiedDuration,
+        kappa: seed.simulation.kappa,
+        theta: seed.simulation.theta,
+        sigmaYield: seed.simulation.sigmaYield,
+        yieldFloor: seed.simulation.yieldFloor ?? 0.001,
       },
       create: {
         termId: term.id,
         productId: product.id,
         initialPrice: seed.simulation.initialPrice,
-        mu: seed.simulation.mu,
-        sigma: seed.simulation.sigma,
+        model: seed.simulation.model ?? 'GBM',
+        mu: seed.simulation.mu ?? 0,
+        sigma: seed.simulation.sigma ?? 0,
         dt: seed.simulation.dt,
+        faceValue: seed.simulation.faceValue,
+        couponRate: seed.simulation.couponRate,
+        initialYield: seed.simulation.initialYield,
+        modifiedDuration: seed.simulation.modifiedDuration,
+        kappa: seed.simulation.kappa,
+        theta: seed.simulation.theta,
+        sigmaYield: seed.simulation.sigmaYield,
+        yieldFloor: seed.simulation.yieldFloor ?? 0.001,
       },
     });
 
@@ -2769,6 +2899,8 @@ async function main() {
   for (const product of products) {
     const rng = createSeededRng(20260301 + product.symbol.length * 97);
     let previousClose = product.simulation.initialPrice;
+    let previousYield =
+      product.simulation.initialYield ?? product.simulation.couponRate ?? 0;
 
     const rows: {
       termId: string;
@@ -2781,6 +2913,8 @@ async function main() {
       returnPct: number;
       muUsed: number;
       sigmaUsed: number;
+      yieldOpen?: number | null;
+      yieldClose?: number | null;
       eventId: string | null;
       generationType: PriceGenerationType;
       createdAt: Date;
@@ -2813,22 +2947,66 @@ async function main() {
         ? Number(eventImpact.sigmaMultiplier)
         : 1;
 
-      const mu = product.simulation.mu + regimeMuAdj + eventMuAdj;
-      const sigma = Math.max(
-        0.005,
-        (product.simulation.sigma + regimeSigmaAdj + eventSigmaAdj) *
-          sigmaMultiplier,
-      );
-
       const z = gaussianFromRng(rng);
       const dt = product.simulation.dt;
-      const drift = (mu - 0.5 * sigma * sigma) * dt;
-      const diffusion = sigma * Math.sqrt(dt) * z;
-
       const open = previousClose;
-      const close = Math.max(0.01, open * Math.exp(drift + diffusion));
+      const isBond =
+        product.simulation.model === 'VASICEK' ||
+        product.symbol.startsWith('TGB');
+      let close: number;
+      let mu: number;
+      let sigma: number;
+      let yieldOpen: number | null = null;
+      let yieldClose: number | null = null;
+      let generationType: PriceGenerationType;
 
-      const wickNoise = Math.abs(gaussianFromRng(rng)) * 0.012;
+      if (isBond) {
+        yieldOpen = previousYield;
+        sigma = Math.max(
+          0.000001,
+          ((product.simulation.sigmaYield ?? 0) +
+            regimeSigmaAdj +
+            eventSigmaAdj) *
+            sigmaMultiplier,
+        );
+        mu = product.simulation.kappa ?? 0;
+        const dy =
+          (product.simulation.kappa ?? 0) *
+            ((product.simulation.theta ?? yieldOpen) - yieldOpen) *
+            dt +
+          sigma * Math.sqrt(dt) * z;
+        yieldClose = Math.max(
+          product.simulation.yieldFloor ?? 0.001,
+          yieldOpen + dy,
+        );
+        close = Math.max(
+          0.01,
+          open *
+            (1 -
+              (product.simulation.modifiedDuration ?? 0) *
+                (yieldClose - yieldOpen)),
+        );
+        previousYield = yieldClose;
+        generationType = activeEvent
+          ? PriceGenerationType.VASICEK_EVENT_ADJUSTED
+          : PriceGenerationType.VASICEK;
+      } else {
+        mu = (product.simulation.mu ?? 0) + regimeMuAdj + eventMuAdj;
+        sigma = Math.max(
+          0.005,
+          ((product.simulation.sigma ?? 0) + regimeSigmaAdj + eventSigmaAdj) *
+            sigmaMultiplier,
+        );
+        const drift = (mu - 0.5 * sigma * sigma) * dt;
+        const diffusion = sigma * Math.sqrt(dt) * z;
+        close = Math.max(0.01, open * Math.exp(drift + diffusion));
+        generationType = activeEvent
+          ? PriceGenerationType.GBM_EVENT_ADJUSTED
+          : PriceGenerationType.GBM;
+      }
+
+      const wickNoise =
+        Math.abs(gaussianFromRng(rng)) * (isBond ? 0.0025 : 0.012);
       const high = Math.max(open, close) * (1 + wickNoise);
       const low = Math.max(0.01, Math.min(open, close) * (1 - wickNoise));
 
@@ -2843,10 +3021,10 @@ async function main() {
         returnPct: open === 0 ? 0 : (close - open) / open,
         muUsed: mu,
         sigmaUsed: sigma,
+        yieldOpen,
+        yieldClose,
         eventId: activeEvent?.eventId ?? null,
-        generationType: activeEvent
-          ? PriceGenerationType.GBM_EVENT_ADJUSTED
-          : PriceGenerationType.GBM,
+        generationType,
         createdAt: addDays(term.startDate, point - 1),
       });
 

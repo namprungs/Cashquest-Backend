@@ -300,6 +300,32 @@ export class UserService {
             },
           });
 
+    // ---- Stats for profile page ----
+    const profileId = studentProfile?.id;
+
+    const [completedQuests, earnedBadges, portfolioFinance] = await Promise.all(
+      [
+        profileId
+          ? this.prisma.questSubmission.count({
+              where: {
+                studentProfileId: profileId,
+                status: 'APPROVED',
+              },
+            })
+          : Promise.resolve(0),
+        profileId
+          ? this.prisma.studentBadge.count({
+              where: {
+                studentProfileId: profileId,
+              },
+            })
+          : Promise.resolve(0),
+        profileId
+          ? this._getPortfolioGrowthPercent(profileId)
+          : Promise.resolve(0),
+      ],
+    );
+
     return {
       success: true,
       data: {
@@ -307,15 +333,88 @@ export class UserService {
         displayName: user.username,
         studentCode: user.username,
         email: user.email,
-        studentProfileId: studentProfile?.id ?? null,
+        studentProfileId: profileId ?? null,
         walletBalance: studentProfile?.mainWallet?.balance ?? 0,
         termId,
         classroomName: classroomEnrollment?.classroom?.name ?? null,
         classroomId: classroomEnrollment?.classroom?.id ?? null,
         currentWeekNo,
         lifeStage: activeStageRule?.lifeStage ?? null,
+        stats: {
+          missionCompleted: completedQuests,
+          achievementsCount: earnedBadges,
+          portfolioGrowth: portfolioFinance,
+        },
       },
     };
+  }
+
+  private async _getPortfolioGrowthPercent(
+    studentProfileId: string,
+  ): Promise<number> {
+    const profile = await this.prisma.studentProfile.findUnique({
+      where: { id: studentProfileId },
+      select: {
+        mainWallet: { select: { id: true, balance: true } },
+        investmentWallet: { select: { id: true, balance: true } },
+      },
+    });
+
+    if (!profile) return 0;
+
+    const walletBalance = Number(profile.mainWallet?.balance ?? 0);
+    const investmentBalance = Number(profile.investmentWallet?.balance ?? 0);
+
+    const [savingsSum, fdSum] = await Promise.all([
+      this.prisma.savingsAccount.aggregate({
+        where: {
+          studentProfileId,
+          status: 'ACTIVE',
+        },
+        _sum: { balance: true },
+      }),
+      this.prisma.fixedDeposit.aggregate({
+        where: {
+          studentProfileId,
+          status: 'ACTIVE',
+        },
+        _sum: { principal: true },
+      }),
+    ]);
+
+    const savingsBalance = Number(savingsSum._sum.balance ?? 0);
+    const fdBalance = Number(fdSum._sum.principal ?? 0);
+    const currentTotal =
+      walletBalance + investmentBalance + savingsBalance + fdBalance;
+
+    // Compare with start of month
+    const monthStart = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      1,
+    );
+
+    const mainWalletSnapshot = profile.mainWallet?.id
+      ? await this.prisma.walletTransaction.findFirst({
+          where: {
+            walletId: profile.mainWallet.id,
+            createdAt: { lt: monthStart },
+          },
+          orderBy: [{ createdAt: 'desc' }],
+          select: { balanceAfter: true },
+        })
+      : null;
+
+    const previousWallet = Number(
+      mainWalletSnapshot?.balanceAfter ?? walletBalance,
+    );
+
+    const previousTotal = previousWallet + savingsBalance + fdBalance;
+
+    if (previousTotal === 0) return 0;
+
+    const growth = ((currentTotal - previousTotal) / previousTotal) * 100;
+    return Math.round(growth * 100) / 100;
   }
 
   async getMyCurrentTermId(userId: string) {
@@ -371,5 +470,75 @@ export class UserService {
 
   findAll() {
     return `This action returns all user`;
+  }
+
+  async getClassroomLeaderboard(userId: string, termId: string, take: number) {
+    // 1. Find which classroom the student belongs to in this term
+    const enrollment = await this.prisma.classroomStudent.findFirst({
+      where: {
+        studentId: userId,
+        classroom: { termId },
+      },
+      select: {
+        classroomId: true,
+      },
+    });
+
+    if (!enrollment) {
+      return {
+        success: true,
+        data: [],
+      };
+    }
+
+    // 2. Get all student user IDs in that classroom
+    const classroomStudents = await this.prisma.classroomStudent.findMany({
+      where: { classroomId: enrollment.classroomId },
+      select: {
+        studentId: true,
+      },
+    });
+
+    const studentUserIds = classroomStudents.map((cs) => cs.studentId);
+
+    // 3. Get student profiles with wallet balances for those users in this term
+    const profiles = await this.prisma.studentProfile.findMany({
+      where: {
+        userId: { in: studentUserIds },
+        termId,
+      },
+      select: {
+        user: { select: { username: true } },
+        mainWallet: { select: { balance: true } },
+      },
+    });
+
+    // 4. Sort by wallet balance descending and compute rank
+    const ranked = profiles
+      .map((p) => ({
+        name: p.user.username,
+        totalCoin: Number(p.mainWallet?.balance ?? 0),
+      }))
+      .sort((a, b) => b.totalCoin - a.totalCoin);
+
+    let rank = 1;
+    const leaderboard = ranked.slice(0, take).map((item, index) => {
+      if (index > 0 && item.totalCoin === ranked[index - 1].totalCoin) {
+        // same balance → same rank
+      } else {
+        rank = index + 1;
+      }
+      return {
+        rank,
+        name: item.name,
+        totalCoin: item.totalCoin,
+        changePct: 0,
+      };
+    });
+
+    return {
+      success: true,
+      data: leaderboard,
+    };
   }
 }

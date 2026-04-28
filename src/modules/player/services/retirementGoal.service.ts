@@ -73,11 +73,18 @@ export class RetirementGoalService {
   }
 
   private async calculateCurrentAmountFromAssets(studentProfileId: string) {
-    const [wallet, savingsAggregate] = await Promise.all([
-      this.prisma.wallet.findUnique({
-        where: { studentProfileId },
-        select: { balance: true },
-      }),
+    const profile = await this.prisma.studentProfile.findUnique({
+      where: { id: studentProfileId },
+      select: {
+        mainWallet: { select: { balance: true } },
+        investmentWallet: { select: { balance: true } },
+      },
+    });
+
+    const walletBalance = this.toNumber(profile?.mainWallet?.balance);
+    const investmentBalance = this.toNumber(profile?.investmentWallet?.balance);
+
+    const [savingsAggregate, fdAggregate] = await Promise.all([
       this.prisma.savingsAccount.aggregate({
         where: {
           studentProfileId,
@@ -87,12 +94,21 @@ export class RetirementGoalService {
           balance: true,
         },
       }),
+      this.prisma.fixedDeposit.aggregate({
+        where: {
+          studentProfileId,
+          status: 'ACTIVE',
+        },
+        _sum: {
+          principal: true,
+        },
+      }),
     ]);
 
-    const walletBalance = this.toNumber(wallet?.balance);
     const savingsBalance = this.toNumber(savingsAggregate._sum.balance);
+    const fdBalance = this.toNumber(fdAggregate._sum.principal);
 
-    return walletBalance + savingsBalance;
+    return walletBalance + investmentBalance + savingsBalance + fdBalance;
   }
 
   async create(termId: string, userId: string, dto: CreateRetirementGoalDto) {
@@ -130,7 +146,17 @@ export class RetirementGoalService {
         orderBy: { createdAt: 'desc' },
       });
 
-      return { success: true, data: items };
+      // Recalculate currentAmount from latest assets
+      const currentAmount = await this.calculateCurrentAmountFromAssets(
+        profile.id,
+      );
+
+      const updatedItems = items.map((item) => ({
+        ...item,
+        currentAmount: new Prisma.Decimal(currentAmount),
+      }));
+
+      return { success: true, data: updatedItems };
     } catch (e) {
       this.handleError(e);
     }

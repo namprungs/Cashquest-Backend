@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFixedDepositBankDto } from '../dto/create-fixed-deposit-bank.dto';
@@ -143,6 +147,9 @@ export class FixedDepositBankService {
       where: { id },
     });
 
-    return { success: true, message: 'Fixed deposit bank config deleted successfully' };
+    return {
+      success: true,
+      message: 'Fixed deposit bank config deleted successfully',
+    };
   }
 }

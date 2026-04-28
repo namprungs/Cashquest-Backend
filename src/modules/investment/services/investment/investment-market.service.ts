@@ -3,7 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PriceGenerationType, TermEventStatus } from '@prisma/client';
+import {
+  PriceGenerationType,
+  ProductType,
+  TermEventStatus,
+} from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FinalizeLiveWeekDto } from '../../dto/finalize-live-week.dto';
 import { GenerateLiveTicksDto } from '../../dto/generate-live-ticks.dto';
@@ -34,8 +38,167 @@ export class InvestmentMarketService {
     }
   }
 
+  private isBondSimulation(sim: {
+    model?: string | null;
+    product?: { type?: ProductType | null } | null;
+  }) {
+    return (
+      sim.product?.type === ProductType.BOND ||
+      sim.model?.toUpperCase?.() === 'VASICEK'
+    );
+  }
+
+  private mapSimulation(sim: {
+    initialPrice: unknown;
+    model?: unknown;
+    mu: unknown;
+    sigma: unknown;
+    dt: unknown;
+    faceValue?: unknown;
+    couponRate?: unknown;
+    initialYield?: unknown;
+    modifiedDuration?: unknown;
+    kappa?: unknown;
+    theta?: unknown;
+    sigmaYield?: unknown;
+    yieldFloor?: unknown;
+  }) {
+    return {
+      initialPrice: sim.initialPrice,
+      model: sim.model ?? 'GBM',
+      mu: sim.mu,
+      sigma: sim.sigma,
+      dt: sim.dt,
+      faceValue: sim.faceValue ?? null,
+      couponRate: sim.couponRate ?? null,
+      initialYield: sim.initialYield ?? null,
+      modifiedDuration: sim.modifiedDuration ?? null,
+      kappa: sim.kappa ?? null,
+      theta: sim.theta ?? null,
+      sigmaYield: sim.sigmaYield ?? null,
+      yieldFloor: sim.yieldFloor ?? null,
+    };
+  }
+
+  private stepBond(
+    sim: {
+      kappa?: unknown;
+      theta?: unknown;
+      sigmaYield?: unknown;
+      modifiedDuration?: unknown;
+      yieldFloor?: unknown;
+    },
+    currentYield: number,
+    currentPrice: number,
+    dt: number,
+    randomShock: number,
+    sigmaAdjustment = 0,
+    sigmaMultiplier = 1,
+  ) {
+    const kappa = this.core.toNumber(sim.kappa);
+    const theta = this.core.toNumber(sim.theta);
+    const baseSigmaYield = this.core.toNumber(sim.sigmaYield);
+    const modifiedDuration = this.core.toNumber(sim.modifiedDuration);
+    const yieldFloor = this.core.toNumber(sim.yieldFloor) || 0.001;
+    const sigmaYield = Math.max(
+      0.000001,
+      (baseSigmaYield + sigmaAdjustment) * sigmaMultiplier,
+    );
+    const dy =
+      kappa * (theta - currentYield) * dt +
+      sigmaYield * Math.sqrt(dt) * randomShock;
+    const newYield = Math.max(yieldFloor, currentYield + dy);
+    const priceChange = -modifiedDuration * (newYield - currentYield);
+    const newPrice = Math.max(0.0001, currentPrice * (1 + priceChange));
+
+    return {
+      newYield,
+      newPrice,
+      sigmaYield,
+      returnPct:
+        currentPrice === 0 ? 0 : (newPrice - currentPrice) / currentPrice,
+    };
+  }
+
+  private asRecord(value: unknown): Record<string, unknown> | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return undefined;
+    }
+
+    return value as Record<string, unknown>;
+  }
+
+  private getBondDisplayMeta(
+    sim: {
+      product?: {
+        type?: ProductType | null;
+        metaJson?: unknown;
+        dividendPayoutIntervalWeeks?: number | null;
+      } | null;
+      couponRate?: unknown;
+      modifiedDuration?: unknown;
+    },
+    term: {
+      totalWeeks: number;
+      endDate: Date;
+      termWeeks: Array<{ weekNo: number; endDate: Date }>;
+    },
+  ) {
+    if (!this.isBondSimulation(sim)) {
+      return {};
+    }
+
+    const meta = this.asRecord(sim.product?.metaJson);
+    const durationYears =
+      this.core.toNumber(meta?.durationYears) ||
+      this.core.toNumber(meta?.termYears) ||
+      this.core.toNumber(sim.modifiedDuration);
+    const configuredMaturityWeeks =
+      this.core.toNumber(meta?.maturityWeeks) || term.totalWeeks;
+    const maturityWeekNo = Math.max(
+      1,
+      Math.min(term.totalWeeks, Math.round(configuredMaturityWeeks)),
+    );
+    const maturityWeek = term.termWeeks.find(
+      (week) => week.weekNo === maturityWeekNo,
+    );
+    const couponIntervalWeeks =
+      sim.product?.dividendPayoutIntervalWeeks &&
+      sim.product.dividendPayoutIntervalWeeks > 0
+        ? sim.product.dividendPayoutIntervalWeeks
+        : 4;
+
+    return {
+      durationYears,
+      totalCouponReturnPercent:
+        this.core.toNumber(sim.couponRate) * 100 * durationYears,
+      maturityWeekNo,
+      maturityDate: maturityWeek?.endDate ?? term.endDate,
+      couponIntervalWeeks,
+      couponIntervalLabel: `ทุก ${couponIntervalWeeks} สัปดาห์`,
+    };
+  }
+
   async listProducts(termId: string) {
-    await this.core.assertTermExists(termId);
+    const term = await this.prisma.term.findUnique({
+      where: { id: termId },
+      select: {
+        totalWeeks: true,
+        endDate: true,
+        termWeeks: {
+          select: {
+            weekNo: true,
+            endDate: true,
+          },
+          orderBy: { weekNo: 'asc' },
+        },
+      },
+    });
+
+    if (!term) {
+      throw new NotFoundException('Term not found');
+    }
+
     const currentWeek = await this.core.getCurrentWeek(termId);
 
     const simulations = await this.prisma.productSimulation.findMany({
@@ -87,15 +250,16 @@ export class InvestmentMarketService {
 
         const liveTicks = currentWeekTicks.length
           ? currentWeekTicks
-          : await this.prisma.productLivePriceTick.findMany({
-              where: {
-                termId,
-                productId: sim.productId,
-                tickedAt: { gte: oneDayAgo },
-              },
-              orderBy: [{ tickedAt: 'asc' }],
-              take: 500,
-            });
+          : (
+              await this.prisma.productLivePriceTick.findMany({
+                where: {
+                  termId,
+                  productId: sim.productId,
+                },
+                orderBy: [{ tickedAt: 'desc' }],
+                take: 500,
+              })
+            ).reverse();
 
         let sparkline = liveTicks.map((tick) => this.core.toNumber(tick.price));
 
@@ -129,17 +293,13 @@ export class InvestmentMarketService {
         return {
           ...sim.product,
           risk: this.mapRiskLevel(sim.product.riskLevel),
-          simulation: {
-            initialPrice: sim.initialPrice,
-            mu: sim.mu,
-            sigma: sim.sigma,
-            dt: sim.dt,
-          },
+          simulation: this.mapSimulation(sim),
           latestPrice: latestPriceByProduct.get(sim.productId) ?? null,
           liveTickPrice: latestLiveTick?.price ?? null,
           liveTickAt: latestLiveTick?.tickedAt ?? null,
           liveReturnPct,
           sparkline,
+          ...this.getBondDisplayMeta(sim, term),
         };
       }),
     );
@@ -148,7 +308,24 @@ export class InvestmentMarketService {
   }
 
   async getProductDetail(termId: string, productId: string) {
-    await this.core.assertTermExists(termId);
+    const term = await this.prisma.term.findUnique({
+      where: { id: termId },
+      select: {
+        totalWeeks: true,
+        endDate: true,
+        termWeeks: {
+          select: {
+            weekNo: true,
+            endDate: true,
+          },
+          orderBy: { weekNo: 'asc' },
+        },
+      },
+    });
+
+    if (!term) {
+      throw new NotFoundException('Term not found');
+    }
 
     const simulation = await this.prisma.productSimulation.findUnique({
       where: {
@@ -219,18 +396,14 @@ export class InvestmentMarketService {
         data: {
           ...simulation.product,
           risk: this.mapRiskLevel(simulation.product.riskLevel),
-          simulation: {
-            initialPrice: simulation.initialPrice,
-            mu: simulation.mu,
-            sigma: simulation.sigma,
-            dt: simulation.dt,
-          },
+          simulation: this.mapSimulation(simulation),
           latestPrice,
           liveTickPrice: latestTickAny?.price ?? null,
           liveTickAt: latestTickAny?.tickedAt ?? null,
           liveReturnPct: returnPct,
           previousPrice,
           returnPct,
+          ...this.getBondDisplayMeta(simulation, term),
         },
       };
     }
@@ -240,18 +413,14 @@ export class InvestmentMarketService {
       data: {
         ...simulation.product,
         risk: this.mapRiskLevel(simulation.product.riskLevel),
-        simulation: {
-          initialPrice: simulation.initialPrice,
-          mu: simulation.mu,
-          sigma: simulation.sigma,
-          dt: simulation.dt,
-        },
+        simulation: this.mapSimulation(simulation),
         latestPrice,
         liveTickPrice: latestLiveTick?.price ?? null,
         liveTickAt: latestLiveTick?.tickedAt ?? null,
         liveReturnPct,
         previousPrice,
         returnPct,
+        ...this.getBondDisplayMeta(simulation, term),
       },
     };
   }
@@ -410,6 +579,7 @@ export class InvestmentMarketService {
         include: {
           product: {
             select: {
+              type: true,
               symbol: true,
               sector: true,
               riskLevel: true,
@@ -476,7 +646,7 @@ export class InvestmentMarketService {
             weekNo: { lt: weekNo },
           },
           orderBy: [{ weekNo: 'desc' }],
-          select: { close: true },
+          select: { close: true, yieldClose: true },
         });
 
         const previousPrice = this.core.toNumber(
@@ -503,32 +673,53 @@ export class InvestmentMarketService {
           { muAdjustment: 0, sigmaAdjustment: 0, sigmaMultiplier: 1 },
         );
 
-        const muUsed =
-          this.core.toNumber(sim.mu) +
-          eventAdjustments.muAdjustment +
-          regimeMuAdj;
-
-        let sigmaUsed =
-          this.core.toNumber(sim.sigma) +
-          eventAdjustments.sigmaAdjustment +
-          regimeSigmaAdj;
-        sigmaUsed *= eventAdjustments.sigmaMultiplier;
-        sigmaUsed = Math.max(0.000001, sigmaUsed);
-
         const dtPerTick = Math.max(
           0.000000001,
           this.core.toNumber(sim.dt) / ticksPerWeek,
         );
         const randomShock = this.core.gaussianRandom();
-        const drift = (muUsed - 0.5 * sigmaUsed * sigmaUsed) * dtPerTick;
-        const diffusion = sigmaUsed * Math.sqrt(dtPerTick) * randomShock;
 
-        const price = Math.max(
-          0.0001,
-          previousPrice * Math.exp(drift + diffusion),
-        );
-        const returnPct =
-          previousPrice === 0 ? 0 : (price - previousPrice) / previousPrice;
+        let muUsed =
+          this.core.toNumber(sim.mu) +
+          eventAdjustments.muAdjustment +
+          regimeMuAdj;
+        let sigmaUsed =
+          this.core.toNumber(sim.sigma) +
+          eventAdjustments.sigmaAdjustment +
+          regimeSigmaAdj;
+        let price: number;
+        let returnPct: number;
+        let yieldValue: number | undefined;
+
+        if (this.isBondSimulation(sim)) {
+          const previousYield = this.core.toNumber(
+            previousTick?.yieldValue ??
+              previousClosePrice?.yieldClose ??
+              sim.initialYield,
+          );
+          const stepped = this.stepBond(
+            sim,
+            previousYield,
+            previousPrice,
+            dtPerTick,
+            randomShock,
+            eventAdjustments.sigmaAdjustment + regimeSigmaAdj,
+            eventAdjustments.sigmaMultiplier,
+          );
+          price = stepped.newPrice;
+          returnPct = stepped.returnPct;
+          yieldValue = stepped.newYield;
+          muUsed = this.core.toNumber(sim.kappa);
+          sigmaUsed = stepped.sigmaYield;
+        } else {
+          sigmaUsed *= eventAdjustments.sigmaMultiplier;
+          sigmaUsed = Math.max(0.000001, sigmaUsed);
+          const drift = (muUsed - 0.5 * sigmaUsed * sigmaUsed) * dtPerTick;
+          const diffusion = sigmaUsed * Math.sqrt(dtPerTick) * randomShock;
+          price = Math.max(0.0001, previousPrice * Math.exp(drift + diffusion));
+          returnPct =
+            previousPrice === 0 ? 0 : (price - previousPrice) / previousPrice;
+        }
 
         const row = await tx.productLivePriceTick.create({
           data: {
@@ -539,6 +730,7 @@ export class InvestmentMarketService {
             returnPct,
             muUsed,
             sigmaUsed,
+            yieldValue,
             eventId: applicableEvents[0]?.event.id,
             generationType: PriceGenerationType.LIVE_TICK,
           },
@@ -590,6 +782,7 @@ export class InvestmentMarketService {
         include: {
           product: {
             select: {
+              type: true,
               symbol: true,
               sector: true,
               riskLevel: true,
@@ -771,6 +964,8 @@ export class InvestmentMarketService {
             returnPct,
             muUsed: this.core.toNumber(last.muUsed),
             sigmaUsed: this.core.toNumber(last.sigmaUsed),
+            yieldOpen: first.yieldValue,
+            yieldClose: last.yieldValue,
             eventId: last.eventId,
             generationType: PriceGenerationType.LIVE_FINALIZED,
           },
@@ -785,6 +980,8 @@ export class InvestmentMarketService {
             returnPct,
             muUsed: this.core.toNumber(last.muUsed),
             sigmaUsed: this.core.toNumber(last.sigmaUsed),
+            yieldOpen: first.yieldValue,
+            yieldClose: last.yieldValue,
             eventId: last.eventId,
             generationType: PriceGenerationType.LIVE_FINALIZED,
           },
@@ -840,6 +1037,7 @@ export class InvestmentMarketService {
       include: {
         product: {
           select: {
+            type: true,
             symbol: true,
             sector: true,
             riskLevel: true,
@@ -921,7 +1119,7 @@ export class InvestmentMarketService {
         { muAdjustment: 0, sigmaAdjustment: 0, sigmaMultiplier: 1 },
       );
 
-      const muUsed =
+      let muUsed =
         this.core.toNumber(sim.mu) +
         eventAdjustments.muAdjustment +
         regimeMuAdj;
@@ -930,27 +1128,68 @@ export class InvestmentMarketService {
         this.core.toNumber(sim.sigma) +
         eventAdjustments.sigmaAdjustment +
         regimeSigmaAdj;
-      sigmaUsed *= eventAdjustments.sigmaMultiplier;
-      sigmaUsed = Math.max(0.000001, sigmaUsed);
-
       const dt = this.core.toNumber(sim.dt);
       const randomShock = this.core.gaussianRandom();
-      const drift = (muUsed - 0.5 * sigmaUsed * sigmaUsed) * dt;
-      const diffusion = sigmaUsed * Math.sqrt(dt) * randomShock;
-
-      const close = Math.max(
-        0.0001,
-        previousClose * Math.exp(drift + diffusion),
-      );
       const open = previousClose;
-      const high =
-        Math.max(open, close) *
-        (1 + Math.abs(this.core.gaussianRandom()) * 0.01);
-      const low =
-        Math.min(open, close) *
-        (1 - Math.abs(this.core.gaussianRandom()) * 0.01);
-      const returnPct =
-        previousClose === 0 ? 0 : (close - previousClose) / previousClose;
+      let close: number;
+      let high: number;
+      let low: number;
+      let returnPct: number;
+      let yieldOpen: number | undefined;
+      let yieldClose: number | undefined;
+      let generationType: PriceGenerationType =
+        applicableEvents.length > 0
+          ? PriceGenerationType.GBM_EVENT_ADJUSTED
+          : PriceGenerationType.GBM;
+
+      if (this.isBondSimulation(sim)) {
+        yieldOpen = this.core.toNumber(
+          previous?.yieldClose ?? sim.initialYield,
+        );
+        const stepped = this.stepBond(
+          sim,
+          yieldOpen,
+          previousClose,
+          dt,
+          randomShock,
+          eventAdjustments.sigmaAdjustment + regimeSigmaAdj,
+          eventAdjustments.sigmaMultiplier,
+        );
+        close = stepped.newPrice;
+        yieldClose = stepped.newYield;
+        returnPct = stepped.returnPct;
+        sigmaUsed = stepped.sigmaYield;
+        muUsed = this.core.toNumber(sim.kappa);
+        const intradayWiggle =
+          Math.abs(this.core.gaussianRandom()) *
+          Math.max(
+            0.0005,
+            this.core.toNumber(sim.modifiedDuration) *
+              sigmaUsed *
+              Math.sqrt(dt) *
+              0.25,
+          );
+        high = Math.max(open, close) * (1 + intradayWiggle);
+        low = Math.max(0.0001, Math.min(open, close) * (1 - intradayWiggle));
+        generationType =
+          applicableEvents.length > 0
+            ? PriceGenerationType.VASICEK_EVENT_ADJUSTED
+            : PriceGenerationType.VASICEK;
+      } else {
+        sigmaUsed *= eventAdjustments.sigmaMultiplier;
+        sigmaUsed = Math.max(0.000001, sigmaUsed);
+        const drift = (muUsed - 0.5 * sigmaUsed * sigmaUsed) * dt;
+        const diffusion = sigmaUsed * Math.sqrt(dt) * randomShock;
+        close = Math.max(0.0001, previousClose * Math.exp(drift + diffusion));
+        high =
+          Math.max(open, close) *
+          (1 + Math.abs(this.core.gaussianRandom()) * 0.01);
+        low =
+          Math.min(open, close) *
+          (1 - Math.abs(this.core.gaussianRandom()) * 0.01);
+        returnPct =
+          previousClose === 0 ? 0 : (close - previousClose) / previousClose;
+      }
 
       const firstActiveEvent = applicableEvents[0]?.event;
 
@@ -970,11 +1209,10 @@ export class InvestmentMarketService {
           returnPct,
           muUsed,
           sigmaUsed,
+          yieldOpen,
+          yieldClose,
           eventId: firstActiveEvent?.id,
-          generationType:
-            applicableEvents.length > 0
-              ? PriceGenerationType.GBM_EVENT_ADJUSTED
-              : PriceGenerationType.GBM,
+          generationType,
         },
         create: {
           termId,
@@ -987,11 +1225,10 @@ export class InvestmentMarketService {
           returnPct,
           muUsed,
           sigmaUsed,
+          yieldOpen,
+          yieldClose,
           eventId: firstActiveEvent?.id,
-          generationType:
-            applicableEvents.length > 0
-              ? PriceGenerationType.GBM_EVENT_ADJUSTED
-              : PriceGenerationType.GBM,
+          generationType,
         },
       });
 

@@ -26,7 +26,9 @@ export class SavingsInterestService {
     // Determine payout window for today (1st and 16th only)
     const payout = this.getPayoutPeriod(today);
     if (!payout) {
-      this.logger.debug('Not a payout day; daily accrual computed but not paid out yet.');
+      this.logger.debug(
+        'Not a payout day; daily accrual computed but not paid out yet.',
+      );
       return;
     }
 
@@ -42,7 +44,9 @@ export class SavingsInterestService {
       const currentWeekNo = await this.getCurrentWeekNo();
 
       if (!currentWeekNo) {
-        this.logger.warn('Could not determine current week number, skipping interest payout calculation');
+        this.logger.warn(
+          'Could not determine current week number, skipping interest payout calculation',
+        );
         return;
       }
 
@@ -63,14 +67,21 @@ export class SavingsInterestService {
         },
       });
 
-      this.logger.log(`Found ${accounts.length} active savings accounts to process`);
+      this.logger.log(
+        `Found ${accounts.length} active savings accounts to process`,
+      );
 
       let processedCount = 0;
       let totalInterest = new Prisma.Decimal(0);
 
       for (const account of accounts) {
         try {
-          const interestResult = await this.applyInterest(account, currentWeekNo, periodDays, rateDivisor);
+          const interestResult = await this.applyInterest(
+            account,
+            currentWeekNo,
+            periodDays,
+            rateDivisor,
+          );
           if (interestResult) {
             processedCount++;
             totalInterest = totalInterest.add(interestResult.interestAmount);
@@ -87,7 +98,10 @@ export class SavingsInterestService {
         `Daily interest job completed. Processed: ${processedCount}/${accounts.length} accounts, Total interest: ${totalInterest.toString()}`,
       );
     } catch (error) {
-      this.logger.error(`Daily interest job failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `Daily interest job failed: ${error.message}`,
+        error.stack,
+      );
     }
   }
 
@@ -109,7 +123,9 @@ export class SavingsInterestService {
     }
 
     // Interest = balance × (rate / rateDivisor)
-    const interestAmount = balance.mul(rate).div(new Prisma.Decimal(rateDivisor));
+    const interestAmount = balance
+      .mul(rate)
+      .div(new Prisma.Decimal(rateDivisor));
 
     // Round to 2 decimal places
     const roundedInterest = interestAmount.toDecimalPlaces(2);
@@ -214,7 +230,12 @@ export class SavingsInterestService {
 
       for (const account of accounts) {
         try {
-          const interestResult = await this.applyInterest(account, currentWeekNo, periodDays, rateDivisor);
+          const interestResult = await this.applyInterest(
+            account,
+            currentWeekNo,
+            periodDays,
+            rateDivisor,
+          );
           if (interestResult) {
             processedCount++;
             totalInterest = totalInterest.add(interestResult.interestAmount);
@@ -266,12 +287,16 @@ export class SavingsInterestService {
       });
 
       if (!activeTerm) {
-        this.logger.warn(`No active term found for current date ${now.toISOString()}`);
+        this.logger.warn(
+          `No active term found for current date ${now.toISOString()}`,
+        );
         return null;
       }
 
       if (!activeTerm.termWeeks?.length) {
-        this.logger.warn(`Active term ${activeTerm.id} has no term weeks defined`);
+        this.logger.warn(
+          `Active term ${activeTerm.id} has no term weeks defined`,
+        );
         return null;
       }
 
@@ -279,11 +304,16 @@ export class SavingsInterestService {
       const currentWeek = activeTerm.termWeeks.find((week) => {
         const startDateString = this.formatLocalDate(new Date(week.startDate));
         const endDateString = this.formatLocalDate(new Date(week.endDate));
-        return currentDateString >= startDateString && currentDateString <= endDateString;
+        return (
+          currentDateString >= startDateString &&
+          currentDateString <= endDateString
+        );
       });
 
       if (!currentWeek) {
-        this.logger.warn(`No current week found in active term ${activeTerm.id} for ${now.toISOString()}`);
+        this.logger.warn(
+          `No current week found in active term ${activeTerm.id} for ${now.toISOString()}`,
+        );
         return null;
       }
 
@@ -294,15 +324,13 @@ export class SavingsInterestService {
     }
   }
 
-  private getPayoutPeriod(date: Date):
-    | {
-        periodStart: Date;
-        periodEnd: Date;
-        periodDays: number;
-        rateDivisor: number;
-        label: string;
-      }
-    | null {
+  private getPayoutPeriod(date: Date): {
+    periodStart: Date;
+    periodEnd: Date;
+    periodDays: number;
+    rateDivisor: number;
+    label: string;
+  } | null {
     const day = date.getDate();
 
     if (day === 16) {

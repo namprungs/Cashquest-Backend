@@ -305,6 +305,8 @@ export class InvestmentPortfolioService {
       where: { id: dto.productId },
       select: {
         id: true,
+        type: true,
+        metaJson: true,
         isActive: true,
       },
     });
@@ -319,13 +321,31 @@ export class InvestmentPortfolioService {
           productId: dto.productId,
         },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        faceValue: true,
+        couponRate: true,
+        modifiedDuration: true,
+      },
     });
     if (!simulation) {
       throw new NotFoundException('Product is not configured in this term');
     }
 
+    const productMeta =
+      product.metaJson &&
+      typeof product.metaJson === 'object' &&
+      !Array.isArray(product.metaJson)
+        ? (product.metaJson as Record<string, unknown>)
+        : {};
     const currentWeek = await this.core.getCurrentWeek(termId);
+    const term = await this.prisma.term.findUnique({
+      where: { id: termId },
+      select: { totalWeeks: true },
+    });
+    if (!term) {
+      throw new NotFoundException('Term not found');
+    }
 
     const latestLiveTickInWeek =
       await this.prisma.productLivePriceTick.findFirst({
@@ -409,10 +429,30 @@ export class InvestmentPortfolioService {
           studentProfileId: profile.id,
           termId,
           productId: dto.productId,
+          productType: product.type,
+          currentWeek,
           side: dto.side,
           quantity: dto.quantity,
           fee,
           executedPrice,
+          bondConfig:
+            product.type === ProductType.BOND
+              ? {
+                  faceValue: this.core.toNumber(simulation.faceValue),
+                  couponRate: this.core.toNumber(simulation.couponRate),
+                  couponIntervalWeeks: 4,
+                  maturityWeeks: Math.max(
+                    0,
+                    Math.min(
+                      term.totalWeeks,
+                      Math.round(
+                        this.core.toNumber(productMeta.maturityWeeks) ||
+                          term.totalWeeks,
+                      ),
+                    ) - currentWeek,
+                  ),
+                }
+              : undefined,
         });
       }
 
@@ -645,10 +685,18 @@ export class InvestmentPortfolioService {
       studentProfileId: string;
       termId: string;
       productId: string;
+      productType?: ProductType;
+      currentWeek: number;
       side: OrderSide;
       quantity: number;
       fee: number;
       executedPrice: number;
+      bondConfig?: {
+        faceValue: number;
+        couponRate: number;
+        couponIntervalWeeks: number;
+        maturityWeeks: number;
+      };
     },
   ) {
     const amount = params.executedPrice * params.quantity;
@@ -676,6 +724,60 @@ export class InvestmentPortfolioService {
         },
       },
     });
+
+    const product =
+      params.productType === undefined
+        ? await tx.product.findUnique({
+            where: { id: params.productId },
+            select: { type: true, metaJson: true },
+          })
+        : null;
+    const productType = params.productType ?? product?.type;
+    let bondConfig = params.bondConfig;
+    if (!bondConfig && productType === ProductType.BOND) {
+      const [sim, term] = await Promise.all([
+        tx.productSimulation.findUnique({
+          where: {
+            termId_productId: {
+              termId: params.termId,
+              productId: params.productId,
+            },
+          },
+          select: {
+            faceValue: true,
+            couponRate: true,
+          },
+        }),
+        tx.term.findUnique({
+          where: { id: params.termId },
+          select: { totalWeeks: true },
+        }),
+      ]);
+
+      if (sim && term) {
+        const productMeta =
+          product?.metaJson &&
+          typeof product.metaJson === 'object' &&
+          !Array.isArray(product.metaJson)
+            ? (product.metaJson as Record<string, unknown>)
+            : {};
+        bondConfig = {
+          faceValue: this.core.toNumber(sim.faceValue),
+          couponRate: this.core.toNumber(sim.couponRate),
+          couponIntervalWeeks: 4,
+          maturityWeeks: Math.max(
+            0,
+            Math.min(
+              term.totalWeeks,
+              Math.round(
+                this.core.toNumber(productMeta.maturityWeeks) ||
+                  term.totalWeeks,
+              ),
+            ) - params.currentWeek,
+          ),
+        };
+      }
+    }
 
     if (params.side === OrderSide.BUY) {
       const totalCost = amount + params.fee;
@@ -710,8 +812,9 @@ export class InvestmentPortfolioService {
         },
       });
 
-      if (!holding) {
-        await tx.holding.create({
+      let updatedHolding = holding;
+      if (!updatedHolding) {
+        updatedHolding = await tx.holding.create({
           data: {
             studentProfileId: params.studentProfileId,
             termId: params.termId,
@@ -721,8 +824,8 @@ export class InvestmentPortfolioService {
           },
         });
       } else {
-        const oldUnits = this.core.toNumber(holding.units);
-        const oldAvg = this.core.toNumber(holding.avgCost);
+        const oldUnits = this.core.toNumber(updatedHolding.units);
+        const oldAvg = this.core.toNumber(updatedHolding.avgCost);
         const newUnits = oldUnits + params.quantity;
         const newAvg =
           newUnits === 0
@@ -730,11 +833,30 @@ export class InvestmentPortfolioService {
             : (oldUnits * oldAvg + params.quantity * params.executedPrice) /
               newUnits;
 
-        await tx.holding.update({
-          where: { id: holding.id },
+        updatedHolding = await tx.holding.update({
+          where: { id: updatedHolding.id },
           data: {
             units: newUnits,
             avgCost: newAvg,
+          },
+        });
+      }
+
+      if (productType === ProductType.BOND && bondConfig) {
+        const faceValue =
+          bondConfig.faceValue > 0
+            ? bondConfig.faceValue
+            : params.executedPrice;
+        await tx.bondPosition.create({
+          data: {
+            termId: params.termId,
+            holdingId: updatedHolding.id,
+            units: params.quantity,
+            faceValue,
+            couponRate: bondConfig.couponRate,
+            couponIntervalWeeks: bondConfig.couponIntervalWeeks,
+            startWeekNo: params.currentWeek,
+            maturityWeekNo: params.currentWeek + bondConfig.maturityWeeks,
           },
         });
       }
@@ -794,6 +916,39 @@ export class InvestmentPortfolioService {
             avgCost: holding.avgCost,
           },
         });
+      }
+
+      if (productType === ProductType.BOND) {
+        let remainingToClose = params.quantity;
+        const positions = await tx.bondPosition.findMany({
+          where: {
+            termId: params.termId,
+            holdingId: holding.id,
+            status: BondPositionStatus.ACTIVE,
+          },
+          orderBy: [{ createdAt: 'asc' }],
+        });
+
+        for (const position of positions) {
+          if (remainingToClose <= 0) {
+            break;
+          }
+
+          const positionUnits = this.core.toNumber(position.units);
+          if (positionUnits <= remainingToClose + 0.000001) {
+            await tx.bondPosition.update({
+              where: { id: position.id },
+              data: { units: 0, status: BondPositionStatus.CLOSED },
+            });
+            remainingToClose -= positionUnits;
+          } else {
+            await tx.bondPosition.update({
+              where: { id: position.id },
+              data: { units: positionUnits - remainingToClose },
+            });
+            remainingToClose = 0;
+          }
+        }
       }
     }
 
@@ -959,6 +1114,8 @@ export class InvestmentPortfolioService {
             studentProfileId: order.studentProfileId,
             termId: order.termId,
             productId: order.productId,
+            productType: undefined,
+            currentWeek: weekNo,
             side: order.side,
             quantity: this.core.toNumber(order.quantity),
             fee: this.core.toNumber(order.fee),
@@ -1149,7 +1306,7 @@ export class InvestmentPortfolioService {
 
       for (const bond of bonds) {
         const elapsed = weekNo - bond.startWeekNo;
-        if (elapsed < 0) {
+        if (elapsed <= 0) {
           continue;
         }
 
@@ -1171,7 +1328,9 @@ export class InvestmentPortfolioService {
 
         const couponAmount =
           this.core.toNumber(bond.faceValue) *
-          this.core.toNumber(bond.couponRate);
+          this.core.toNumber(bond.couponRate) *
+          (bond.couponIntervalWeeks / 52) *
+          this.core.toNumber(bond.units);
 
         await tx.bondCouponPayout.create({
           data: {
@@ -1206,6 +1365,8 @@ export class InvestmentPortfolioService {
                 bondPositionId: bond.id,
                 termId,
                 weekNo,
+                units: this.core.toNumber(bond.units),
+                couponIntervalWeeks: bond.couponIntervalWeeks,
               },
             },
           });

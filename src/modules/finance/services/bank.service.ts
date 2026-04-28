@@ -123,7 +123,9 @@ export class BankService {
       where: { id: bankId },
       include: {
         savingsAccountBank: {
-          include: { savingsAccounts: { where: { status: 'ACTIVE' }, take: 1 } },
+          include: {
+            savingsAccounts: { where: { status: 'ACTIVE' }, take: 1 },
+          },
         },
         fixedDepositBank: {
           include: { fixedDeposits: { where: { status: 'ACTIVE' }, take: 1 } },
@@ -184,12 +186,15 @@ export class BankService {
         bank: { id: bank.id, name: bank.name },
         savingsAccount: {
           totalAccounts: savingsAccounts.length,
-          activeAccounts: savingsAccounts.filter((a) => a.status === 'ACTIVE').length,
+          activeAccounts: savingsAccounts.filter((a) => a.status === 'ACTIVE')
+            .length,
         },
         fixedDeposit: {
           totalDeposits: fixedDeposits.length,
-          activeDeposits: fixedDeposits.filter((d) => d.status === 'ACTIVE').length,
-          maturedDeposits: fixedDeposits.filter((d) => d.status === 'MATURED').length,
+          activeDeposits: fixedDeposits.filter((d) => d.status === 'ACTIVE')
+            .length,
+          maturedDeposits: fixedDeposits.filter((d) => d.status === 'MATURED')
+            .length,
         },
       },
     };

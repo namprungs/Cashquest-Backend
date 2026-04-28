@@ -2,7 +2,7 @@
  * Seed Term Simulation and Product Prices (OHLC)
  */
 
-const { PriceGenerationType } = require('@prisma/client');
+const { PriceGenerationType, ProductType } = require('@prisma/client');
 
 const seededAssetAliases = {
   SCHMART: 'L1',
@@ -154,6 +154,8 @@ async function seedProductPrices(prisma, academicData, products) {
   for (const product of products) {
     const rng = createSeededRng(20260301 + product.symbol.length * 97);
     let previousClose = product.simulation.initialPrice;
+    let previousYield =
+      product.simulation.initialYield ?? product.simulation.couponRate ?? 0;
 
     const rows = [];
 
@@ -175,25 +177,70 @@ async function seedProductPrices(prisma, academicData, products) {
         : 0;
       const eventAdjustment = resolveEventAdjustment(eventImpact, product);
 
-      const mu =
-        product.simulation.mu + regimeMuAdj + eventAdjustment.muAdjustment;
-      const sigma = Math.max(
-        0.005,
-        (product.simulation.sigma +
-          regimeSigmaAdj +
-          eventAdjustment.sigmaAdjustment) *
-          eventAdjustment.sigmaMultiplier,
-      );
-
       const z = gaussianFromRng(rng);
       const dt = product.simulation.dt;
-      const drift = (mu - 0.5 * sigma * sigma) * dt;
-      const diffusion = sigma * Math.sqrt(dt) * z;
-
       const open = previousClose;
-      const close = Math.max(0.01, open * Math.exp(drift + diffusion));
+      const isBond =
+        product.type === ProductType.BOND ||
+        product.simulation.model === 'VASICEK';
+      let close;
+      let mu;
+      let sigma;
+      let yieldOpen = null;
+      let yieldClose = null;
+      let generationType;
+      if (isBond) {
+        yieldOpen = previousYield;
+        sigma = Math.max(
+          0.000001,
+          ((product.simulation.sigmaYield ?? 0) +
+            regimeSigmaAdj +
+            eventAdjustment.sigmaAdjustment) *
+            eventAdjustment.sigmaMultiplier,
+        );
+        mu = product.simulation.kappa ?? 0;
+        const dy =
+          (product.simulation.kappa ?? 0) *
+            ((product.simulation.theta ?? yieldOpen) - yieldOpen) *
+            dt +
+          sigma * Math.sqrt(dt) * z;
+        yieldClose = Math.max(
+          product.simulation.yieldFloor ?? 0.001,
+          yieldOpen + dy,
+        );
+        close = Math.max(
+          0.01,
+          open *
+            (1 -
+              (product.simulation.modifiedDuration ?? 0) *
+                (yieldClose - yieldOpen)),
+        );
+        previousYield = yieldClose;
+        generationType = activeEvent
+          ? PriceGenerationType.VASICEK_EVENT_ADJUSTED
+          : PriceGenerationType.VASICEK;
+      } else {
+        mu =
+          (product.simulation.mu ?? 0) +
+          regimeMuAdj +
+          eventAdjustment.muAdjustment;
+        sigma = Math.max(
+          0.005,
+          ((product.simulation.sigma ?? 0) +
+            regimeSigmaAdj +
+            eventAdjustment.sigmaAdjustment) *
+            eventAdjustment.sigmaMultiplier,
+        );
+        const drift = (mu - 0.5 * sigma * sigma) * dt;
+        const diffusion = sigma * Math.sqrt(dt) * z;
+        close = Math.max(0.01, open * Math.exp(drift + diffusion));
+        generationType = activeEvent
+          ? PriceGenerationType.GBM_EVENT_ADJUSTED
+          : PriceGenerationType.GBM;
+      }
 
-      const wickNoise = Math.abs(gaussianFromRng(rng)) * 0.012;
+      const wickNoise =
+        Math.abs(gaussianFromRng(rng)) * (isBond ? 0.0025 : 0.012);
       const high = Math.max(open, close) * (1 + wickNoise);
       const low = Math.max(0.01, Math.min(open, close) * (1 - wickNoise));
 
@@ -208,10 +255,10 @@ async function seedProductPrices(prisma, academicData, products) {
         returnPct: open === 0 ? 0 : (close - open) / open,
         muUsed: mu,
         sigmaUsed: sigma,
+        yieldOpen,
+        yieldClose,
         eventId: activeEvent?.eventId ?? null,
-        generationType: activeEvent
-          ? PriceGenerationType.GBM_EVENT_ADJUSTED
-          : PriceGenerationType.GBM,
+        generationType,
         createdAt: addDays(term.startDate, point - 1),
       });
 
