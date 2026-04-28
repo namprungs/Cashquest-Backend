@@ -4,6 +4,86 @@
 
 const { PriceGenerationType } = require('@prisma/client');
 
+const seededAssetAliases = {
+  SCHMART: 'L1',
+  HLTHPLS: 'L2',
+  GRNPWR: 'M1',
+  FSTFIN: 'M2',
+  TWAV: 'H1',
+  GHUB: 'H2',
+};
+
+const asRecord = (value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value;
+};
+
+const toNumber = (value) => {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  return Number(value);
+};
+
+const readAdjustment = (impact) => {
+  const data = asRecord(impact);
+  if (!data) {
+    return { muAdjustment: 0, sigmaAdjustment: 0, sigmaMultiplier: 1 };
+  }
+
+  const muAdjustment =
+    toNumber(data.muAdjustment) ||
+    toNumber(data.driftShift) ||
+    toNumber(data.muShift) ||
+    toNumber(data.mu) ||
+    0;
+
+  const sigmaAdjustment =
+    toNumber(data.sigmaAdjustment) ||
+    toNumber(data.volatilityShift) ||
+    toNumber(data.sigma) ||
+    0;
+
+  const sigmaMultiplier =
+    toNumber(data.sigmaMultiplier) || toNumber(data.volatilityMultiplier) || 1;
+
+  return {
+    muAdjustment,
+    sigmaAdjustment,
+    sigmaMultiplier: sigmaMultiplier <= 0 ? 1 : sigmaMultiplier,
+  };
+};
+
+const resolveEventAdjustment = (impact, product) => {
+  const data = asRecord(impact);
+  if (!data) {
+    return { muAdjustment: 0, sigmaAdjustment: 0, sigmaMultiplier: 1 };
+  }
+
+  const symbol = String(product.symbol ?? '')
+    .trim()
+    .toUpperCase();
+  const assetImpact =
+    asRecord(data.assets)?.[symbol] ??
+    asRecord(data.assets)?.[seededAssetAliases[symbol]];
+
+  return [data, asRecord(data.global), asRecord(assetImpact)]
+    .filter(Boolean)
+    .map(readAdjustment)
+    .reduce(
+      (acc, item) => ({
+        muAdjustment: acc.muAdjustment + item.muAdjustment,
+        sigmaAdjustment: acc.sigmaAdjustment + item.sigmaAdjustment,
+        sigmaMultiplier: acc.sigmaMultiplier * item.sigmaMultiplier,
+      }),
+      { muAdjustment: 0, sigmaAdjustment: 0, sigmaMultiplier: 1 },
+    );
+};
+
 const addDays = (date, days) => {
   const d = new Date(date);
   d.setDate(d.getDate() + days);
@@ -90,15 +170,19 @@ async function seedProductPrices(prisma, academicData, products) {
         activeEvent?.customImpact ?? activeEvent?.event?.defaultImpact ?? null;
 
       const regimeMuAdj = activeRegime ? Number(activeRegime.muAdjustment) : 0;
-      const regimeSigmaAdj = activeRegime ? Number(activeRegime.sigmaAdjustment) : 0;
-      const eventMuAdj = eventImpact?.muAdjustment ? Number(eventImpact.muAdjustment) : 0;
-      const eventSigmaAdj = eventImpact?.sigmaAdjustment ? Number(eventImpact.sigmaAdjustment) : 0;
-      const sigmaMultiplier = eventImpact?.sigmaMultiplier ? Number(eventImpact.sigmaMultiplier) : 1;
+      const regimeSigmaAdj = activeRegime
+        ? Number(activeRegime.sigmaAdjustment)
+        : 0;
+      const eventAdjustment = resolveEventAdjustment(eventImpact, product);
 
-      const mu = product.simulation.mu + regimeMuAdj + eventMuAdj;
+      const mu =
+        product.simulation.mu + regimeMuAdj + eventAdjustment.muAdjustment;
       const sigma = Math.max(
         0.005,
-        (product.simulation.sigma + regimeSigmaAdj + eventSigmaAdj) * sigmaMultiplier,
+        (product.simulation.sigma +
+          regimeSigmaAdj +
+          eventAdjustment.sigmaAdjustment) *
+          eventAdjustment.sigmaMultiplier,
       );
 
       const z = gaussianFromRng(rng);

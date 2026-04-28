@@ -1,5 +1,14 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
+import { QuestStatus, QuestType } from '@prisma/client';
 
 export class ListMyQuestsQueryDto {
   @IsOptional()
@@ -13,4 +22,16 @@ export class ListMyQuestsQueryDto {
   @Min(1)
   @Max(50)
   limit?: number;
+
+  @IsOptional()
+  @IsUUID()
+  classroomId?: string;
+
+  @IsOptional()
+  @IsEnum(QuestType)
+  type?: QuestType;
+
+  @IsOptional()
+  @IsEnum(QuestStatus)
+  status?: QuestStatus;
 }

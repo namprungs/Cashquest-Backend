@@ -410,7 +410,9 @@ export class InvestmentMarketService {
         include: {
           product: {
             select: {
+              symbol: true,
               sector: true,
+              riskLevel: true,
             },
           },
         },
@@ -484,14 +486,14 @@ export class InvestmentMarketService {
         const applicableEvents = activeEvents.filter((eventItem) => {
           const impact =
             eventItem.customImpact ?? eventItem.event.defaultImpact;
-          return this.core.eventAppliesToProduct(impact, sim.product?.sector);
+          return this.core.eventAppliesToProduct(impact, sim.product);
         });
 
         const eventAdjustments = applicableEvents.reduce(
           (acc, eventItem) => {
             const impact =
               eventItem.customImpact ?? eventItem.event.defaultImpact;
-            const next = this.core.resolveEventAdjustments(impact);
+            const next = this.core.resolveEventAdjustments(impact, sim.product);
             return {
               muAdjustment: acc.muAdjustment + next.muAdjustment,
               sigmaAdjustment: acc.sigmaAdjustment + next.sigmaAdjustment,
@@ -588,7 +590,9 @@ export class InvestmentMarketService {
         include: {
           product: {
             select: {
+              symbol: true,
               sector: true,
+              riskLevel: true,
             },
           },
         },
@@ -600,7 +604,7 @@ export class InvestmentMarketService {
       > = [];
 
       for (const sim of simulations) {
-        if (!this.core.eventAppliesToProduct(impact, sim.product?.sector)) {
+        if (!this.core.eventAppliesToProduct(impact, sim.product)) {
           continue;
         }
 
@@ -646,7 +650,10 @@ export class InvestmentMarketService {
         const nextPrice = Math.max(0.0001, previousPrice * (1 + shockPct));
         const returnPct = (nextPrice - previousPrice) / previousPrice;
 
-        const eventAdjustments = this.core.resolveEventAdjustments(impact);
+        const eventAdjustments = this.core.resolveEventAdjustments(
+          impact,
+          sim.product,
+        );
         const muUsed =
           this.core.toNumber(sim.mu) + eventAdjustments.muAdjustment;
         const sigmaUsed = Math.max(
@@ -833,7 +840,9 @@ export class InvestmentMarketService {
       include: {
         product: {
           select: {
+            symbol: true,
             sector: true,
+            riskLevel: true,
           },
         },
       },
@@ -895,14 +904,14 @@ export class InvestmentMarketService {
 
       const applicableEvents = activeEvents.filter((eventItem) => {
         const impact = eventItem.customImpact ?? eventItem.event.defaultImpact;
-        return this.core.eventAppliesToProduct(impact, sim.product?.sector);
+        return this.core.eventAppliesToProduct(impact, sim.product);
       });
 
       const eventAdjustments = applicableEvents.reduce(
         (acc, eventItem) => {
           const impact =
             eventItem.customImpact ?? eventItem.event.defaultImpact;
-          const next = this.core.resolveEventAdjustments(impact);
+          const next = this.core.resolveEventAdjustments(impact, sim.product);
           return {
             muAdjustment: acc.muAdjustment + next.muAdjustment,
             sigmaAdjustment: acc.sigmaAdjustment + next.sigmaAdjustment,

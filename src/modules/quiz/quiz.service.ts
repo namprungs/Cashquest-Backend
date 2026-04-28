@@ -1026,11 +1026,10 @@ export class QuizService {
       });
 
       if (linkedQuest) {
-        // Check if there are manually-graded questions (LONG_TEXT / FILE_UPLOAD)
+        // Teacher-created quiz quests can use SHORT_TEXT or FILE_UPLOAD with
+        // MANUAL grading, so key this off gradingType rather than questionType.
         const hasManualQuestions = attempt.quiz.questions.some(
-          (q) =>
-            q.questionType === QuizQuestionType.LONG_TEXT ||
-            q.questionType === QuizQuestionType.FILE_UPLOAD,
+          (q) => q.gradingType === QuizGradingType.MANUAL,
         );
 
         // Create/update QuestSubmission when manual grading is needed or quiz not passed
