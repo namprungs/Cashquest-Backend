@@ -12,7 +12,14 @@ import { QuestStatus, QuestType } from '@prisma/client';
 
 export class ListMyQuestsQueryDto {
   @IsOptional()
-  @Transform(({ value }) => value === true || value === 'true')
+  @Transform(({ obj, key, value }) => {
+    const raw = obj?.[key] ?? value;
+    if (raw === true || raw === false) {
+      return raw;
+    }
+    const normalized = raw?.toString().trim().toLowerCase();
+    return normalized === 'true' || normalized === '1';
+  })
   @IsBoolean()
   notSubmittedOnly?: boolean;
 

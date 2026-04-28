@@ -1227,7 +1227,74 @@ export class QuestService {
       ...(query.limit ? { take: query.limit } : {}),
     });
 
-    return { success: true, data: quests };
+    const studentProfiles = await this.prisma.studentProfile.findMany({
+      where: {
+        userId: user.id,
+        termId: { in: context.termIds },
+      },
+      select: { id: true },
+    });
+    const studentProfileIds = studentProfiles.map((profile) => profile.id);
+    const questIds = new Set<string>();
+    const quizIds = new Set<string>();
+
+    for (const quest of quests) {
+      questIds.add(quest.id);
+      if (quest.quizId) {
+        quizIds.add(quest.quizId);
+      }
+      for (const child of quest.children ?? []) {
+        questIds.add(child.id);
+        if (child.quizId) {
+          quizIds.add(child.quizId);
+        }
+      }
+    }
+
+    const approvedSubmissions = studentProfileIds.length
+      ? await this.prisma.questSubmission.findMany({
+          where: {
+            studentProfileId: { in: studentProfileIds },
+            questId: { in: [...questIds] },
+            status: QuestSubmissionStatus.APPROVED,
+          },
+          select: { questId: true },
+        })
+      : [];
+
+    const passedAttempts = studentProfileIds.length
+      ? await this.prisma.quizAttempt.findMany({
+          where: {
+            studentProfileId: { in: studentProfileIds },
+            quizId: { in: [...quizIds] },
+            isPassed: true,
+          },
+          select: { quizId: true },
+        })
+      : [];
+
+    const completedQuestIds = new Set(
+      approvedSubmissions.map((submission) => submission.questId),
+    );
+    const completedQuizIds = new Set(
+      passedAttempts.map((attempt) => attempt.quizId),
+    );
+    const isQuestCompleted = (quest: (typeof quests)[number]) =>
+      completedQuestIds.has(quest.id) ||
+      (!!quest.quizId && completedQuizIds.has(quest.quizId));
+
+    const questsWithCompletion = quests.map((quest) => ({
+      ...quest,
+      isCompleted: isQuestCompleted(quest),
+      children: (quest.children ?? []).map((child) => ({
+        ...child,
+        isCompleted:
+          completedQuestIds.has(child.id) ||
+          (!!child.quizId && completedQuizIds.has(child.quizId)),
+      })),
+    }));
+
+    return { success: true, data: questsWithCompletion };
   }
 
   private async ensureQuestMembership(
