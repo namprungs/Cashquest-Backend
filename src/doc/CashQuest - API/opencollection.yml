@@ -29,7 +29,7 @@ request:
     - name: schoolId
       value: ""
     - name: termId
-      value: e1964c15-8551-484b-a0f3-c75df9891e16
+      value: b16455fc-a21f-420e-bda2-26f139b94ccd
     - name: lifeStageId
       value: ""
     - name: termStageRuleId

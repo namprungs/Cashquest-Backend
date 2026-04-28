@@ -16,6 +16,78 @@ export class ClassroomService {
     private readonly questService: QuestService,
   ) {}
 
+  private toNumber(value: unknown): number {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      'toNumber' in value &&
+      typeof (value as { toNumber: unknown }).toNumber === 'function'
+    ) {
+      const parsed = (value as { toNumber: () => number }).toNumber();
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  }
+
+  private round2(value: number): number {
+    return Math.round(value * 100) / 100;
+  }
+
+  private async getCurrentWeekNo(termId: string) {
+    const term = await this.prisma.term.findUnique({
+      where: { id: termId },
+      select: { startDate: true, totalWeeks: true },
+    });
+    if (!term) return null;
+
+    const now = new Date();
+    const termWeek = await this.prisma.termWeek.findFirst({
+      where: {
+        termId,
+        startDate: { lte: now },
+        endDate: { gte: now },
+      },
+      select: { weekNo: true },
+    });
+    if (termWeek) return termWeek.weekNo;
+
+    const diffDays = Math.floor(
+      (now.getTime() - term.startDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    return Math.min(Math.max(Math.floor(diffDays / 7) + 1, 1), term.totalWeeks);
+  }
+
+  private async getLatestPriceByProduct(termId: string, productIds: string[]) {
+    if (!productIds.length) return new Map<string, number>();
+
+    const latestPrices = await this.prisma.productPrice.findMany({
+      where: { termId, productId: { in: productIds } },
+      orderBy: [{ weekNo: 'desc' }, { createdAt: 'desc' }],
+      select: { productId: true, close: true },
+    });
+
+    const priceByProduct = new Map<string, number>();
+    for (const price of latestPrices) {
+      if (!priceByProduct.has(price.productId)) {
+        priceByProduct.set(price.productId, this.toNumber(price.close));
+      }
+    }
+
+    return priceByProduct;
+  }
+
+  private splitAssetType(type: string) {
+    if (type === 'FUND') return 'funds';
+    if (type === 'BOND') return 'bonds';
+    return 'stocks';
+  }
+
   // -----------------------------
   // Create classroom
   // -----------------------------
@@ -311,6 +383,421 @@ export class ClassroomService {
     });
 
     return { success: true, data: students };
+  }
+
+  async getStudentOverview(classroomId: string) {
+    const classroom = await this.prisma.classroom.findUnique({
+      where: { id: classroomId },
+      select: {
+        id: true,
+        name: true,
+        termId: true,
+        students: {
+          select: {
+            studentId: true,
+            student: { select: { id: true, username: true, email: true } },
+          },
+        },
+      },
+    });
+
+    if (!classroom) {
+      throw new NotFoundException('Classroom not found');
+    }
+
+    const studentIds = classroom.students.map((row) => row.studentId);
+    const profiles = studentIds.length
+      ? await this.prisma.studentProfile.findMany({
+          where: { termId: classroom.termId, userId: { in: studentIds } },
+          select: {
+            id: true,
+            userId: true,
+            mainWallet: { select: { balance: true } },
+            investmentWallet: { select: { balance: true } },
+            savingsAccounts: {
+              where: { status: 'ACTIVE' },
+              select: { balance: true },
+            },
+            fixedDeposits: {
+              where: { status: 'ACTIVE' },
+              select: { principal: true },
+            },
+            holdings: {
+              where: { termId: classroom.termId, units: { gt: 0 } },
+              select: {
+                productId: true,
+                units: true,
+                avgCost: true,
+              },
+            },
+          },
+        })
+      : [];
+
+    const productIds = Array.from(
+      new Set(
+        profiles.flatMap((profile) =>
+          profile.holdings.map((holding) => holding.productId),
+        ),
+      ),
+    );
+    const latestPriceByProduct = await this.getLatestPriceByProduct(
+      classroom.termId,
+      productIds,
+    );
+
+    const questIds = (
+      await this.prisma.questClassroom.findMany({
+        where: {
+          classroomId,
+          quest: { termId: classroom.termId, status: QuestStatus.PUBLISHED },
+        },
+        select: { questId: true },
+      })
+    ).map((row) => row.questId);
+
+    const submissions =
+      profiles.length && questIds.length
+        ? await this.prisma.questSubmission.findMany({
+            where: {
+              studentProfileId: { in: profiles.map((profile) => profile.id) },
+              questId: { in: questIds },
+              status: QuestSubmissionStatus.APPROVED,
+            },
+            select: { studentProfileId: true },
+          })
+        : [];
+
+    const missionsByProfileId = new Map<string, number>();
+    for (const submission of submissions) {
+      missionsByProfileId.set(
+        submission.studentProfileId,
+        (missionsByProfileId.get(submission.studentProfileId) ?? 0) + 1,
+      );
+    }
+
+    const profileByUserId = new Map(
+      profiles.map((profile) => [profile.userId, profile]),
+    );
+    const rows = classroom.students.map((row) => {
+      const profile = profileByUserId.get(row.studentId);
+      const wallet = this.toNumber(profile?.mainWallet?.balance);
+      const savings = (profile?.savingsAccounts ?? []).reduce(
+        (sum, account) => sum + this.toNumber(account.balance),
+        0,
+      );
+      const fixedDeposit = (profile?.fixedDeposits ?? []).reduce(
+        (sum, deposit) => sum + this.toNumber(deposit.principal),
+        0,
+      );
+      const investmentCash = this.toNumber(profile?.investmentWallet?.balance);
+
+      let marketValue = 0;
+      let investedValue = 0;
+      for (const holding of profile?.holdings ?? []) {
+        const units = this.toNumber(holding.units);
+        const avgCost = this.toNumber(holding.avgCost);
+        const price = latestPriceByProduct.get(holding.productId) ?? avgCost;
+        investedValue += units * avgCost;
+        marketValue += units * price;
+      }
+
+      const totalCoin =
+        wallet + savings + fixedDeposit + investmentCash + marketValue;
+      const growth =
+        investedValue > 0
+          ? ((marketValue - investedValue) / investedValue) * 100
+          : 0;
+
+      return {
+        id: row.student.id,
+        studentProfileId: profile?.id ?? null,
+        name: row.student.username,
+        studentCode: row.student.username,
+        email: row.student.email,
+        classroomId: classroom.id,
+        classroomName: classroom.name,
+        rank: 0,
+        missions: profile ? (missionsByProfileId.get(profile.id) ?? 0) : 0,
+        walletBalance: this.round2(wallet),
+        totalCoin: this.round2(totalCoin),
+        growth: this.round2(growth),
+      };
+    });
+
+    const sortedRows = [...rows].sort((a, b) => b.totalCoin - a.totalCoin);
+    sortedRows.forEach((row, index) => {
+      row.rank = index + 1;
+    });
+
+    const studentCount = sortedRows.length;
+    const totalWallet = sortedRows.reduce(
+      (sum, row) => sum + row.walletBalance,
+      0,
+    );
+    const totalAssets = sortedRows.reduce((sum, row) => sum + row.totalCoin, 0);
+    const totalGrowth = sortedRows.reduce((sum, row) => sum + row.growth, 0);
+
+    return {
+      success: true,
+      data: {
+        classroom: {
+          id: classroom.id,
+          name: classroom.name,
+          termId: classroom.termId,
+        },
+        summary: {
+          avgMoney: studentCount ? this.round2(totalWallet / studentCount) : 0,
+          avgAssetValue: studentCount
+            ? this.round2(totalAssets / studentCount)
+            : 0,
+          growthRate: studentCount
+            ? this.round2(totalGrowth / studentCount)
+            : 0,
+        },
+        students: sortedRows,
+      },
+    };
+  }
+
+  async getStudentDetail(classroomId: string, studentId: string) {
+    const classroom = await this.prisma.classroom.findUnique({
+      where: { id: classroomId },
+      select: { id: true, name: true, termId: true },
+    });
+    if (!classroom) throw new NotFoundException('Classroom not found');
+
+    const enrollment = await this.prisma.classroomStudent.findUnique({
+      where: { classroomId_studentId: { classroomId, studentId } },
+      select: {
+        student: { select: { id: true, username: true, email: true } },
+      },
+    });
+    if (!enrollment) {
+      throw new NotFoundException('Student not found in this classroom');
+    }
+
+    const profile = await this.prisma.studentProfile.findUnique({
+      where: {
+        userId_termId: {
+          userId: studentId,
+          termId: classroom.termId,
+        },
+      },
+      select: {
+        id: true,
+        mainWallet: { select: { balance: true } },
+        investmentWallet: { select: { balance: true } },
+        savingsAccounts: {
+          where: { status: 'ACTIVE' },
+          select: { balance: true },
+        },
+        fixedDeposits: {
+          where: { status: 'ACTIVE' },
+          select: { principal: true },
+        },
+        retirementGoals: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            currentAmount: true,
+            targetAmount: true,
+            retirementAge: true,
+            lifeExpectancy: true,
+          },
+        },
+        holdings: {
+          where: { termId: classroom.termId, units: { gt: 0 } },
+          include: { product: true },
+          orderBy: { updatedAt: 'desc' },
+        },
+      },
+    });
+
+    const currentWeekNo = await this.getCurrentWeekNo(classroom.termId);
+    const lifeStageRule =
+      currentWeekNo == null
+        ? null
+        : await this.prisma.termStageRule.findFirst({
+            where: {
+              termId: classroom.termId,
+              startWeek: { lte: currentWeekNo },
+              endWeek: { gte: currentWeekNo },
+            },
+            include: { lifeStage: true },
+          });
+
+    const profileId = profile?.id;
+    const productIds = (profile?.holdings ?? []).map(
+      (holding) => holding.productId,
+    );
+    const latestPriceByProduct = await this.getLatestPriceByProduct(
+      classroom.termId,
+      productIds,
+    );
+
+    const assets = {
+      stocks: [] as Array<Record<string, unknown>>,
+      funds: [] as Array<Record<string, unknown>>,
+      bonds: [] as Array<Record<string, unknown>>,
+    };
+
+    let marketValue = 0;
+    let investedValue = 0;
+    for (const holding of profile?.holdings ?? []) {
+      const units = this.toNumber(holding.units);
+      const avgCost = this.toNumber(holding.avgCost);
+      const price = latestPriceByProduct.get(holding.productId) ?? avgCost;
+      const valueCoin = units * price;
+      const costValue = units * avgCost;
+      const changeCoin = valueCoin - costValue;
+      const changePercent = costValue > 0 ? (changeCoin / costValue) * 100 : 0;
+
+      marketValue += valueCoin;
+      investedValue += costValue;
+
+      const bucket = this.splitAssetType(holding.product.type);
+      assets[bucket].push({
+        productId: holding.productId,
+        symbol: holding.product.symbol,
+        name: holding.product.name,
+        units,
+        unitsLabel:
+          holding.product.type === 'STOCK'
+            ? `จำนวนหุ้น: ${this.round2(units)}`
+            : `จำนวนหน่วย: ${this.round2(units)}`,
+        valueCoin: this.round2(valueCoin),
+        changePercent: this.round2(changePercent),
+        changeCoin: this.round2(changeCoin),
+      });
+    }
+
+    const wallet = this.toNumber(profile?.mainWallet?.balance);
+    const savings = (profile?.savingsAccounts ?? []).reduce(
+      (sum, account) => sum + this.toNumber(account.balance),
+      0,
+    );
+    const fixedDeposit = (profile?.fixedDeposits ?? []).reduce(
+      (sum, deposit) => sum + this.toNumber(deposit.principal),
+      0,
+    );
+    const investmentCash = this.toNumber(profile?.investmentWallet?.balance);
+    const totalCoin =
+      wallet + savings + fixedDeposit + investmentCash + marketValue;
+    const growth =
+      investedValue > 0
+        ? ((marketValue - investedValue) / investedValue) * 100
+        : 0;
+
+    const questRows = await this.prisma.quest.findMany({
+      where: {
+        termId: classroom.termId,
+        status: QuestStatus.PUBLISHED,
+        classrooms: { some: { classroomId } },
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        isSystem: true,
+        rewardCoins: true,
+        difficulty: true,
+        deadlineAt: true,
+        submissions: profileId
+          ? {
+              where: { studentProfileId: profileId },
+              select: { id: true, status: true, updatedAt: true },
+              take: 1,
+            }
+          : false,
+      },
+      orderBy: [{ parentId: 'asc' }, { orderNo: 'asc' }, { createdAt: 'desc' }],
+    });
+
+    const badgeRows = profileId
+      ? await this.prisma.badge.findMany({
+          where: { termId: classroom.termId },
+          orderBy: { code: 'asc' },
+          include: {
+            studentBadges: {
+              where: { studentProfileId: profileId },
+              select: { earnedAt: true },
+              take: 1,
+            },
+          },
+        })
+      : [];
+
+    const retirementGoal = profile?.retirementGoals[0];
+
+    return {
+      success: true,
+      data: {
+        profile: {
+          id: enrollment.student.id,
+          studentProfileId: profile?.id ?? null,
+          displayName: enrollment.student.username,
+          studentCode: enrollment.student.username,
+          email: enrollment.student.email,
+          classroomId: classroom.id,
+          classroomName: classroom.name,
+          termId: classroom.termId,
+          currentWeekNo,
+          lifeStage: lifeStageRule?.lifeStage ?? null,
+          totalCoin: this.round2(totalCoin),
+        },
+        finance: {
+          accountMoney: this.round2(wallet),
+          assetValue: this.round2(totalCoin),
+          growthRate: this.round2(growth),
+          savings: this.round2(savings),
+          fixedDeposit: this.round2(fixedDeposit),
+          investmentCash: this.round2(investmentCash),
+          investmentMarketValue: this.round2(marketValue),
+        },
+        retirementGoal: retirementGoal
+          ? {
+              id: retirementGoal.id,
+              currentAmount: this.round2(
+                this.toNumber(retirementGoal.currentAmount),
+              ),
+              targetAmount: this.round2(
+                this.toNumber(retirementGoal.targetAmount),
+              ),
+              retirementAge: retirementGoal.retirementAge,
+              lifeExpectancy: retirementGoal.lifeExpectancy,
+            }
+          : null,
+        badges: badgeRows.map((badge) => {
+          const earned = badge.studentBadges[0];
+          return {
+            id: badge.id,
+            code: badge.code,
+            title: badge.name,
+            description: badge.description,
+            earned: Boolean(earned),
+            earnedAt: earned?.earnedAt ?? null,
+          };
+        }),
+        quests: questRows.map((quest) => {
+          const submission = quest.submissions?.[0];
+          return {
+            id: quest.id,
+            title: quest.title,
+            description: quest.description,
+            isSystem: quest.isSystem,
+            rewardCoins: quest.rewardCoins,
+            difficulty: quest.difficulty,
+            deadlineAt: quest.deadlineAt,
+            status: submission?.status ?? 'NOT_SUBMITTED',
+            submissionId: submission?.id ?? null,
+            submittedAt: submission?.updatedAt ?? null,
+          };
+        }),
+        assets,
+      },
+    };
   }
 
   // -----------------------------
