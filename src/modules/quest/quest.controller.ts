@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { QuestService } from './quest.service';
 import { NeededPermissions } from '../auth/decorators/needed-permissions.decorator';
 import { PERMISSIONS } from 'src/common/constants/permissions.constant';
@@ -13,6 +22,7 @@ import {
   ApproveSubmissionDto,
   RejectSubmissionDto,
 } from './dto/review-submission.dto';
+import { TeacherQuizQuestDraftDto } from './dto/teacher-quiz-quest.dto';
 
 @Controller('quests')
 export class QuestController {
@@ -24,6 +34,15 @@ export class QuestController {
     return this.questService.createQuest(user, dto);
   }
 
+  @Post('quiz-draft')
+  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  createQuizDraft(
+    @CurrentUser() user: User,
+    @Body() dto: TeacherQuizQuestDraftDto,
+  ) {
+    return this.questService.createTeacherQuizDraft(user, dto);
+  }
+
   @Put(':questId')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
   update(
@@ -32,6 +51,16 @@ export class QuestController {
     @Body() dto: UpdateQuestDto,
   ) {
     return this.questService.updateQuest(questId, user, dto);
+  }
+
+  @Put(':questId/quiz-draft')
+  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  updateQuizDraft(
+    @Param('questId') questId: string,
+    @CurrentUser() user: User,
+    @Body() dto: TeacherQuizQuestDraftDto,
+  ) {
+    return this.questService.updateTeacherQuizDraft(questId, user, dto);
   }
 
   @Get()
@@ -61,6 +90,15 @@ export class QuestController {
     return this.questService.getInteractiveQuestStatus(questId, user);
   }
 
+  @Get(':questId/submissions/me/status')
+  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  getMySubmissionStatus(
+    @Param('questId') questId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.questService.getMyQuestSubmissionStatus(questId, user);
+  }
+
   @Get('classrooms/:classroomId/pending-submissions')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
   getPendingSubmissions(
@@ -74,10 +112,20 @@ export class QuestController {
     );
   }
 
+  @Get(':questId/submissions')
+  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  listQuestSubmissions(
+    @Param('questId') questId: string,
+    @CurrentUser() user: User,
+    @Query('classroomId') classroomId?: string,
+  ) {
+    return this.questService.listQuestSubmissions(questId, user, classroomId);
+  }
+
   @Get(':questId')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
-  getOne(@Param('questId') questId: string) {
-    return this.questService.getQuestById(questId);
+  getOne(@Param('questId') questId: string, @CurrentUser() user: User) {
+    return this.questService.getQuestById(questId, user);
   }
 
   @Post(':questId/publish')
@@ -90,6 +138,12 @@ export class QuestController {
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
   close(@Param('questId') questId: string, @CurrentUser() user: User) {
     return this.questService.closeQuest(questId, user);
+  }
+
+  @Delete(':questId')
+  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  remove(@Param('questId') questId: string, @CurrentUser() user: User) {
+    return this.questService.deleteQuest(questId, user);
   }
 
   @Post(':questId/submissions/me')

@@ -8,6 +8,16 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 export type CurrentUser = User & { role?: { name?: string } | null };
 export type TxClient = Prisma.TransactionClient;
+type EventProductContext = {
+  symbol?: string | null;
+  sector?: string | null;
+  riskLevel?: string | null;
+};
+type EventAdjustments = {
+  muAdjustment: number;
+  sigmaAdjustment: number;
+  sigmaMultiplier: number;
+};
 
 @Injectable()
 export class InvestmentCoreService {
@@ -107,34 +117,50 @@ export class InvestmentCoreService {
     return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
   }
 
-  resolveEventAdjustments(impact: unknown) {
+  resolveEventAdjustments(
+    impact: unknown,
+    product?: EventProductContext | null,
+  ): EventAdjustments {
     if (!impact || typeof impact !== 'object' || Array.isArray(impact)) {
       return { muAdjustment: 0, sigmaAdjustment: 0, sigmaMultiplier: 1 };
     }
 
     const data = impact as Record<string, unknown>;
+    const impactParts = [
+      data,
+      this.asRecord(data.global),
+      this.resolveAssetImpact(data.assets, product),
+    ].filter((item): item is Record<string, unknown> => item !== undefined);
 
-    const muAdjustment =
-      this.toNumber(data.muAdjustment) ||
-      this.toNumber(data.driftShift) ||
-      this.toNumber(data.muShift) ||
-      0;
+    return impactParts.reduce<EventAdjustments>(
+      (acc, item) => {
+        const muAdjustment =
+          this.toNumber(item.muAdjustment) ||
+          this.toNumber(item.driftShift) ||
+          this.toNumber(item.muShift) ||
+          this.toNumber(item.mu) ||
+          0;
 
-    const sigmaAdjustment =
-      this.toNumber(data.sigmaAdjustment) ||
-      this.toNumber(data.volatilityShift) ||
-      0;
+        const sigmaAdjustment =
+          this.toNumber(item.sigmaAdjustment) ||
+          this.toNumber(item.volatilityShift) ||
+          this.toNumber(item.sigma) ||
+          0;
 
-    const sigmaMultiplier =
-      this.toNumber(data.sigmaMultiplier) ||
-      this.toNumber(data.volatilityMultiplier) ||
-      1;
+        const sigmaMultiplier =
+          this.toNumber(item.sigmaMultiplier) ||
+          this.toNumber(item.volatilityMultiplier) ||
+          1;
 
-    return {
-      muAdjustment,
-      sigmaAdjustment,
-      sigmaMultiplier: sigmaMultiplier <= 0 ? 1 : sigmaMultiplier,
-    };
+        return {
+          muAdjustment: acc.muAdjustment + muAdjustment,
+          sigmaAdjustment: acc.sigmaAdjustment + sigmaAdjustment,
+          sigmaMultiplier:
+            acc.sigmaMultiplier * (sigmaMultiplier <= 0 ? 1 : sigmaMultiplier),
+        };
+      },
+      { muAdjustment: 0, sigmaAdjustment: 0, sigmaMultiplier: 1 },
+    );
   }
 
   normalizeStringArray(value: unknown): string[] {
@@ -154,12 +180,19 @@ export class InvestmentCoreService {
     return [];
   }
 
-  eventAppliesToProduct(impact: unknown, sector?: string | null) {
+  eventAppliesToProduct(
+    impact: unknown,
+    productOrSector?: EventProductContext | string | null,
+  ) {
     if (!impact || typeof impact !== 'object' || Array.isArray(impact)) {
       return true;
     }
 
     const data = impact as Record<string, unknown>;
+    const product =
+      typeof productOrSector === 'string'
+        ? { sector: productOrSector }
+        : (productOrSector ?? {});
     const targetSectors = this.normalizeStringArray(
       data.targetSectors ?? data.sectors ?? data.targetSector,
     );
@@ -167,12 +200,18 @@ export class InvestmentCoreService {
       data.excludeSectors ?? data.excludedSectors,
     );
 
-    if (!targetSectors.length && !excludeSectors.length) {
+    const hasAssetTargets =
+      !!this.asRecord(data.assets) &&
+      Object.keys(this.asRecord(data.assets)!).length > 0;
+    const hasGlobalImpact = !!this.asRecord(data.global);
+    const hasRootImpact = this.hasAdjustmentFields(data);
+
+    if (!targetSectors.length && !excludeSectors.length && !hasAssetTargets) {
       return true;
     }
 
-    const normalizedSector = (sector ?? '').trim().toUpperCase();
-    if (!normalizedSector) {
+    const normalizedSector = (product.sector ?? '').trim().toUpperCase();
+    if ((targetSectors.length || excludeSectors.length) && !normalizedSector) {
       return false;
     }
 
@@ -184,6 +223,82 @@ export class InvestmentCoreService {
       return false;
     }
 
-    return true;
+    if (!hasAssetTargets) {
+      return true;
+    }
+
+    return (
+      hasGlobalImpact ||
+      hasRootImpact ||
+      !!this.resolveAssetImpact(data.assets, product)
+    );
+  }
+
+  private asRecord(value: unknown): Record<string, unknown> | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return undefined;
+    }
+
+    return value as Record<string, unknown>;
+  }
+
+  private resolveAssetImpact(
+    assets: unknown,
+    product?: EventProductContext | null,
+  ): Record<string, unknown> | undefined {
+    const assetMap = this.asRecord(assets);
+    if (!assetMap || !product) {
+      return undefined;
+    }
+
+    const keys = this.getEventAssetKeys(product);
+    for (const key of keys) {
+      const value = assetMap[key];
+      const record = this.asRecord(value);
+      if (record) {
+        return record;
+      }
+    }
+
+    return undefined;
+  }
+
+  private hasAdjustmentFields(data: Record<string, unknown>) {
+    return [
+      data.muAdjustment,
+      data.driftShift,
+      data.muShift,
+      data.mu,
+      data.sigmaAdjustment,
+      data.volatilityShift,
+      data.sigma,
+      data.sigmaMultiplier,
+      data.volatilityMultiplier,
+    ].some((value) => value !== undefined && value !== null);
+  }
+
+  private getEventAssetKeys(product: EventProductContext) {
+    const symbol = (product.symbol ?? '').trim().toUpperCase();
+    const sector = (product.sector ?? '').trim().toUpperCase();
+    const riskLevel = (product.riskLevel ?? '').trim().toUpperCase();
+
+    const seededAssetAliases: Record<string, string> = {
+      SCHMART: 'L1',
+      HLTHPLS: 'L2',
+      GRNPWR: 'M1',
+      FSTFIN: 'M2',
+      TWAV: 'H1',
+      GHUB: 'H2',
+    };
+
+    return [
+      symbol,
+      seededAssetAliases[symbol],
+      sector,
+      riskLevel,
+      riskLevel === 'LOW' ? 'L' : undefined,
+      riskLevel === 'MED' ? 'M' : undefined,
+      riskLevel === 'HIGH' ? 'H' : undefined,
+    ].filter((item): item is string => !!item);
   }
 }

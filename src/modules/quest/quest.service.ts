@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import {
   Prisma,
+  QuizGradingType,
+  QuizQuestionType,
   QuestSubmissionStatus,
   QuestStatus,
   QuestType,
@@ -21,10 +23,17 @@ import { ListMyQuestsQueryDto } from './dto/list-my-quests-query.dto';
 import { SubmitQuestDto } from './dto/submit-quest.dto';
 import {
   ApproveSubmissionDto,
+  ApproveSubmissionQuestionReviewDto,
   RejectSubmissionDto,
 } from './dto/review-submission.dto';
+import {
+  TeacherQuizDraftQuestionDto,
+  TeacherQuizQuestDraftDto,
+} from './dto/teacher-quiz-quest.dto';
 
 type CurrentUser = User & { role?: { name?: string } | null };
+
+const TEACHER_QUIZ_DRAFT_CONTENT_TYPE = 'TEACHER_QUIZ_DRAFT_V1';
 
 @Injectable()
 export class QuestService {
@@ -119,6 +128,192 @@ export class QuestService {
     }
   }
 
+  private buildTeacherQuizDraftContent(dto: TeacherQuizQuestDraftDto) {
+    return JSON.stringify({
+      type: TEACHER_QUIZ_DRAFT_CONTENT_TYPE,
+      title: dto.title ?? '',
+      description: dto.description ?? '',
+      iconKey: dto.iconKey ?? '',
+      iconColorHex: dto.iconColorHex ?? '',
+      rewardCoins: dto.rewardCoins ?? 0,
+      deadlineAt: dto.deadlineAt ? new Date(dto.deadlineAt).toISOString() : null,
+      questions: dto.questions ?? [],
+    });
+  }
+
+  private parseTeacherQuizDraftContent(content?: string | null) {
+    if (!content) {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(content) as Record<string, unknown>;
+      if (parsed?.type !== TEACHER_QUIZ_DRAFT_CONTENT_TYPE) {
+        return null;
+      }
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  private normalizeDraftQuestions(
+    questions?: TeacherQuizDraftQuestionDto[],
+  ): TeacherQuizDraftQuestionDto[] {
+    return (questions ?? []).map((question) => {
+      if (question.type === 'choice' && Array.isArray(question.choices)) {
+        const validChoices = question.choices
+          .map((choice, originalIndex) => ({
+            choice: choice.trim(),
+            originalIndex,
+          }))
+          .filter((item) => item.choice.length > 0);
+
+        return {
+          type: String(question.type ?? '').trim(),
+          question: question.question ?? '',
+          choices: validChoices.map((item) => item.choice),
+          correctIndex: validChoices.findIndex(
+            (item) => item.originalIndex === question.correctIndex,
+          ),
+        };
+      }
+
+      return {
+        type: String(question.type ?? '').trim(),
+        question: question.question ?? '',
+        choices: undefined,
+        correctIndex: question.correctIndex,
+      };
+    });
+  }
+
+  private validateTeacherQuizForPublish(dto: TeacherQuizQuestDraftDto) {
+    const title = (dto.title ?? '').trim();
+    if (!title) {
+      throw new BadRequestException('กรุณากรอกชื่อภารกิจ');
+    }
+
+    const questions = this.normalizeDraftQuestions(dto.questions);
+    if (!questions.length) {
+      throw new BadRequestException('กรุณาเพิ่มคำถามอย่างน้อย 1 ข้อ');
+    }
+
+    questions.forEach((question, index) => {
+      if (!String(question.question ?? '').trim()) {
+        throw new BadRequestException(`กรุณากรอกคำถามที่ ${index + 1}`);
+      }
+
+      if (question.type === 'choice') {
+        const choices = question.choices ?? [];
+        if (choices.length < 2) {
+          throw new BadRequestException(
+            `คำถามที่ ${index + 1} ต้องมีตัวเลือกอย่างน้อย 2 ตัวเลือก`,
+          );
+        }
+        if (
+          question.correctIndex === undefined ||
+          question.correctIndex < 0 ||
+          question.correctIndex >= choices.length
+        ) {
+          throw new BadRequestException(
+            `คำถามที่ ${index + 1} ต้องเลือกคำตอบที่ถูกต้อง`,
+          );
+        }
+        return;
+      }
+
+      if (!['text', 'file'].includes(question.type)) {
+        throw new BadRequestException(
+          `ชนิดคำถามที่ ${index + 1} ไม่ถูกต้อง`,
+        );
+      }
+    });
+  }
+
+  private toQuizQuestionCreateInput(
+    question: TeacherQuizDraftQuestionDto,
+    index: number,
+  ) {
+    if (question.type === 'choice') {
+      const choices = (question.choices ?? []).filter(Boolean);
+      return {
+        questionText: question.question?.trim() ?? '',
+        questionType: QuizQuestionType.SINGLE_CHOICE,
+        orderNo: index + 1,
+        points: 1,
+        gradingType: QuizGradingType.AUTO,
+        answerKey: Prisma.JsonNull,
+        config: Prisma.JsonNull,
+        choices: {
+          create: choices.map((choiceText, choiceIndex) => ({
+            choiceText,
+            isCorrect: choiceIndex === question.correctIndex,
+            orderNo: choiceIndex + 1,
+          })),
+        },
+      };
+    }
+
+    return {
+      questionText: question.question?.trim() ?? '',
+      questionType:
+        question.type === 'file'
+          ? QuizQuestionType.FILE_UPLOAD
+          : QuizQuestionType.SHORT_TEXT,
+      orderNo: index + 1,
+      points: 1,
+      gradingType: QuizGradingType.MANUAL,
+      answerKey: Prisma.JsonNull,
+      config: Prisma.JsonNull,
+    };
+  }
+
+  private async upsertTeacherQuizSnapshot(
+    tx: Prisma.TransactionClient,
+    quizId: string | null,
+    dto: TeacherQuizQuestDraftDto,
+  ) {
+    const questions = this.normalizeDraftQuestions(dto.questions);
+    if (quizId) {
+      const attemptCount = await tx.quizAttempt.count({ where: { quizId } });
+      if (attemptCount > 0) {
+        throw new BadRequestException(
+          'Quiz already has attempts. Editing questions is not allowed.',
+        );
+      }
+    }
+
+    const quiz = quizId
+      ? await tx.quiz.update({
+          where: { id: quizId },
+          data: {
+            passAllRequired: false,
+            timeLimitSec: null,
+          },
+          select: { id: true },
+        })
+      : await tx.quiz.create({
+          data: {
+            passAllRequired: false,
+            timeLimitSec: null,
+          },
+          select: { id: true },
+        });
+
+    await tx.quizQuestion.deleteMany({ where: { quizId: quiz.id } });
+
+    for (const [index, question] of questions.entries()) {
+      await tx.quizQuestion.create({
+        data: {
+          quizId: quiz.id,
+          ...this.toQuizQuestionCreateInput(question, index),
+        },
+      });
+    }
+
+    return quiz.id;
+  }
+
   private toQuestInclude() {
     return {
       classrooms: {
@@ -136,6 +331,16 @@ export class QuestService {
         select: {
           id: true,
           moduleId: true,
+          timeLimitSec: true,
+          passAllRequired: true,
+          questions: {
+            orderBy: { orderNo: 'asc' as const },
+            include: {
+              choices: {
+                orderBy: { orderNo: 'asc' as const },
+              },
+            },
+          },
         },
       },
       term: {
@@ -265,6 +470,138 @@ export class QuestService {
     });
 
     return { success: true, data: created };
+  }
+
+  async createTeacherQuizDraft(
+    user: CurrentUser,
+    dto: TeacherQuizQuestDraftDto,
+  ) {
+    this.assertTeacherOrAdmin(user);
+
+    const term = await this.prisma.term.findUnique({
+      where: { id: dto.termId },
+      select: { id: true },
+    });
+    if (!term) {
+      throw new NotFoundException('Term not found');
+    }
+    await this.validateClassroomsInTerm(dto.classroomIds, dto.termId);
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const quest = await tx.quest.create({
+        data: {
+          termId: dto.termId,
+          type: QuestType.QUIZ,
+          title: (dto.title ?? '').trim() || 'ภารกิจแบบร่าง',
+          description: dto.description,
+          content: this.buildTeacherQuizDraftContent(dto),
+          isSystem: false,
+          rewardCoins: dto.rewardCoins ?? 0,
+          difficulty: 'EASY',
+          status: QuestStatus.DRAFT,
+          deadlineAt: dto.deadlineAt,
+          createdById: user.id,
+        },
+        select: { id: true },
+      });
+
+      if (dto.classroomIds.length) {
+        await tx.questClassroom.createMany({
+          data: dto.classroomIds.map((classroomId) => ({
+            questId: quest.id,
+            classroomId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      return tx.quest.findUnique({
+        where: { id: quest.id },
+        include: this.toQuestInclude(),
+      });
+    });
+
+    return { success: true, data: created };
+  }
+
+  async updateTeacherQuizDraft(
+    questId: string,
+    user: CurrentUser,
+    dto: TeacherQuizQuestDraftDto,
+  ) {
+    this.assertTeacherOrAdmin(user);
+
+    const existing = await this.prisma.quest.findUnique({
+      where: { id: questId },
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        quizId: true,
+        createdById: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Quest not found');
+    }
+    if (existing.createdById !== user.id) {
+      throw new ForbiddenException('Only quest owner can update this quest');
+    }
+    if (existing.type !== QuestType.QUIZ) {
+      throw new BadRequestException('Only QUIZ quests can be edited here');
+    }
+
+    const term = await this.prisma.term.findUnique({
+      where: { id: dto.termId },
+      select: { id: true },
+    });
+    if (!term) {
+      throw new NotFoundException('Term not found');
+    }
+    await this.validateClassroomsInTerm(dto.classroomIds, dto.termId);
+
+    if (existing.status === QuestStatus.PUBLISHED) {
+      this.validateTeacherQuizForPublish(dto);
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      let quizId = existing.quizId;
+      if (existing.status === QuestStatus.PUBLISHED) {
+        quizId = await this.upsertTeacherQuizSnapshot(tx, quizId, dto);
+      }
+
+      await tx.quest.update({
+        where: { id: questId },
+        data: {
+          termId: dto.termId,
+          quizId,
+          title: (dto.title ?? '').trim() || 'ภารกิจแบบร่าง',
+          description: dto.description,
+          content: this.buildTeacherQuizDraftContent(dto),
+          rewardCoins: dto.rewardCoins ?? 0,
+          deadlineAt: dto.deadlineAt,
+        },
+      });
+
+      await tx.questClassroom.deleteMany({ where: { questId } });
+      if (dto.classroomIds.length) {
+        await tx.questClassroom.createMany({
+          data: dto.classroomIds.map((classroomId) => ({
+            questId,
+            classroomId,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      return tx.quest.findUnique({
+        where: { id: questId },
+        include: this.toQuestInclude(),
+      });
+    });
+
+    return { success: true, data: updated };
   }
 
   async updateQuest(questId: string, user: CurrentUser, dto: UpdateQuestDto) {
@@ -429,7 +766,7 @@ export class QuestService {
     return { success: true, data: quests };
   }
 
-  async getQuestById(questId: string) {
+  async getQuestById(questId: string, user?: CurrentUser) {
     const quest = await this.prisma.quest.findUnique({
       where: { id: questId },
       include: this.toQuestInclude(),
@@ -439,16 +776,113 @@ export class QuestService {
       throw new NotFoundException('Quest not found');
     }
 
-    return { success: true, data: quest };
+    if (user) {
+      const roleName = this.getRoleName(user);
+      if (
+        ['TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(roleName) &&
+        quest.createdById !== user.id &&
+        roleName !== 'ADMIN' &&
+        roleName !== 'SUPER_ADMIN'
+      ) {
+        throw new ForbiddenException('Only quest owner can view this quest');
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        ...quest,
+        draftContent: this.parseTeacherQuizDraftContent(quest.content),
+      },
+    };
   }
 
   async publishQuest(questId: string, user: CurrentUser) {
     this.assertTeacherOrAdmin(user);
-    return this.updateQuestStatus(questId, QuestStatus.PUBLISHED);
+
+    const existing = await this.prisma.quest.findUnique({
+      where: { id: questId },
+      include: {
+        classrooms: { select: { classroomId: true } },
+      },
+    });
+    if (!existing) {
+      throw new NotFoundException('Quest not found');
+    }
+    if (existing.createdById !== user.id) {
+      throw new ForbiddenException('Only quest owner can publish this quest');
+    }
+
+    if (existing.type !== QuestType.QUIZ || existing.isSystem) {
+      return this.updateQuestStatus(questId, QuestStatus.PUBLISHED);
+    }
+
+    const draft = this.parseTeacherQuizDraftContent(existing.content);
+    const dto: TeacherQuizQuestDraftDto = {
+      termId: existing.termId,
+      classroomIds: existing.classrooms.map((row) => row.classroomId),
+      title:
+        (draft?.title as string | undefined) ??
+        existing.title ??
+        'ภารกิจแบบร่าง',
+      description:
+        (draft?.description as string | undefined) ??
+        existing.description ??
+        undefined,
+      iconKey: (draft?.iconKey as string | undefined) ?? undefined,
+      iconColorHex:
+        (draft?.iconColorHex as string | undefined) ?? undefined,
+      rewardCoins:
+        typeof draft?.rewardCoins === 'number'
+          ? draft.rewardCoins
+          : existing.rewardCoins,
+      deadlineAt:
+        typeof draft?.deadlineAt === 'string' && draft.deadlineAt
+          ? new Date(draft.deadlineAt)
+          : (existing.deadlineAt ?? undefined),
+      questions: Array.isArray(draft?.questions)
+        ? (draft.questions as TeacherQuizDraftQuestionDto[])
+        : [],
+    };
+
+    this.validateTeacherQuizForPublish(dto);
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const quizId = await this.upsertTeacherQuizSnapshot(
+        tx,
+        existing.quizId,
+        dto,
+      );
+
+      return tx.quest.update({
+        where: { id: questId },
+        data: {
+          quizId,
+          title: dto.title?.trim() || existing.title,
+          description: dto.description,
+          rewardCoins: dto.rewardCoins ?? 0,
+          deadlineAt: dto.deadlineAt,
+          status: QuestStatus.PUBLISHED,
+        },
+        include: this.toQuestInclude(),
+      });
+    });
+
+    return { success: true, data: updated };
   }
 
   async closeQuest(questId: string, user: CurrentUser) {
     this.assertTeacherOrAdmin(user);
+    const quest = await this.prisma.quest.findUnique({
+      where: { id: questId },
+      select: { createdById: true },
+    });
+    if (!quest) {
+      throw new NotFoundException('Quest not found');
+    }
+    if (quest.createdById !== user.id) {
+      throw new ForbiddenException('Only quest owner can close this quest');
+    }
     return this.updateQuestStatus(questId, QuestStatus.CLOSED);
   }
 
@@ -468,6 +902,238 @@ export class QuestService {
     });
 
     return { success: true, data: updated };
+  }
+
+  async deleteQuest(questId: string, user: CurrentUser) {
+    this.assertTeacherOrAdmin(user);
+
+    const quest = await this.prisma.quest.findUnique({
+      where: { id: questId },
+      select: {
+        id: true,
+        status: true,
+        createdById: true,
+        _count: {
+          select: {
+            submissions: true,
+          },
+        },
+      },
+    });
+
+    if (!quest) {
+      throw new NotFoundException('Quest not found');
+    }
+    if (quest.createdById !== user.id) {
+      throw new ForbiddenException('Only quest owner can delete this quest');
+    }
+    if (quest.status !== QuestStatus.DRAFT) {
+      throw new BadRequestException('Only draft quests can be deleted');
+    }
+    if (quest._count.submissions > 0) {
+      throw new BadRequestException('Quest with submissions cannot be deleted');
+    }
+
+    await this.prisma.quest.delete({ where: { id: questId } });
+    return { success: true, data: { id: questId } };
+  }
+
+  async listQuestSubmissions(
+    questId: string,
+    user: CurrentUser,
+    classroomId?: string,
+  ) {
+    this.assertTeacherOrAdmin(user);
+
+    const quest = await this.prisma.quest.findUnique({
+      where: { id: questId },
+      select: {
+        id: true,
+        title: true,
+        deadlineAt: true,
+        rewardCoins: true,
+        createdById: true,
+        quizId: true,
+      },
+    });
+
+    if (!quest) {
+      throw new NotFoundException('Quest not found');
+    }
+    if (quest.createdById !== user.id) {
+      throw new ForbiddenException(
+        'Only quest owner can view submissions for this quest',
+      );
+    }
+
+    const submissions = await this.prisma.questSubmission.findMany({
+      where: {
+        questId,
+        ...(classroomId
+          ? {
+              studentProfile: {
+                user: {
+                  classroomStudents: {
+                    some: { classroomId },
+                  },
+                },
+              },
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        status: true,
+        studentProfile: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+              },
+            },
+          },
+        },
+        versions: {
+          orderBy: { versionNo: 'desc' },
+          take: 1,
+          select: {
+            createdAt: true,
+            payloadJson: true,
+          },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    const maxScore = quest.quizId
+      ? (
+          await this.prisma.quizQuestion.aggregate({
+            where: { quizId: quest.quizId },
+            _sum: { points: true },
+          })
+        )._sum.points ?? 0
+      : 0;
+
+    const latestAttempts = quest.quizId
+      ? await this.prisma.quizAttempt.findMany({
+          where: {
+            quizId: quest.quizId,
+            ...(classroomId
+              ? {
+                  studentProfile: {
+                    user: {
+                      classroomStudents: {
+                        some: { classroomId },
+                      },
+                    },
+                  },
+                }
+              : {}),
+            submittedAt: { not: null },
+          },
+          select: {
+            id: true,
+            score: true,
+            submittedAt: true,
+            studentProfile: {
+              select: {
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { submittedAt: 'desc' },
+        })
+      : [];
+
+    const rowsByUserId = new Map<string, Record<string, unknown>>();
+
+    for (const submission of submissions) {
+      const submittedAt = submission.versions[0]?.createdAt;
+      const payload = submission.versions[0]?.payloadJson;
+      const payloadScore =
+        payload &&
+        typeof payload === 'object' &&
+        !Array.isArray(payload) &&
+        Array.isArray((payload as Record<string, unknown>).answers)
+          ? ((payload as Record<string, unknown>).answers as unknown[]).reduce<number>(
+              (sum, rawAnswer) => {
+                if (
+                  !rawAnswer ||
+                  typeof rawAnswer !== 'object' ||
+                  Array.isArray(rawAnswer)
+                ) {
+                  return sum;
+                }
+
+                const awardedPoints = Number(
+                  (rawAnswer as Record<string, unknown>).awardedPoints ?? 0,
+                );
+                return Number.isFinite(awardedPoints)
+                  ? sum + awardedPoints
+                  : sum;
+              },
+              0,
+            )
+          : null;
+      const userInfo = submission.studentProfile.user;
+      rowsByUserId.set(userInfo.id, {
+        submissionId: submission.id,
+        studentName: userInfo.username,
+        studentCode: userInfo.email,
+        submittedAt: submittedAt?.toISOString() ?? null,
+        status:
+          submission.status === QuestSubmissionStatus.APPROVED
+            ? 'checked'
+            : submittedAt && quest.deadlineAt && submittedAt > quest.deadlineAt
+              ? 'late'
+              : 'pending',
+        score: submission.status === QuestSubmissionStatus.APPROVED
+          ? payloadScore
+          : null,
+      });
+    }
+
+    for (const attempt of latestAttempts) {
+      const userInfo = attempt.studentProfile.user;
+      if (rowsByUserId.has(userInfo.id)) {
+        const existing = rowsByUserId.get(userInfo.id)!;
+        existing.score = attempt.score;
+        continue;
+      }
+      rowsByUserId.set(userInfo.id, {
+        submissionId: '',
+        studentName: userInfo.username,
+        studentCode: userInfo.email,
+        submittedAt: attempt.submittedAt?.toISOString() ?? null,
+        status:
+          attempt.submittedAt && quest.deadlineAt && attempt.submittedAt > quest.deadlineAt
+            ? 'late'
+            : 'checked',
+        score: attempt.score,
+      });
+    }
+
+    return {
+      success: true,
+      data: {
+        quest: {
+          id: quest.id,
+          title: quest.title,
+          rewardCoins: quest.rewardCoins,
+          deadlineAt: quest.deadlineAt,
+          maxScore,
+        },
+        submissions: Array.from(rowsByUserId.values()),
+      },
+    };
   }
 
   private async getStudentContext(user: CurrentUser) {
@@ -503,6 +1169,18 @@ export class QuestService {
       const quests = await this.prisma.quest.findMany({
         where: {
           createdById: user.id,
+          isSystem: false,
+          ...(query.type ? { type: query.type } : {}),
+          ...(query.status ? { status: query.status } : {}),
+          ...(query.classroomId
+            ? {
+                classrooms: {
+                  some: {
+                    classroomId: query.classroomId,
+                  },
+                },
+              }
+            : {}),
         },
         include: this.toQuestInclude(),
         orderBy: [
@@ -727,6 +1405,79 @@ export class QuestService {
     return approvedSubmission;
   }
 
+  private applySubmissionQuestionReviews(
+    payloadJson: Prisma.JsonValue | null,
+    questionReviews: ApproveSubmissionQuestionReviewDto[] | undefined,
+  ): Prisma.InputJsonValue | undefined {
+    if (!questionReviews?.length) {
+      return undefined;
+    }
+
+    if (
+      !payloadJson ||
+      typeof payloadJson !== 'object' ||
+      Array.isArray(payloadJson)
+    ) {
+      return undefined;
+    }
+
+    const payload = payloadJson as Record<string, unknown>;
+    const answers = Array.isArray(payload.answers) ? payload.answers : null;
+    if (!answers) {
+      return undefined;
+    }
+
+    const reviewByQuestionId = new Map(
+      questionReviews.map((review) => [review.questionId, review]),
+    );
+
+    const nextAnswers = answers.map((rawAnswer) => {
+      if (
+        !rawAnswer ||
+        typeof rawAnswer !== 'object' ||
+        Array.isArray(rawAnswer)
+      ) {
+        return rawAnswer;
+      }
+
+      const answer = rawAnswer as Record<string, unknown>;
+      const questionId = String(answer.questionId ?? '');
+      const review = reviewByQuestionId.get(questionId);
+
+      if (!review) {
+        return answer;
+      }
+
+      return {
+        ...answer,
+        isCorrect: review.isCorrect,
+        awardedPoints: review.awardedPoints ?? (review.isCorrect ? 1 : 0),
+      };
+    });
+
+    const totalScore = nextAnswers.reduce((sum, rawAnswer) => {
+      if (
+        !rawAnswer ||
+        typeof rawAnswer !== 'object' ||
+        Array.isArray(rawAnswer)
+      ) {
+        return sum;
+      }
+
+      const awardedPoints = Number(
+        (rawAnswer as Record<string, unknown>).awardedPoints ?? 0,
+      );
+      return Number.isFinite(awardedPoints) ? sum + awardedPoints : sum;
+    }, 0);
+
+    return {
+      ...payload,
+      answers: nextAnswers,
+      totalScore,
+      reviewedAt: new Date().toISOString(),
+    } as Prisma.InputJsonValue;
+  }
+
   async submitMyQuest(questId: string, user: CurrentUser, dto: SubmitQuestDto) {
     this.assertStudent(user);
 
@@ -808,18 +1559,6 @@ export class QuestService {
           );
         }
 
-        // If submission already exists and is PENDING, just return it (no duplicate)
-        if (existing.status === QuestSubmissionStatus.PENDING) {
-          return tx.questSubmission.findUnique({
-            where: { id: existing.id },
-            include: {
-              versions: {
-                orderBy: { versionNo: 'desc' },
-              },
-            },
-          });
-        }
-
         if (
           dto.expectedLatestVersionNo !== undefined &&
           dto.expectedLatestVersionNo !== existing.latestVersionNo
@@ -838,6 +1577,7 @@ export class QuestService {
             latestVersionNo: { increment: 1 },
             status: QuestSubmissionStatus.PENDING,
             rejectReason: null,
+            reviewedById: null,
           },
         });
 
@@ -961,7 +1701,8 @@ export class QuestService {
 
     const latestVersion = submission.versions[0] ?? null;
     const isLate = submission.quest.deadlineAt
-      ? submission.createdAt > submission.quest.deadlineAt
+      ? (latestVersion?.createdAt ?? submission.createdAt) >
+        submission.quest.deadlineAt
       : false;
 
     // For QUIZ-type quests, fetch quiz questions + student answers
@@ -985,14 +1726,25 @@ export class QuestService {
         },
       });
 
-      if (latestAttempt) {
-        // Get all questions with choices
-        const questions = await this.prisma.quizQuestion.findMany({
-          where: { quizId },
-          include: { choices: true },
-          orderBy: { orderNo: 'asc' },
-        });
+      const questions = await this.prisma.quizQuestion.findMany({
+        where: { quizId },
+        include: { choices: true },
+        orderBy: { orderNo: 'asc' },
+      });
 
+      const choiceIdsByQuestion = new Map<string, string[]>();
+      const answerByQuestionId = new Map<
+        string,
+        {
+          answerText?: string | null;
+          answerNumber?: Prisma.Decimal | number | null;
+          attachmentUrl?: string | null;
+          isCorrect?: boolean | null;
+          awardedPoints?: number | null;
+        }
+      >();
+
+      if (latestAttempt) {
         // Get student answers for this attempt
         const answers = await this.prisma.quizAttemptAnswer.findMany({
           where: { attemptId: latestAttempt.id },
@@ -1005,21 +1757,76 @@ export class QuestService {
             select: { questionId: true, choiceId: true },
           });
 
-        const choiceIdsByQuestion = new Map<string, string[]>();
         for (const ac of answerChoices) {
           const list = choiceIdsByQuestion.get(ac.questionId) ?? [];
           list.push(ac.choiceId);
           choiceIdsByQuestion.set(ac.questionId, list);
         }
 
-        const answerByQuestionId = new Map(
-          answers.map((a) => [a.questionId, a]),
-        );
+        for (const answer of answers) {
+          answerByQuestionId.set(answer.questionId, answer);
+        }
+      } else {
+        const payload =
+          latestVersion?.payloadJson &&
+          typeof latestVersion.payloadJson === 'object' &&
+          !Array.isArray(latestVersion.payloadJson)
+            ? (latestVersion.payloadJson as Record<string, unknown>)
+            : null;
+        const payloadAnswers = Array.isArray(payload?.answers)
+          ? payload.answers
+          : [];
 
+        for (const rawAnswer of payloadAnswers) {
+          if (
+            !rawAnswer ||
+            typeof rawAnswer !== 'object' ||
+            Array.isArray(rawAnswer)
+          ) {
+            continue;
+          }
+
+          const answer = rawAnswer as Record<string, unknown>;
+          const questionId = String(answer.questionId ?? '');
+          if (!questionId) {
+            continue;
+          }
+
+          const selectedChoiceIds = Array.isArray(answer.selectedChoiceIds)
+            ? answer.selectedChoiceIds
+                .map((choiceId) => String(choiceId))
+                .filter((choiceId) => choiceId.length > 0)
+            : [];
+          choiceIdsByQuestion.set(questionId, selectedChoiceIds);
+          answerByQuestionId.set(questionId, {
+            answerText:
+              answer.answerText !== undefined && answer.answerText !== null
+                ? String(answer.answerText)
+                : null,
+            answerNumber:
+              typeof answer.answerNumber === 'number'
+                ? answer.answerNumber
+                : null,
+            attachmentUrl:
+              answer.attachmentUrl !== undefined &&
+              answer.attachmentUrl !== null
+                ? String(answer.attachmentUrl)
+                : null,
+            isCorrect:
+              typeof answer.isCorrect === 'boolean' ? answer.isCorrect : null,
+            awardedPoints:
+              typeof answer.awardedPoints === 'number'
+                ? answer.awardedPoints
+                : null,
+          });
+        }
+      }
+
+      if (latestAttempt || answerByQuestionId.size > 0) {
         quizData = {
-          attemptId: latestAttempt.id,
-          attemptScore: latestAttempt.score,
-          isPassed: latestAttempt.isPassed,
+          attemptId: latestAttempt?.id ?? null,
+          attemptScore: latestAttempt?.score ?? 0,
+          isPassed: latestAttempt?.isPassed ?? false,
           questions: questions.map((q) => {
             const answer = answerByQuestionId.get(q.id);
             const selectedChoiceIds = choiceIdsByQuestion.get(q.id) ?? [];
@@ -1110,6 +1917,14 @@ export class QuestService {
             rewardCoins: true,
           },
         },
+        versions: {
+          orderBy: { versionNo: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            payloadJson: true,
+          },
+        },
       },
     });
 
@@ -1123,14 +1938,31 @@ export class QuestService {
       throw new BadRequestException('Submission is already approved');
     }
 
-    const updated = await this.prisma.$transaction((tx) =>
-      this.approveSubmissionAndReward(tx, {
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const latestVersion = submission.versions[0];
+      const reviewedPayload = latestVersion
+        ? this.applySubmissionQuestionReviews(
+            latestVersion.payloadJson,
+            dto.questionReviews,
+          )
+        : undefined;
+
+      if (latestVersion && reviewedPayload !== undefined) {
+        await tx.questSubmissionVersion.update({
+          where: { id: latestVersion.id },
+          data: {
+            payloadJson: reviewedPayload,
+          },
+        });
+      }
+
+      return this.approveSubmissionAndReward(tx, {
         submissionId,
         studentProfileId: submission.studentProfileId,
         quest: submission.quest,
         reviewedById: user.id,
-      }),
-    );
+      });
+    });
 
     return { success: true, data: updated };
   }
@@ -1385,6 +2217,71 @@ export class QuestService {
     };
   }
 
+  async getMyQuestSubmissionStatus(questId: string, user: CurrentUser) {
+    this.assertStudent(user);
+
+    const quest = await this.ensureQuestMembership(questId, user.id);
+    const studentProfile = await this.getStudentProfileInQuestTerm(
+      quest,
+      user.id,
+    );
+
+    const submission = await this.prisma.questSubmission.findUnique({
+      where: {
+        questId_studentProfileId: {
+          questId,
+          studentProfileId: studentProfile.id,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        latestVersionNo: true,
+        rejectReason: true,
+      },
+    });
+
+    if (!submission) {
+      return {
+        success: true,
+        data: {
+          isCompleted: false,
+          isClaimed: false,
+          status: '',
+          latestVersionNo: 0,
+          rejectReason: null,
+        },
+      };
+    }
+
+    const walletTransaction = await this.prisma.walletTransaction.findFirst({
+      where: {
+        wallet: {
+          studentProfileId: studentProfile.id,
+        },
+        type: TransactionType.QUEST_REWARD,
+        metadata: {
+          path: ['refId'],
+          equals: submission.id,
+        },
+      },
+      select: { id: true },
+    });
+
+    const isApproved = submission.status === QuestSubmissionStatus.APPROVED;
+
+    return {
+      success: true,
+      data: {
+        isCompleted: isApproved,
+        isClaimed: !!walletTransaction,
+        status: submission.status,
+        latestVersionNo: submission.latestVersionNo,
+        rejectReason: submission.rejectReason,
+      },
+    };
+  }
+
   async getInteractiveQuestStatus(questId: string, user: CurrentUser) {
     this.assertStudent(user);
 
@@ -1525,22 +2422,33 @@ export class QuestService {
       select: {
         id: true,
         createdAt: true,
+        updatedAt: true,
         quest: {
           select: { title: true, deadlineAt: true },
         },
         studentProfileId: true,
+        versions: {
+          orderBy: { versionNo: 'desc' },
+          take: 1,
+          select: {
+            createdAt: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
       take: limit,
     });
 
-    const submissionResults = submissions.map((s) => ({
-      id: s.id,
-      task_name: s.quest.title,
-      student_name: userNameByProfileId.get(s.studentProfileId) || 'Unknown',
-      submitted_at: s.createdAt.toISOString(),
-      is_late: s.createdAt > (s.quest.deadlineAt || new Date()),
-    }));
+    const submissionResults = submissions.map((s) => {
+      const submittedAt = s.versions[0]?.createdAt ?? s.updatedAt;
+      return {
+        id: s.id,
+        task_name: s.quest.title,
+        student_name: userNameByProfileId.get(s.studentProfileId) || 'Unknown',
+        submitted_at: submittedAt.toISOString(),
+        is_late: s.quest.deadlineAt ? submittedAt > s.quest.deadlineAt : false,
+      };
+    });
 
     // Also find pending quiz attempts that need manual grading (LONG_TEXT/FILE_UPLOAD)
     // or failed attempts for quests in this classroom

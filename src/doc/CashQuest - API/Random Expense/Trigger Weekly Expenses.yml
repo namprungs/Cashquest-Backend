@@ -14,7 +14,7 @@ http:
     data: |-
       {
         "termId": "{{termId}}",
-        "weekNo": null
+        "weekNo": 8
       }
   auth: inherit
 

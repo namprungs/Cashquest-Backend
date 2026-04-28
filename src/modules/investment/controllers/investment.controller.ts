@@ -168,7 +168,7 @@ export class InvestmentController {
   }
 
   @Get('terms/:termId/events')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([])
   listTermEvents(
     @Param('termId') termId: string,
     @Query() query: ListTermEventsQueryDto,
