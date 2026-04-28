@@ -282,7 +282,7 @@ export class SavingsAccountService {
     // Ensure wallet exists
     let wallet = savingsAccount.studentProfile.mainWallet;
     if (!wallet) {
-      const studentProfileId = savingsAccount.studentProfile.id as string;
+      const studentProfileId = savingsAccount.studentProfile.id;
       wallet = await this.walletService.ensureWallet(studentProfileId);
     }
 

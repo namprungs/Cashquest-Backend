@@ -61,7 +61,9 @@ export class SavingsAccountController {
    */
   @Get('bank/:savingsAccountBankId')
   @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
-  async listByBank(@Param('savingsAccountBankId') savingsAccountBankId: string) {
+  async listByBank(
+    @Param('savingsAccountBankId') savingsAccountBankId: string,
+  ) {
     return this.savingsAccountService.listAccountsByBank(savingsAccountBankId);
   }
 

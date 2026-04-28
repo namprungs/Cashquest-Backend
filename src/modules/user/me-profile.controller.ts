@@ -21,4 +21,15 @@ export class MeProfileController {
   getMyProfile(@CurrentUser() user: User, @Query() query: MeProfileQueryDto) {
     return this.userService.getMeProfile(user.id, query.termId);
   }
+
+  @Get('leaderboard')
+  @NeededPermissions([PERMISSIONS.USER.VIEW_SELF])
+  getLeaderboard(
+    @CurrentUser() user: User,
+    @Query('termId') termId: string,
+    @Query('limit') limit?: string,
+  ) {
+    const take = limit ? parseInt(limit, 10) : 10;
+    return this.userService.getClassroomLeaderboard(user.id, termId, take);
+  }
 }

@@ -38,8 +38,14 @@ export class RandomExpenseController {
     @Request() req: any,
     @Query() query: GetPendingExpensesDto,
   ) {
-    const studentProfileId = await this.resolveStudentProfileId(req.user.id, query.termId);
-    return this.randomExpenseService.getPendingExpenses(studentProfileId, query);
+    const studentProfileId = await this.resolveStudentProfileId(
+      req.user.id,
+      query.termId,
+    );
+    return this.randomExpenseService.getPendingExpenses(
+      studentProfileId,
+      query,
+    );
   }
 
   /**
@@ -52,7 +58,10 @@ export class RandomExpenseController {
     @Request() req: any,
     @Query() query: GetExpenseHistoryDto,
   ) {
-    const studentProfileId = await this.resolveStudentProfileId(req.user.id, query.termId);
+    const studentProfileId = await this.resolveStudentProfileId(
+      req.user.id,
+      query.termId,
+    );
     return this.randomExpenseService.getExpenseHistory(studentProfileId, query);
   }
 
@@ -68,7 +77,10 @@ export class RandomExpenseController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    const studentProfileId = await this.resolveStudentProfileId(req.user.id, termId);
+    const studentProfileId = await this.resolveStudentProfileId(
+      req.user.id,
+      termId,
+    );
     return this.randomExpenseService.getAllExpenses(
       studentProfileId,
       termId,
@@ -87,8 +99,14 @@ export class RandomExpenseController {
     @Request() req: any,
     @Query('termId', new ParseUUIDPipe()) termId: string,
   ) {
-    const studentProfileId = await this.resolveStudentProfileId(req.user.id, termId);
-    return this.randomExpenseService.getExpenseSummary(studentProfileId, termId);
+    const studentProfileId = await this.resolveStudentProfileId(
+      req.user.id,
+      termId,
+    );
+    return this.randomExpenseService.getExpenseSummary(
+      studentProfileId,
+      termId,
+    );
   }
 
   /**
@@ -177,10 +195,7 @@ export class RandomExpenseController {
       req.user.id,
       termId,
     );
-    return this.randomExpenseService.acknowledgeExpense(
-      studentProfileId,
-      id,
-    );
+    return this.randomExpenseService.acknowledgeExpense(studentProfileId, id);
   }
 
   /**
@@ -217,9 +232,8 @@ export class RandomExpenseController {
       req.user.id,
       termId,
     );
-    const balance = await this.randomExpenseService.getWalletBalance(
-      studentProfileId,
-    );
+    const balance =
+      await this.randomExpenseService.getWalletBalance(studentProfileId);
     return { balance };
   }
 

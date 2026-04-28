@@ -529,8 +529,7 @@ export class QuizService {
       throw new ForbiddenException('Quiz is not assigned to your classroom');
     }
 
-    const isClaimed =
-      assignedQuest.submissions?.[0]?.status === 'APPROVED';
+    const isClaimed = assignedQuest.submissions?.[0]?.status === 'APPROVED';
 
     const attempts = await this.prisma.quizAttempt.findMany({
       where: {

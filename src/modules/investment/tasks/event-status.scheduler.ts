@@ -60,7 +60,10 @@ export class EventStatusScheduler {
           } else if (currentWeek === event.endWeek + 1) {
             // 1 week after endWeek, mark as active (peak impact on prices)
             newStatus = TermEventStatus.ACTIVE;
-          } else if (currentWeek >= event.startWeek && currentWeek <= event.endWeek) {
+          } else if (
+            currentWeek >= event.startWeek &&
+            currentWeek <= event.endWeek
+          ) {
             // During event period, mark as announced (learning/awareness period)
             newStatus = TermEventStatus.ANNOUNCED;
           }
