@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Query } from '@nestjs/common';
 import type { User } from '@prisma/client';
 import { PERMISSIONS } from 'src/common/constants/permissions.constant';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
@@ -20,6 +20,18 @@ export class MeProfileController {
   @NeededPermissions([PERMISSIONS.USER.VIEW_SELF])
   getMyProfile(@CurrentUser() user: User, @Query() query: MeProfileQueryDto) {
     return this.userService.getMeProfile(user.id, query.termId);
+  }
+
+  @Patch('profile-image')
+  @NeededPermissions([PERMISSIONS.USER.VIEW_SELF])
+  updateMyProfileImage(
+    @CurrentUser() user: User,
+    @Body('profileImageUrl') profileImageUrl?: string | null,
+  ) {
+    return this.userService.updateMyProfileImage(
+      user.id,
+      profileImageUrl?.trim() || null,
+    );
   }
 
   @Get('leaderboard')

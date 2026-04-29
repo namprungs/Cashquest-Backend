@@ -136,6 +136,9 @@ export class InvestmentPortfolioService {
 
     let investedValue = 0;
     let marketValue = 0;
+    let stockMarketValue = 0;
+    let fundMarketValue = 0;
+    let bondMarketValue = 0;
 
     const items = holdings.map((holding) => {
       const units = this.core.toNumber(holding.units);
@@ -152,6 +155,18 @@ export class InvestmentPortfolioService {
 
       investedValue += costValue;
       marketValue += currentValue;
+
+      // Track market value by product type
+      const productType = (
+        holding.product?.type ?? ''
+      ).toUpperCase();
+      if (productType === 'STOCK') {
+        stockMarketValue += currentValue;
+      } else if (productType === 'FUND') {
+        fundMarketValue += currentValue;
+      } else if (productType === 'BOND') {
+        bondMarketValue += currentValue;
+      }
 
       return {
         holding,
@@ -186,6 +201,9 @@ export class InvestmentPortfolioService {
         cash,
         investedValue,
         marketValue,
+        stockValue: stockMarketValue,
+        fundValue: fundMarketValue,
+        bondValue: bondMarketValue,
         equity,
         unrealizedPnL: marketValue - investedValue,
         transferredIn,

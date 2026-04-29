@@ -29,7 +29,7 @@ request:
     - name: schoolId
       value: ""
     - name: termId
-      value: b16455fc-a21f-420e-bda2-26f139b94ccd
+      value: cd9729e0-de11-40b3-9da0-b7f6a183c3c3
     - name: lifeStageId
       value: ""
     - name: termStageRuleId
@@ -61,7 +61,7 @@ request:
     - name: expectedUpdatedAt
       value: ""
     - name: marketTermId
-      value: 5f95128b-8273-42b5-a541-ed416a678b57
+      value: cd9729e0-de11-40b3-9da0-b7f6a183c3c3
     - name: productId
       value: c158d09b-a660-4f76-934b-be1977b58e23
     - name: orderId

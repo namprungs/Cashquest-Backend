@@ -18,6 +18,7 @@ model User {
   roleId   String? @db.Uuid
   role     Role?   @relation(fields: [roleId], references: [id], onDelete: SetNull)
   isActive Boolean @default(true)
+  profileImageUrl String? @map("profile_image_url")
 
   // Relations
   schoolId          String?            @db.Uuid
@@ -903,6 +904,7 @@ model QuestSubmission {
   reviewedBy   User?   @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
 
   rejectReason String? @map("reject_reason")
+  fileUrl      String? @map("file_url")
 
   versions QuestSubmissionVersion[]
 

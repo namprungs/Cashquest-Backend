@@ -9,6 +9,7 @@ import {
   TermEventStatus,
 } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { AppCacheService } from 'src/modules/cache/app-cache.service';
 import { FinalizeLiveWeekDto } from '../../dto/finalize-live-week.dto';
 import { GenerateLiveTicksDto } from '../../dto/generate-live-ticks.dto';
 import { GenerateRangePriceDto } from '../../dto/generate-range-price.dto';
@@ -23,6 +24,7 @@ export class InvestmentMarketService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly core: InvestmentCoreService,
+    private readonly cache: AppCacheService,
   ) {}
 
   private mapRiskLevel(riskLevel: string) {
@@ -180,6 +182,12 @@ export class InvestmentMarketService {
   }
 
   async listProducts(termId: string) {
+    return this.cache.getOrSetCache(`market:products:${termId}`, 45, () =>
+      this.fetchProducts(termId),
+    );
+  }
+
+  private async fetchProducts(termId: string) {
     const term = await this.prisma.term.findUnique({
       where: { id: termId },
       select: {
