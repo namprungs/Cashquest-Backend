@@ -11,9 +11,12 @@ async function seedEconomicEvents(prisma, academicData) {
 
   const economicEventConfigs = [
     {
-      title: 'CPI Surge Shock',
-      description: `CPI พุ่ง 5.2% สูงกว่าคาด เงินเฟ้อกดกำลังซื้อ ตลาดคาดขึ้นดอกเบี้ย
-Insight: ลงทุนในสินทรัพย์ที่เอาชนะเงินเฟ้อ อย่าถือเงินสดมากเกิน`,
+      title:
+        'สำนักงานสถิติแห่งชาติรายงาน \nCPI เดือนนี้พุ่ง 5.2% สูงกว่าคาดที่ 3.8%',
+      description: `• ราคาอาหาร พลังงาน และสินค้าอุปโภคบริโภคปรับสูงขึ้นพร้อมกัน\n
+• ตลาดคาด กนง. อาจขึ้นดอกเบี้ยในการประชุมครั้งถัดไปเพื่อสกัดเงินเฟ้อ\n
+•อำนาจซื้อของผู้บริโภคลดลง เงินที่เก็บไว้ซื้อสินค้าได้น้อยลง
+`,
       eventType: EconomicEventType.VOLATILITY_SHOCK,
       defaultImpact: {
         global: { muAdjustment: -0.02, sigmaAdjustment: 0.05 },
