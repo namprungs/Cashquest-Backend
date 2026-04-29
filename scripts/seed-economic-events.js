@@ -13,9 +13,9 @@ async function seedEconomicEvents(prisma, academicData) {
     {
       title:
         'สำนักงานสถิติแห่งชาติรายงาน \nCPI เดือนนี้พุ่ง 5.2% สูงกว่าคาดที่ 3.8%',
-      description: `• ราคาอาหาร พลังงาน และสินค้าอุปโภคบริโภคปรับสูงขึ้นพร้อมกัน\n
-• ตลาดคาด กนง. อาจขึ้นดอกเบี้ยในการประชุมครั้งถัดไปเพื่อสกัดเงินเฟ้อ\n
-•อำนาจซื้อของผู้บริโภคลดลง เงินที่เก็บไว้ซื้อสินค้าได้น้อยลง
+      description: `  ราคาอาหาร พลังงาน และสินค้าอุปโภคบริโภคปรับสูงขึ้นพร้อมกัน
+  ตลาดคาด กนง. อาจขึ้นดอกเบี้ยในการประชุมครั้งถัดไปเพื่อสกัดเงินเฟ้อ
+  อำนาจซื้อของผู้บริโภคลดลง เงินที่เก็บไว้ซื้อสินค้าได้น้อยลง
 `,
       eventType: EconomicEventType.VOLATILITY_SHOCK,
       defaultImpact: {
@@ -33,9 +33,13 @@ async function seedEconomicEvents(prisma, academicData) {
     },
 
     {
-      title: 'Rate Hike Policy',
-      description: `กนง. ขึ้นดอกเบี้ย หุ้นลง bond yield ขึ้น
-Insight: DCA ต่อ อย่า panic sell`,
+      title: 'กนง. ขึ้นดอกเบี้ย',
+      description: `• กนง. ขึ้นดอกเบี้ยนโยบาย ทุนไหลออกจากตลาดเกิดใหม่
+•ดอกเบี้ยออมทรัพย์ขึ้น
+•ดอกเบี้ยฝากประจำที่ฝากอยู่แล้ว — เท่าเดิม  |  offer ใหม่ — ขึ้น
+• ตราสารหนี้ที่ถืออยู่แล้ว — ดอกเบี้ยเท่าเดิม  |  offer ใหม่ — ขึ้น
+• หุ้นลง มูลค่า port ลง  |  DCA ได้หน่วยเพิ่มขึ้น
+`,
       eventType: EconomicEventType.MARKET_CRASH,
       defaultImpact: {
         global: { muAdjustment: -0.08, sigmaAdjustment: 0.1 },
@@ -52,9 +56,12 @@ Insight: DCA ต่อ อย่า panic sell`,
     },
 
     {
-      title: 'Tech Earnings Beat',
-      description: `TechWave กำไร +40% เงินไหลเข้า growth stocks
-Insight: ระวัง FOMO`,
+      title: 'หุ้น Tech กำไรเกินคาด',
+      description: `• TechWave (H1) ประกาศกำไรสุทธิไตรมาสล่าสุดสูงกว่าคาดถึง 40%
+•นักลงทุนต่างชาติไหลเข้าหุ้น tech ไทย sector rotation เข้า growth stocks
+• ดัชนีหุ้น tech ปรับตัวขึ้นแรง GameHub ได้ sentiment บวกไปด้วย
+• หุ้น defensive ไม่ได้รับ sentiment บวกมากนัก
+`,
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         global: { muAdjustment: 0.05 },
@@ -68,9 +75,12 @@ Insight: ระวัง FOMO`,
     },
 
     {
-      title: 'GDP Growth Positive',
-      description: `GDP โต 4.8% เงินไหลเข้าตลาดหุ้น
-Insight: ถือหุ้นต่อ`,
+      title: 'GDP ขยายตัวดีกว่าคาด',
+      description: `• สภาพัฒน์รายงาน GDP ไตรมาสล่าสุดขยายตัว 4.8% สูงกว่าคาดที่ 3.5%
+•ภาคการส่งออกและบริการท่องเที่ยวฟื้นตัวแข็งแกร่ง
+•ความเชื่อมั่นนักลงทุนเพิ่มขึ้น เม็ดเงินต่างชาติไหล เข้าตลาดหุ้นไทย
+•ตลาดหุ้นโดยรวมปรับตัวขึ้นพร้อมกัน
+`,
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         global: { muAdjustment: 0.07, sigmaAdjustment: -0.02 },
@@ -87,9 +97,12 @@ Insight: ถือหุ้นต่อ`,
     },
 
     {
-      title: 'THB Weakening',
-      description: `เงินบาทอ่อนค่า บริษัท export ได้ประโยชน์
-Insight: ถือสินทรัพย์ที่มีรายได้ USD`,
+      title: 'ค่าเงินบาท อ่อนค่า',
+      description: `•ค่าเงินบาทอ่อนค่าจาก 33 บาท/ดอลล์ เป็น 36 บาท/ดอลล์ ในเวลาสั้น
+• นักลงทุนต่างชาติ net sell หุ้นไทย เงินทุนไหลออกสู่ตลาดดอกเบี้ยสูง
+• บริษัทที่รายได้เป็น USD ได้ประโยชน์ เมื่อแปลงกลับเป็นบาทได้มากขึ้น
+•บริษัทที่นำเข้าวัตถุดิบต้นทุนพุ่ง กระทบ margin
+`,
       eventType: EconomicEventType.SECTOR_SPECIFIC,
       defaultImpact: {
         assets: {
@@ -101,9 +114,12 @@ Insight: ถือสินทรัพย์ที่มีรายได้ U
     },
 
     {
-      title: 'Oil Price Surge',
-      description: `ราคาน้ำมันพุ่ง 25%
-Insight: หุ้นพลังงานได้ประโยชน์`,
+      title: 'ราคาน้ำมันพุ่ง',
+      description: `•ราคาน้ำมันดิบโลกพุ่ง 25% จากการลดกำลังการผลิตของ OPEC+
+•ต้นทุนโลจิสติกส์และพลังงานพุ่งสูง ทุกธุรกิจได้รับผลกระทบ
+• GreenPower (M1) ซึ่งเน้นพลังงานทดแทนกลายเป็นหุ้นที่น่าสนใจมากขึ้น
+•ผู้บริโภคมีภาระค่าน้ำมันสูงขึ้น กระทบ disposable income
+`,
       eventType: EconomicEventType.SECTOR_SPECIFIC,
       defaultImpact: {
         assets: {
@@ -115,9 +131,12 @@ Insight: หุ้นพลังงานได้ประโยชน์`,
     },
 
     {
-      title: 'Minimum Wage Increase',
-      description: `ค่าแรงขึ้น 15%
-Insight: ระวัง margin บริษัท`,
+      title: 'ค่าแรงขั้นต่ำขึ้น',
+      description: `•รัฐบาลประกาศขึ้นค่าแรงขั้นต่ำ 15% มีผลเดือนหน้า
+•บริษัทที่ใช้แรงงานจำนวนมากต้นทุนพุ่ง margin ลด
+•ผู้มีรายได้น้อยมีกำลังซื้อมากขึ้น consumer spending ในสินค้าจำเป็นดีขึ้น
+• ธุรกิจ tech และ digital ใช้แรงงานน้อยกว่า ได้รับผลกระทบน้อย
+`,
       eventType: EconomicEventType.VOLATILITY_SHOCK,
       defaultImpact: {
         assets: {
@@ -128,9 +147,13 @@ Insight: ระวัง margin บริษัท`,
     },
 
     {
-      title: 'Rate Cut Stimulus',
-      description: `กนง. ลดดอกเบี้ย ตลาดหุ้นขึ้น
-Insight: เพิ่ม equity`,
+      title: 'กนง. ลดดอกเบี้ย',
+      description: `• กนง. มีมติลดดอกเบี้ยนโยบาย เพื่อกระตุ้นเศรษฐกิจที่ชะลอตัว
+•ดอกเบี้ยเงินฝากออมทรัพย์ลดลงทันที ฝากประจำที่ฝากอยู่เท่าเดิมจนครบกำหนด
+• ตลาดหุ้นตอบรับบวก cost of capital ลด การลงทุนง่ายขึ้น
+•ตราสารหนี้ที่ถืออยู่ราคาขึ้น (yield ลด)  offer ใหม่ผลตอบแทนลดลง
+• DCA ได้หน่วยน้อยลง (ราคาหุ้นขึ้น)
+`,
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         global: { muAdjustment: 0.08 },
@@ -144,9 +167,12 @@ Insight: เพิ่ม equity`,
     },
 
     {
-      title: 'Rate Hold Surprise',
-      description: `คงดอกเบี้ยแบบ surprise
-Insight: relief rally`,
+      title: 'กนง. คงดอกเบี้ย',
+      description: `• ตลาดคาดว่า กนง. จะขึ้นดอกเบี้ย แต่ กนง. มีมติ "คงดอกเบี้ย" แบบเซอร์ไพรส์
+• กนง. มองเศรษฐกิจยังต้องการการสนับสนุน ไม่รีบขึ้นดอก
+• ตลาดหุ้นเกิด "relief rally" ความไม่แน่นอนลดลงทันที
+• นักลงทุนที่เตรียม short bond ขาดทุน ราคา bond ขึ้นกะทันหัน
+`,
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         assets: {
@@ -157,9 +183,12 @@ Insight: relief rally`,
     },
 
     {
-      title: 'GameHub Loss Shock',
-      description: `GameHub ขาดทุนหนัก
-Insight: diversify`,
+      title: 'GameHub รายงานขาดทุน',
+      description: `• GameHub (H2) รายงานผลประกอบการ: ขาดทุนสุทธิ 450 ล้านบาท แย่กว่าคาดมาก
+• ยอดผู้ใช้งานลด ต้นทุนพัฒนาเกมใหม่สูงเกินแผน
+• หุ้น H2 ร่วงแรงทันที ลาก sentiment หุ้น tech/growth อื่นลงด้วย
+• นักลงทุนตั้งคำถามว่าหุ้น high-risk "คุ้มค่า" หรือไม่
+`,
       eventType: EconomicEventType.MARKET_CRASH,
       defaultImpact: {
         assets: {
@@ -170,9 +199,12 @@ Insight: diversify`,
     },
 
     {
-      title: 'HealthPlus Telehealth Approval',
-      description: `HealthPlus ได้อนุมัติ Telehealth
-Insight: catalyst เฉพาะตัว`,
+      title: 'HealthPlus อนุมัติ Telehealth',
+      description: `• HealthPlus (L2) ได้รับอนุมัติจาก สปสช. ให้บริการ Telehealth แบบครบวงจรทั่วประเทศ
+•เปิดตลาดใหม่โดยไม่ต้องขยายสาขา margin ดีขึ้นมาก
+• ราคาหุ้น L2 ตอบรับบวกแรง เป็น catalyst เฉพาะตัว
+•หุ้นตัวอื่นไม่ได้รับผลกระทบโดยตรง
+`,
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         assets: {
@@ -182,9 +214,12 @@ Insight: catalyst เฉพาะตัว`,
     },
 
     {
-      title: 'GreenPower Solar Win',
-      description: `GreenPower ได้โครงการ 20 ปี
-Insight: เหมาะ long-term`,
+      title: 'GreenPower ชนะประมูลโซลาร์',
+      description: `• GreenPower (M1) ชนะประมูลโครงการผลิตไฟฟ้าโซลาร์ภาครัฐ มูลค่า 8,000 ล้านบาท
+• สัญญา 20 ปี รายได้มั่นคง ลด risk ของบริษัทในระยะยาว
+• ตลาดตอบรับดี M1 ขึ้น sector sentiment พลังงานสีเขียวดีขึ้น
+• หุ้น sector อื่นไม่ได้รับผลกระทบโดยตรง
+`,
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         assets: {
