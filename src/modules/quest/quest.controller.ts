@@ -29,13 +29,13 @@ export class QuestController {
   constructor(private readonly questService: QuestService) {}
 
   @Post()
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.CREATE])
   create(@CurrentUser() user: User, @Body() dto: CreateQuestDto) {
     return this.questService.createQuest(user, dto);
   }
 
   @Post('quiz-draft')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.CREATE])
   createQuizDraft(
     @CurrentUser() user: User,
     @Body() dto: TeacherQuizQuestDraftDto,
@@ -44,7 +44,7 @@ export class QuestController {
   }
 
   @Put(':questId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.EDIT])
   update(
     @Param('questId') questId: string,
     @CurrentUser() user: User,
@@ -54,7 +54,7 @@ export class QuestController {
   }
 
   @Put(':questId/quiz-draft')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.EDIT])
   updateQuizDraft(
     @Param('questId') questId: string,
     @CurrentUser() user: User,
@@ -64,25 +64,25 @@ export class QuestController {
   }
 
   @Get()
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.VIEW])
   list(@Query() query: ListQuestsQueryDto) {
     return this.questService.listQuests(query);
   }
 
   @Get('me')
-  @NeededPermissions([PERMISSIONS.USER.VIEW_SELF])
+  @NeededPermissions([PERMISSIONS.QUEST.VIEW_OWN])
   listMe(@CurrentUser() user: User, @Query() query: ListMyQuestsQueryDto) {
     return this.questService.listMyQuests(user, query);
   }
 
   @Get(':questId/me')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.QUEST.VIEW_OWN])
   getMyQuest(@Param('questId') questId: string, @CurrentUser() user: User) {
     return this.questService.getMyQuestDetail(questId, user);
   }
 
   @Get(':questId/interactive-status')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.QUEST.VIEW_OWN])
   getInteractiveStatus(
     @Param('questId') questId: string,
     @CurrentUser() user: User,
@@ -91,7 +91,7 @@ export class QuestController {
   }
 
   @Get(':questId/submissions/me/status')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.QUEST.VIEW_OWN])
   getMySubmissionStatus(
     @Param('questId') questId: string,
     @CurrentUser() user: User,
@@ -100,7 +100,7 @@ export class QuestController {
   }
 
   @Get('classrooms/:classroomId/pending-submissions')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.SUBMISSION_VIEW])
   getPendingSubmissions(
     @Param('classroomId') classroomId: string,
     @Query('limit') limit?: string,
@@ -113,7 +113,7 @@ export class QuestController {
   }
 
   @Get(':questId/submissions')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.SUBMISSION_VIEW])
   listQuestSubmissions(
     @Param('questId') questId: string,
     @CurrentUser() user: User,
@@ -123,31 +123,31 @@ export class QuestController {
   }
 
   @Get(':questId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.VIEW])
   getOne(@Param('questId') questId: string, @CurrentUser() user: User) {
     return this.questService.getQuestById(questId, user);
   }
 
   @Post(':questId/publish')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.PUBLISH])
   publish(@Param('questId') questId: string, @CurrentUser() user: User) {
     return this.questService.publishQuest(questId, user);
   }
 
   @Post(':questId/close')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.CLOSE])
   close(@Param('questId') questId: string, @CurrentUser() user: User) {
     return this.questService.closeQuest(questId, user);
   }
 
   @Delete(':questId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.DELETE])
   remove(@Param('questId') questId: string, @CurrentUser() user: User) {
     return this.questService.deleteQuest(questId, user);
   }
 
   @Post(':questId/submissions/me')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.QUEST.SUBMIT])
   submitMe(
     @Param('questId') questId: string,
     @CurrentUser() user: User,
@@ -157,13 +157,13 @@ export class QuestController {
   }
 
   @Get('submissions/:submissionId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.SUBMISSION_VIEW])
   getSubmissionDetail(@Param('submissionId') submissionId: string) {
     return this.questService.getSubmissionDetail(submissionId);
   }
 
   @Post('submissions/:submissionId/approve')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.SUBMISSION_REVIEW])
   approve(
     @Param('submissionId') submissionId: string,
     @CurrentUser() user: User,
@@ -173,7 +173,7 @@ export class QuestController {
   }
 
   @Post('submissions/:submissionId/reject')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUEST.SUBMISSION_REVIEW])
   reject(
     @Param('submissionId') submissionId: string,
     @CurrentUser() user: User,
@@ -182,7 +182,7 @@ export class QuestController {
     return this.questService.rejectSubmission(submissionId, user, dto);
   }
   @Post(':questId/claim')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.QUEST.CLAIM_REWARD])
   claim(@Param('questId') questId: string, @CurrentUser() user: User) {
     return this.questService.claimQuestReward(questId, user);
   }

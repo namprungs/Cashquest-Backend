@@ -23,13 +23,13 @@ export class QuizController {
   constructor(private readonly quizService: QuizService) {}
 
   @Post('quizzes')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUIZ.CREATE])
   createQuiz(@CurrentUser() user: User, @Body() dto: CreateQuizSnapshotDto) {
     return this.quizService.createQuizSnapshot(user, dto);
   }
 
   @Put('quizzes/:quizId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUIZ.EDIT])
   updateQuiz(
     @Param('quizId') quizId: string,
     @CurrentUser() user: User,
@@ -39,19 +39,19 @@ export class QuizController {
   }
 
   @Get('quizzes')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUIZ.VIEW])
   listQuizzes(@Query() query: ListQuizzesQueryDto) {
     return this.quizService.listQuizzes(query);
   }
 
   @Get('quizzes/:quizId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUIZ.VIEW])
   getQuiz(@Param('quizId') quizId: string) {
     return this.quizService.getQuizById(quizId);
   }
 
   @Get('quizzes/:quizId/me')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.QUIZ.VIEW_OWN])
   getQuizForStudent(
     @Param('quizId') quizId: string,
     @CurrentUser() user: User,
@@ -60,19 +60,19 @@ export class QuizController {
   }
 
   @Delete('quizzes/:quizId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.QUIZ.DELETE])
   deleteQuiz(@Param('quizId') quizId: string, @CurrentUser() user: User) {
     return this.quizService.deleteQuiz(quizId, user);
   }
 
   @Post('quizzes/:quizId/attempts')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.QUIZ.ATTEMPT])
   createAttempt(@Param('quizId') quizId: string, @CurrentUser() user: User) {
     return this.quizService.createAttempt(quizId, user);
   }
 
   @Post('attempts/:attemptId/submit')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.QUIZ.ATTEMPT])
   submitAttempt(
     @Param('attemptId') attemptId: string,
     @CurrentUser() user: User,

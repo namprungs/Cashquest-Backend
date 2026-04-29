@@ -16,6 +16,8 @@ import { LearningModuleModule } from './modules/learning-module/learning-module.
 import { InvestmentModule } from './modules/investment/investment.module';
 import { GamificationModule } from './modules/gamification/gamification.module';
 import { RandomExpenseModule } from './modules/random-expense/random-expense.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { PlayerModule } from './modules/player/player.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { RandomExpenseModule } from './modules/random-expense/random-expense.mod
     QuizModule,
     QuestModule,
     LearningModuleModule,
+    FinanceModule,
+    PlayerModule,
     InvestmentModule,
     GamificationModule,
     RandomExpenseModule,
