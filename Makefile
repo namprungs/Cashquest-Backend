@@ -2,6 +2,7 @@ SHELL := /bin/zsh
 
 PNPM := pnpm
 PRISMA := $(PNPM) prisma
+NODE := node
 
 .PHONY: help install dev runbackend closebackend build start lint test test-cov migrate migrate-reset generate seed db-push db-status studio docker-up docker-down docker-logs
 
@@ -70,7 +71,7 @@ generate:
 	$(PRISMA) generate
 
 seed:
-	$(PRISMA) db seed
+	$(NODE) scripts/seed-orchestrator.js
 
 db-push:
 	$(PRISMA) db push
