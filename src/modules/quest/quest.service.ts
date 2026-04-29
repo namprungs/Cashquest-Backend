@@ -1208,6 +1208,7 @@ export class QuestService {
         where: {
           createdById: user.id,
           isSystem: false,
+          ...(query.isSystem !== undefined ? { isSystem: query.isSystem } : {}),
           ...(query.type ? { type: query.type } : {}),
           ...(query.status ? { status: query.status } : {}),
           ...(query.classroomId
@@ -1243,6 +1244,14 @@ export class QuestService {
       where: {
         status: QuestStatus.PUBLISHED,
         termId: { in: context.termIds },
+        ...(query.isSystem !== undefined ? { isSystem: query.isSystem } : {}),
+        ...(query.hideExpired
+          ? {
+              deadlineAt: {
+                gte: new Date(),
+              },
+            }
+          : {}),
         classrooms: {
           some: {
             classroomId: { in: context.classroomIds },
