@@ -11,7 +11,7 @@ export class BadgeController {
   constructor(private readonly badgeService: BadgeService) {}
 
   @Get()
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.BADGE.VIEW_OWN])
   findAllForStudent(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @CurrentUser() user: User,
@@ -21,7 +21,7 @@ export class BadgeController {
   }
 
   @Get(':badgeId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.BADGE.VIEW_OWN])
   findOneForStudent(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @Param('badgeId', new ParseUUIDPipe()) badgeId: string,

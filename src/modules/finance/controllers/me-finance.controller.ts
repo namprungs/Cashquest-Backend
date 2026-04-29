@@ -11,7 +11,7 @@ export class MeFinanceController {
   constructor(private readonly meFinanceService: MeFinanceService) {}
 
   @Get('finance')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.FINANCE.DASHBOARD_VIEW_OWN])
   getMyFinance(@CurrentUser() user: User, @Query() query: MeFinanceQueryDto) {
     return this.meFinanceService.getDashboard(query.termId, user);
   }

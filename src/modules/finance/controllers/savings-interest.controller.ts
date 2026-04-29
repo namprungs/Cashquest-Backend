@@ -14,7 +14,7 @@ export class SavingsInterestController {
    * POST /admin/savings-interest/trigger
    */
   @Post('trigger')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.FINANCE.INTEREST_RUN])
   async triggerInterestCalculation() {
     return this.savingsInterestService.triggerInterestCalculation();
   }

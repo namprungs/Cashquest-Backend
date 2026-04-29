@@ -21,7 +21,7 @@ export class RetirementGoalController {
   constructor(private readonly retirementGoalService: RetirementGoalService) {}
 
   @Post()
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.PLAYER.RETIREMENT_GOAL_MANAGE])
   create(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @CurrentUser() user: User,
@@ -31,7 +31,7 @@ export class RetirementGoalController {
   }
 
   @Get()
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.PLAYER.RETIREMENT_GOAL_MANAGE])
   findAll(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @CurrentUser() user: User,
@@ -40,7 +40,7 @@ export class RetirementGoalController {
   }
 
   @Get(':id')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.PLAYER.RETIREMENT_GOAL_MANAGE])
   findOne(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -50,7 +50,7 @@ export class RetirementGoalController {
   }
 
   @Patch(':id')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.PLAYER.RETIREMENT_GOAL_MANAGE])
   update(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -61,7 +61,7 @@ export class RetirementGoalController {
   }
 
   @Delete(':id')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.PLAYER.RETIREMENT_GOAL_MANAGE])
   remove(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @Param('id', new ParseUUIDPipe()) id: string,

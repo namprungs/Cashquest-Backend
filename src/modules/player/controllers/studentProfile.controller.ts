@@ -11,19 +11,19 @@ export class PlayerController {
   constructor(private readonly bootstrapService: PlayerService) {}
 
   @Post('terms/:termId/bootstrap')
-  @NeededPermissions([PERMISSIONS.PLAYER.BOOTSTRAP]) // หรือ USER
+  @NeededPermissions([PERMISSIONS.PLAYER.BOOTSTRAP])
   bootstrap(@Param('termId') termId: string, @CurrentUser() user: User) {
     return this.bootstrapService.bootstrap(termId, user.id);
   }
 
   @Get('terms/:termId/students')
-  @NeededPermissions([PERMISSIONS.SIMULATION.REPORT_VIEW])
+  @NeededPermissions([PERMISSIONS.PLAYER.PROFILE_REPORT_VIEW])
   listStudents(@Param('termId') termId: string) {
     return this.bootstrapService.getAllByTerm(termId);
   }
 
   @Get('students/:id')
-  @NeededPermissions([PERMISSIONS.SIMULATION.REPORT_VIEW])
+  @NeededPermissions([PERMISSIONS.PLAYER.PROFILE_REPORT_VIEW])
   getStudentProfile(@Param('id') id: string) {
     return this.bootstrapService.getById(id);
   }

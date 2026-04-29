@@ -19,6 +19,8 @@ import {
   TriggerWeeklyExpenseDto,
 } from '../dto/expense-query.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { NeededPermissions } from 'src/modules/auth/decorators/needed-permissions.decorator';
+import { PERMISSIONS } from 'src/common/constants/permissions.constant';
 
 @Controller('expenses')
 @UseGuards(JwtAuthGuard)
@@ -34,6 +36,7 @@ export class RandomExpenseController {
    * Query: termId (required), weekNo (optional), page, limit
    */
   @Get('pending')
+  @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getPendingExpenses(
     @Request() req: any,
     @Query() query: GetPendingExpensesDto,
@@ -54,6 +57,7 @@ export class RandomExpenseController {
    * Query: termId (required), weekNo (optional), page, limit
    */
   @Get('history')
+  @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getExpenseHistory(
     @Request() req: any,
     @Query() query: GetExpenseHistoryDto,
@@ -71,6 +75,7 @@ export class RandomExpenseController {
    * Query: termId (required), page, limit
    */
   @Get('all')
+  @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getAllExpenses(
     @Request() req: any,
     @Query('termId', new ParseUUIDPipe()) termId: string,
@@ -95,6 +100,7 @@ export class RandomExpenseController {
    * Query: termId (required)
    */
   @Get('summary')
+  @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getExpenseSummary(
     @Request() req: any,
     @Query('termId', new ParseUUIDPipe()) termId: string,
@@ -115,6 +121,7 @@ export class RandomExpenseController {
    * Body: { studentExpenseId, sourceType?, sourceRef? }
    */
   @Post('pay')
+  @NeededPermissions([PERMISSIONS.EXPENSE.PAY_OWN])
   async payExpense(@Request() req: any, @Body() body: PayExpenseDto) {
     // Look up the expense to get termId for profile resolution
     const expense = await this.prisma.studentExpense.findUnique({
@@ -137,6 +144,7 @@ export class RandomExpenseController {
    * Body: { termId, weekNo? }
    */
   @Post('trigger')
+  @NeededPermissions([PERMISSIONS.EXPENSE.TRIGGER])
   async triggerWeeklyExpenses(@Body() body: TriggerWeeklyExpenseDto) {
     return this.randomExpenseService.triggerWeeklyExpenses(body);
   }
@@ -147,6 +155,7 @@ export class RandomExpenseController {
    * Query: termId (required)
    */
   @Get('current-week')
+  @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getCurrentWeekExpenses(
     @Request() req: any,
     @Query('termId', new ParseUUIDPipe()) termId: string,
@@ -167,6 +176,7 @@ export class RandomExpenseController {
    * Query: termId (required)
    */
   @Get('unacknowledged')
+  @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getUnacknowledgedExpenses(
     @Request() req: any,
     @Query('termId', new ParseUUIDPipe()) termId: string,
@@ -186,6 +196,7 @@ export class RandomExpenseController {
    * Mark a single expense as acknowledged (seen by student)
    */
   @Post(':id/acknowledge')
+  @NeededPermissions([PERMISSIONS.EXPENSE.ACKNOWLEDGE_OWN])
   async acknowledgeExpense(
     @Request() req: any,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -204,6 +215,7 @@ export class RandomExpenseController {
    * Body: { termId }
    */
   @Post('acknowledge-all')
+  @NeededPermissions([PERMISSIONS.EXPENSE.ACKNOWLEDGE_OWN])
   async acknowledgeAllExpenses(
     @Request() req: any,
     @Body() body: { termId: string },
@@ -224,6 +236,7 @@ export class RandomExpenseController {
    * Query: termId (required)
    */
   @Get('wallet-balance')
+  @NeededPermissions([PERMISSIONS.FINANCE.WALLET_VIEW_OWN])
   async getWalletBalance(
     @Request() req: any,
     @Query('termId', new ParseUUIDPipe()) termId: string,

@@ -23,13 +23,13 @@ export class LearningModuleController {
   constructor(private readonly learningModuleService: LearningModuleService) {}
 
   @Post()
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.LEARNING_MODULE.CREATE])
   create(@CurrentUser() user: User, @Body() dto: CreateLearningModuleDto) {
     return this.learningModuleService.create(user, dto);
   }
 
   @Put(':moduleId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.LEARNING_MODULE.EDIT])
   update(
     @Param('moduleId') moduleId: string,
     @CurrentUser() user: User,
@@ -39,31 +39,31 @@ export class LearningModuleController {
   }
 
   @Delete(':moduleId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.LEARNING_MODULE.DELETE])
   remove(@Param('moduleId') moduleId: string, @CurrentUser() user: User) {
     return this.learningModuleService.remove(moduleId, user);
   }
 
   @Patch(':moduleId/activate')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.LEARNING_MODULE.PUBLISH])
   activate(@Param('moduleId') moduleId: string, @CurrentUser() user: User) {
     return this.learningModuleService.setActive(moduleId, user, true);
   }
 
   @Patch(':moduleId/deactivate')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.LEARNING_MODULE.PUBLISH])
   deactivate(@Param('moduleId') moduleId: string, @CurrentUser() user: User) {
     return this.learningModuleService.setActive(moduleId, user, false);
   }
 
   @Get()
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.LEARNING_MODULE.VIEW])
   list(@Query() query: ListLearningModulesQueryDto) {
     return this.learningModuleService.list(query);
   }
 
   @Get(':moduleId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.LEARNING_MODULE.VIEW])
   findOne(@Param('moduleId') moduleId: string) {
     return this.learningModuleService.findOne(moduleId);
   }

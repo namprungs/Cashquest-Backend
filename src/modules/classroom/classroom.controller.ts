@@ -23,7 +23,7 @@ export class ClassroomController {
   // Create classroom
   // -----------------------------
   @Post('terms/:termId/classrooms')
-  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_CREATE])
+  @NeededPermissions([PERMISSIONS.CLASSROOM.CREATE])
   create(
     @Param('termId') termId: string,
     @CurrentUser() teacher: User,
@@ -36,7 +36,7 @@ export class ClassroomController {
   // List classrooms in term
   // -----------------------------
   @Get('terms/:termId/classrooms')
-  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  @NeededPermissions([PERMISSIONS.CLASSROOM.VIEW])
   findByTerm(@Param('termId') termId: string) {
     return this.classroomService.findByTerm(termId);
   }
@@ -45,7 +45,7 @@ export class ClassroomController {
   // Teacher home dashboard (summary + classroom cards)
   // -----------------------------
   @Get('terms/:termId/classrooms/me/dashboard')
-  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  @NeededPermissions([PERMISSIONS.CLASSROOM.DASHBOARD_VIEW])
   teacherDashboard(
     @Param('termId') termId: string,
     @CurrentUser() teacher: User,
@@ -57,7 +57,7 @@ export class ClassroomController {
   // Add student
   // -----------------------------
   @Post('classrooms/:classroomId/students')
-  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_EDIT])
+  @NeededPermissions([PERMISSIONS.CLASSROOM.STUDENT_MANAGE])
   addStudent(
     @Param('classroomId') classroomId: string,
     @Body() dto: AddStudentDto,
@@ -69,7 +69,7 @@ export class ClassroomController {
   // Remove student
   // -----------------------------
   @Delete('classrooms/:classroomId/students/:studentId')
-  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_EDIT])
+  @NeededPermissions([PERMISSIONS.CLASSROOM.STUDENT_MANAGE])
   removeStudent(
     @Param('classroomId') classroomId: string,
     @Param('studentId') studentId: string,
@@ -81,19 +81,19 @@ export class ClassroomController {
   // List students
   // -----------------------------
   @Get('classrooms/:classroomId/students')
-  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  @NeededPermissions([PERMISSIONS.CLASSROOM.STUDENT_VIEW])
   listStudents(@Param('classroomId') classroomId: string) {
     return this.classroomService.listStudents(classroomId);
   }
 
   @Get('classrooms/:classroomId/students/overview')
-  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  @NeededPermissions([PERMISSIONS.CLASSROOM.STUDENT_VIEW])
   studentOverview(@Param('classroomId') classroomId: string) {
     return this.classroomService.getStudentOverview(classroomId);
   }
 
   @Get('classrooms/:classroomId/students/:studentId/detail')
-  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  @NeededPermissions([PERMISSIONS.CLASSROOM.STUDENT_VIEW])
   studentDetail(
     @Param('classroomId') classroomId: string,
     @Param('studentId') studentId: string,
@@ -105,13 +105,13 @@ export class ClassroomController {
   // Home overview
   // -----------------------------
   @Get('classrooms/:id/home-overview')
-  @NeededPermissions([PERMISSIONS.ACADEMIC.CLASSROOM_VIEW])
+  @NeededPermissions([PERMISSIONS.CLASSROOM.DASHBOARD_VIEW])
   homeOverview(@Param('id') classroomId: string) {
     return this.classroomService.getHomeOverview(classroomId);
   }
 
   @Get('classrooms/:classroomId/pending-submissions')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.CLASSROOM.SUBMISSION_VIEW])
   pendingSubmissions(
     @Param('classroomId') classroomId: string,
     @Query('limit') limit?: string,

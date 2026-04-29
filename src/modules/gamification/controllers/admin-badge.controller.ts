@@ -20,7 +20,7 @@ export class AdminBadgeController {
   constructor(private readonly badgeService: BadgeService) {}
 
   @Post()
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.BADGE.MANAGE])
   create(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @Body() dto: CreateBadgeDto,
@@ -29,13 +29,13 @@ export class AdminBadgeController {
   }
 
   @Get()
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.BADGE.MANAGE])
   findAll(@Param('termId', new ParseUUIDPipe()) termId: string) {
     return this.badgeService.getBadgesForAdmin(termId);
   }
 
   @Get(':badgeId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.BADGE.MANAGE])
   findOne(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @Param('badgeId', new ParseUUIDPipe()) badgeId: string,
@@ -44,7 +44,7 @@ export class AdminBadgeController {
   }
 
   @Patch(':badgeId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.BADGE.MANAGE])
   update(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @Param('badgeId', new ParseUUIDPipe()) badgeId: string,
@@ -54,7 +54,7 @@ export class AdminBadgeController {
   }
 
   @Delete(':badgeId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.BADGE.MANAGE])
   remove(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @Param('badgeId', new ParseUUIDPipe()) badgeId: string,
@@ -63,7 +63,7 @@ export class AdminBadgeController {
   }
 
   @Post(':badgeId/award')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.BADGE.AWARD])
   awardToStudentProfile(
     @Param('termId', new ParseUUIDPipe()) termId: string,
     @Param('badgeId', new ParseUUIDPipe()) badgeId: string,

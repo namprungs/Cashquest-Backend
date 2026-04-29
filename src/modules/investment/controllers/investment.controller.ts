@@ -41,13 +41,13 @@ export class InvestmentController {
   constructor(private readonly investmentService: InvestmentService) {}
 
   @Get('terms/:termId/products')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.MARKET_VIEW])
   listProducts(@Param('termId') termId: string) {
     return this.investmentService.listProducts(termId);
   }
 
   @Get('terms/:termId/products/:productId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.MARKET_VIEW])
   getProductDetail(
     @Param('termId') termId: string,
     @Param('productId') productId: string,
@@ -56,7 +56,7 @@ export class InvestmentController {
   }
 
   @Get('terms/:termId/products/:productId/prices')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.MARKET_VIEW])
   listProductPrices(
     @Param('termId') termId: string,
     @Param('productId') productId: string,
@@ -66,7 +66,7 @@ export class InvestmentController {
   }
 
   @Get('terms/:termId/products/:productId/live-prices')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.MARKET_VIEW])
   listLivePriceTicks(
     @Param('termId') termId: string,
     @Param('productId') productId: string,
@@ -76,13 +76,13 @@ export class InvestmentController {
   }
 
   @Get('terms/:termId/portfolio/me')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PORTFOLIO_VIEW_OWN])
   myPortfolio(@Param('termId') termId: string, @CurrentUser() user: User) {
     return this.investmentService.getMyPortfolio(termId, user);
   }
 
   @Post('terms/:termId/investment-wallet/open')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.WALLET_MANAGE_OWN])
   openInvestmentWallet(
     @Param('termId') termId: string,
     @CurrentUser() user: User,
@@ -91,7 +91,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/investment-wallet/deposit')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.WALLET_MANAGE_OWN])
   depositToInvestment(
     @Param('termId') termId: string,
     @CurrentUser() user: User,
@@ -101,7 +101,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/investment-wallet/withdraw')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.WALLET_MANAGE_OWN])
   withdrawFromInvestment(
     @Param('termId') termId: string,
     @CurrentUser() user: User,
@@ -111,13 +111,13 @@ export class InvestmentController {
   }
 
   @Get('terms/:termId/holdings/me')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PORTFOLIO_VIEW_OWN])
   myHoldings(@Param('termId') termId: string, @CurrentUser() user: User) {
     return this.investmentService.getMyHoldings(termId, user);
   }
 
   @Post('terms/:termId/orders')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.ORDER_MANAGE_OWN])
   createOrder(
     @Param('termId') termId: string,
     @CurrentUser() user: User,
@@ -127,7 +127,7 @@ export class InvestmentController {
   }
 
   @Get('terms/:termId/orders/me')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.ORDER_MANAGE_OWN])
   myOrders(
     @Param('termId') termId: string,
     @CurrentUser() user: User,
@@ -137,7 +137,7 @@ export class InvestmentController {
   }
 
   @Patch('terms/:termId/orders/:orderId/cancel')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.ORDER_MANAGE_OWN])
   cancelOrder(
     @Param('termId') termId: string,
     @Param('orderId') orderId: string,
@@ -147,19 +147,19 @@ export class InvestmentController {
   }
 
   @Get('terms/:termId/dividends/me')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PORTFOLIO_VIEW_OWN])
   myDividends(@Param('termId') termId: string, @CurrentUser() user: User) {
     return this.investmentService.listMyDividends(termId, user);
   }
 
   @Get('terms/:termId/bonds/me')
-  @NeededPermissions([PERMISSIONS.SIMULATION.PLAY])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PORTFOLIO_VIEW_OWN])
   myBonds(@Param('termId') termId: string, @CurrentUser() user: User) {
     return this.investmentService.listMyBonds(termId, user);
   }
 
   @Get('terms/:termId/events/active')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.EVENT_VIEW])
   activeEvents(
     @Param('termId') termId: string,
     @Query('weekNo') weekNo?: string,
@@ -168,7 +168,7 @@ export class InvestmentController {
   }
 
   @Get('terms/:termId/events')
-  @NeededPermissions([])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.EVENT_VIEW])
   listTermEvents(
     @Param('termId') termId: string,
     @Query() query: ListTermEventsQueryDto,
@@ -177,7 +177,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/products')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PRODUCT_MANAGE])
   createProduct(
     @Param('termId') termId: string,
     @Body() dto: CreateProductDto,
@@ -186,7 +186,7 @@ export class InvestmentController {
   }
 
   @Patch('products/:productId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PRODUCT_MANAGE])
   updateProduct(
     @Param('productId') productId: string,
     @Body() dto: UpdateProductDto,
@@ -195,7 +195,7 @@ export class InvestmentController {
   }
 
   @Patch('products/:productId/active')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PRODUCT_MANAGE])
   setProductActive(
     @Param('productId') productId: string,
     @Body('isActive') isActive: boolean,
@@ -204,7 +204,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/simulations')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.SIMULATION_MANAGE])
   upsertProductSimulations(
     @Param('termId') termId: string,
     @Body() dto: UpsertProductSimulationsDto,
@@ -213,7 +213,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/term-simulation')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.SIMULATION_MANAGE])
   upsertTermSimulation(
     @Param('termId') termId: string,
     @Body() dto: UpsertTermSimulationDto,
@@ -222,7 +222,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/prices/generate-week')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PRICE_MANAGE])
   generateWeek(
     @Param('termId') termId: string,
     @Body() dto: GenerateWeekPriceDto,
@@ -231,7 +231,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/prices/generate-range')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PRICE_MANAGE])
   generateRange(
     @Param('termId') termId: string,
     @Body() dto: GenerateRangePriceDto,
@@ -240,7 +240,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/live-prices/generate-tick')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PRICE_MANAGE])
   generateLiveTick(
     @Param('termId') termId: string,
     @Body() dto: GenerateLiveTicksDto,
@@ -249,7 +249,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/live-prices/finalize-week')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PRICE_MANAGE])
   finalizeLiveWeek(
     @Param('termId') termId: string,
     @Body() dto: FinalizeLiveWeekDto,
@@ -258,7 +258,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/prices/manual')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.PRICE_MANAGE])
   manualPrices(
     @Param('termId') termId: string,
     @Body() dto: ManualProductPricesDto,
@@ -267,13 +267,13 @@ export class InvestmentController {
   }
 
   @Post('economic-events')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.EVENT_MANAGE])
   createEconomicEvent(@Body() dto: CreateEconomicEventDto) {
     return this.investmentService.createEconomicEvent(dto);
   }
 
   @Patch('economic-events/:eventId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.EVENT_MANAGE])
   updateEconomicEvent(
     @Param('eventId') eventId: string,
     @Body() dto: UpdateEconomicEventDto,
@@ -282,7 +282,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/term-events')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.EVENT_MANAGE])
   createTermEvent(
     @Param('termId') termId: string,
     @Body() dto: CreateTermEventDto,
@@ -291,7 +291,7 @@ export class InvestmentController {
   }
 
   @Patch('terms/:termId/term-events/:termEventId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.EVENT_MANAGE])
   updateTermEvent(
     @Param('termId') termId: string,
     @Param('termEventId') termEventId: string,
@@ -301,7 +301,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/regimes')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.REGIME_MANAGE])
   createRegime(
     @Param('termId') termId: string,
     @Body() dto: CreateMarketRegimeDto,
@@ -310,7 +310,7 @@ export class InvestmentController {
   }
 
   @Patch('terms/:termId/regimes/:regimeId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.REGIME_MANAGE])
   updateRegime(
     @Param('termId') termId: string,
     @Param('regimeId') regimeId: string,
@@ -320,7 +320,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/jobs/process-orders')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.JOB_RUN])
   processOrders(
     @Param('termId') termId: string,
     @Body() dto: ProcessOrdersDto,
@@ -329,7 +329,7 @@ export class InvestmentController {
   }
 
   @Post('terms/:termId/jobs/payouts')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.INVESTMENT.JOB_RUN])
   processPayouts(
     @Param('termId') termId: string,
     @Body() dto: ProcessPayoutsDto,

@@ -32,34 +32,37 @@ export class BankController {
   // ============================================================
 
   @Post()
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_MANAGE])
   createBank(@Body() dto: CreateBankDto) {
     return this.bankService.createBank(dto);
   }
 
   @Put(':bankId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_MANAGE])
   updateBank(@Param('bankId') bankId: string, @Body() dto: UpdateBankDto) {
     return this.bankService.updateBank(bankId, dto);
   }
 
   @Get('term/:termId')
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_VIEW])
   listBanksByTerm(@Param('termId') termId: string) {
     return this.bankService.listBanksByTerm(termId);
   }
 
   @Get(':bankId')
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_VIEW])
   getBank(@Param('bankId') bankId: string) {
     return this.bankService.getBank(bankId);
   }
 
   @Delete(':bankId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_MANAGE])
   deleteBank(@Param('bankId') bankId: string) {
     return this.bankService.deleteBank(bankId);
   }
 
   @Get(':bankId/statistics')
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_STAT_VIEW])
   getBankStatistics(@Param('bankId') bankId: string) {
     return this.bankService.getBankStatistics(bankId);
   }
@@ -69,7 +72,7 @@ export class BankController {
   // ============================================================
 
   @Post(':bankId/savings-config')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_MANAGE])
   createSavingsConfig(
     @Param('bankId') bankId: string,
     @Body() dto: CreateSavingsAccountBankDto,
@@ -78,17 +81,19 @@ export class BankController {
   }
 
   @Get('term/:termId/savings-configs')
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_VIEW])
   listSavingsConfigsByTerm(@Param('termId') termId: string) {
     return this.savingsAccountBankService.listByTerm(termId);
   }
 
   @Get(':bankId/savings-configs')
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_VIEW])
   listSavingsConfigsByBank(@Param('bankId') bankId: string) {
     return this.savingsAccountBankService.listByBank(bankId);
   }
 
   @Put('savings-config/:configId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_MANAGE])
   updateSavingsConfig(
     @Param('configId') configId: string,
     @Body() dto: UpdateSavingsAccountBankDto,
@@ -97,7 +102,7 @@ export class BankController {
   }
 
   @Delete('savings-config/:configId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_MANAGE])
   deleteSavingsConfig(@Param('configId') configId: string) {
     return this.savingsAccountBankService.remove(configId);
   }
@@ -107,7 +112,7 @@ export class BankController {
   // ============================================================
 
   @Post(':bankId/fd-config')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_MANAGE])
   createFdConfig(
     @Param('bankId') bankId: string,
     @Body() dto: CreateFixedDepositBankDto,
@@ -116,17 +121,19 @@ export class BankController {
   }
 
   @Get('term/:termId/fd-configs')
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_VIEW])
   listFdConfigsByTerm(@Param('termId') termId: string) {
     return this.fixedDepositBankService.listByTerm(termId);
   }
 
   @Get(':bankId/fd-configs')
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_VIEW])
   listFdConfigsByBank(@Param('bankId') bankId: string) {
     return this.fixedDepositBankService.listByBank(bankId);
   }
 
   @Put('fd-config/:configId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_MANAGE])
   updateFdConfig(
     @Param('configId') configId: string,
     @Body() dto: UpdateFixedDepositBankDto,
@@ -135,7 +142,7 @@ export class BankController {
   }
 
   @Delete('fd-config/:configId')
-  @NeededPermissions([PERMISSIONS.SIMULATION.CONTENT_MANAGE])
+  @NeededPermissions([PERMISSIONS.FINANCE.BANK_MANAGE])
   deleteFdConfig(@Param('configId') configId: string) {
     return this.fixedDepositBankService.remove(configId);
   }
