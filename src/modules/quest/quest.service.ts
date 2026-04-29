@@ -30,7 +30,6 @@ import {
   TeacherQuizDraftQuestionDto,
   TeacherQuizQuestDraftDto,
 } from './dto/teacher-quiz-quest.dto';
-
 type CurrentUser = User & { role?: { name?: string } | null };
 
 const TEACHER_QUIZ_DRAFT_CONTENT_TYPE = 'TEACHER_QUIZ_DRAFT_V1';
@@ -44,6 +43,38 @@ export class QuestService {
       .trim()
       .replace(/[_\s-]+/g, '')
       .toUpperCase();
+  }
+
+  private getSubmissionFileUrl(dto: SubmitQuestDto) {
+    if (dto.attachmentUrl?.trim()) {
+      return dto.attachmentUrl.trim();
+    }
+
+    const payload =
+      dto.payloadJson &&
+      typeof dto.payloadJson === 'object' &&
+      !Array.isArray(dto.payloadJson)
+        ? (dto.payloadJson as Record<string, unknown>)
+        : null;
+    const answers = Array.isArray(payload?.answers) ? payload.answers : [];
+
+    for (const rawAnswer of answers) {
+      if (
+        !rawAnswer ||
+        typeof rawAnswer !== 'object' ||
+        Array.isArray(rawAnswer)
+      ) {
+        continue;
+      }
+
+      const attachmentUrl = (rawAnswer as Record<string, unknown>)
+        .attachmentUrl;
+      if (typeof attachmentUrl === 'string' && attachmentUrl.trim()) {
+        return attachmentUrl.trim();
+      }
+    }
+
+    return null;
   }
 
   private getRoleName(user: CurrentUser) {
@@ -737,6 +768,10 @@ export class QuestService {
   }
 
   async listQuests(query: ListQuestsQueryDto) {
+    return this.fetchQuests(query);
+  }
+
+  private async fetchQuests(query: ListQuestsQueryDto) {
     const where: Prisma.QuestWhereInput = {
       ...(query.termId ? { termId: query.termId } : {}),
       ...(query.status ? { status: query.status } : {}),
@@ -1162,6 +1197,10 @@ export class QuestService {
   }
 
   async listMyQuests(user: CurrentUser, query: ListMyQuestsQueryDto) {
+    return this.fetchMyQuests(user, query);
+  }
+
+  private async fetchMyQuests(user: CurrentUser, query: ListMyQuestsQueryDto) {
     const roleName = this.getRoleName(user);
 
     if (['TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(roleName)) {
@@ -1563,6 +1602,7 @@ export class QuestService {
       quest,
       user.id,
     );
+    const fileUrl = this.getSubmissionFileUrl(dto);
 
     try {
       const result = await this.prisma.$transaction(async (tx) => {
@@ -1594,6 +1634,7 @@ export class QuestService {
               studentProfileId: studentProfile.id,
               status: QuestSubmissionStatus.PENDING,
               latestVersionNo: 1,
+              fileUrl,
             },
             select: { id: true },
           });
@@ -1644,6 +1685,7 @@ export class QuestService {
             status: QuestSubmissionStatus.PENDING,
             rejectReason: null,
             reviewedById: null,
+            fileUrl,
           },
         });
 
@@ -1723,6 +1765,7 @@ export class QuestService {
         id: true,
         status: true,
         latestVersionNo: true,
+        fileUrl: true,
         createdAt: true,
         updatedAt: true,
         rejectReason: true,
@@ -1933,6 +1976,7 @@ export class QuestService {
       data: {
         id: submission.id,
         status: submission.status,
+        fileUrl: submission.fileUrl,
         isLate,
         createdAt: submission.createdAt.toISOString(),
         updatedAt: submission.updatedAt.toISOString(),
@@ -2046,6 +2090,7 @@ export class QuestService {
         id: true,
         status: true,
         updatedAt: true,
+        studentProfileId: true,
       },
     });
 

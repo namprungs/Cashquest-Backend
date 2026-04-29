@@ -4,10 +4,14 @@ import { Prisma, TermStatus, User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { AppCacheService } from '../cache/app-cache.service';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: AppCacheService,
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
     const salt = await bcrypt.genSalt();
@@ -197,6 +201,7 @@ export class UserService {
         id: true,
         username: true,
         email: true,
+        profileImageUrl: true,
       },
     });
 
@@ -333,6 +338,7 @@ export class UserService {
         displayName: user.username,
         studentCode: user.username,
         email: user.email,
+        profileImageUrl: user.profileImageUrl,
         studentProfileId: profileId ?? null,
         walletBalance: studentProfile?.mainWallet?.balance ?? 0,
         termId,
@@ -346,6 +352,34 @@ export class UserService {
           portfolioGrowth: portfolioFinance,
         },
       },
+    };
+  }
+
+  async updateMyProfileImage(userId: string, profileImageUrl: string | null) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { profileImageUrl },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        profileImageUrl: true,
+      },
+    });
+
+    const profiles = await this.prisma.studentProfile.findMany({
+      where: { userId },
+      select: { termId: true },
+    });
+    await Promise.all(
+      profiles.map((profile) =>
+        this.cache.delete(`user:profile:${userId}:term:${profile.termId}`),
+      ),
+    );
+
+    return {
+      success: true,
+      data: user,
     };
   }
 
@@ -473,6 +507,18 @@ export class UserService {
   }
 
   async getClassroomLeaderboard(userId: string, termId: string, take: number) {
+    return this.cache.getOrSetCache(
+      `leaderboard:user:${userId}:term:${termId}:take:${take}`,
+      90,
+      () => this.fetchClassroomLeaderboard(userId, termId, take),
+    );
+  }
+
+  private async fetchClassroomLeaderboard(
+    userId: string,
+    termId: string,
+    take: number,
+  ) {
     // 1. Find which classroom the student belongs to in this term
     const enrollment = await this.prisma.classroomStudent.findFirst({
       where: {

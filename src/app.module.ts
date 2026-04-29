@@ -18,6 +18,7 @@ import { GamificationModule } from './modules/gamification/gamification.module';
 import { RandomExpenseModule } from './modules/random-expense/random-expense.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { PlayerModule } from './modules/player/player.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { PlayerModule } from './modules/player/player.module';
     InvestmentModule,
     GamificationModule,
     RandomExpenseModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService, HealthService],

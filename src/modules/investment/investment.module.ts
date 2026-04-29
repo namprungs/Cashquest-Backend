@@ -8,8 +8,10 @@ import { InvestmentMarketService } from './services/investment/investment-market
 import { InvestmentPortfolioService } from './services/investment/investment-portfolio.service';
 import { LivePriceTickScheduler } from './tasks/live-price-tick.scheduler';
 import { EventStatusScheduler } from './tasks/event-status.scheduler';
+import { AppCacheModule } from '../cache/app-cache.module';
 
 @Module({
+  imports: [AppCacheModule],
   controllers: [InvestmentController],
   providers: [
     InvestmentCoreService,

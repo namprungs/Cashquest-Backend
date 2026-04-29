@@ -7,6 +7,7 @@ import { QuestStatus, QuestSubmissionStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PlayerService } from 'src/modules/player/services/studentProfile.service';
 import { QuestService } from '../quest/quest.service';
+import { AppCacheService } from '../cache/app-cache.service';
 
 @Injectable()
 export class ClassroomService {
@@ -14,6 +15,7 @@ export class ClassroomService {
     private readonly prisma: PrismaService,
     private readonly playerService: PlayerService,
     private readonly questService: QuestService,
+    private readonly cache: AppCacheService,
   ) {}
 
   private toNumber(value: unknown): number {
@@ -395,7 +397,14 @@ export class ClassroomService {
         students: {
           select: {
             studentId: true,
-            student: { select: { id: true, username: true, email: true } },
+            student: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                profileImageUrl: true,
+              },
+            },
           },
         },
       },
@@ -515,6 +524,7 @@ export class ClassroomService {
         name: row.student.username,
         studentCode: row.student.username,
         email: row.student.email,
+        profileImageUrl: row.student.profileImageUrl,
         classroomId: classroom.id,
         classroomName: classroom.name,
         rank: 0,
@@ -570,7 +580,14 @@ export class ClassroomService {
     const enrollment = await this.prisma.classroomStudent.findUnique({
       where: { classroomId_studentId: { classroomId, studentId } },
       select: {
-        student: { select: { id: true, username: true, email: true } },
+        student: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            profileImageUrl: true,
+          },
+        },
       },
     });
     if (!enrollment) {
@@ -740,6 +757,7 @@ export class ClassroomService {
           displayName: enrollment.student.username,
           studentCode: enrollment.student.username,
           email: enrollment.student.email,
+          profileImageUrl: enrollment.student.profileImageUrl,
           classroomId: classroom.id,
           classroomName: classroom.name,
           termId: classroom.termId,
@@ -804,6 +822,12 @@ export class ClassroomService {
   // Home overview for classroom
   // -----------------------------
   async getHomeOverview(classroomId: string) {
+    return this.cache.getOrSetCache(`classroom:home:${classroomId}`, 90, () =>
+      this.fetchHomeOverview(classroomId),
+    );
+  }
+
+  private async fetchHomeOverview(classroomId: string) {
     const classroom = await this.prisma.classroom.findUnique({
       where: { id: classroomId },
       include: { students: { select: { studentId: true } }, term: true },

@@ -9,12 +9,16 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateLearningModuleDto } from './dto/create-learning-module.dto';
 import { UpdateLearningModuleDto } from './dto/update-learning-module.dto';
 import { ListLearningModulesQueryDto } from './dto/list-learning-modules-query.dto';
+import { AppCacheService } from '../cache/app-cache.service';
 
 type CurrentUser = User & { role?: { name?: string } | null };
 
 @Injectable()
 export class LearningModuleService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: AppCacheService,
+  ) {}
 
   private assertTeacherOrAdmin(user: CurrentUser) {
     const roleName = user?.role?.name?.toUpperCase?.();
@@ -164,6 +168,13 @@ export class LearningModuleService {
   }
 
   async list(query: ListLearningModulesQueryDto) {
+    const key = `learning:list:${this.cache.stableKey(query)}`;
+    return this.cache.getOrSetCache(key, 900, () =>
+      this.fetchLearningModules(query),
+    );
+  }
+
+  private async fetchLearningModules(query: ListLearningModulesQueryDto) {
     const isActiveFilter =
       query.isActive === 'true'
         ? true
@@ -196,6 +207,12 @@ export class LearningModuleService {
   }
 
   async findOne(moduleId: string) {
+    return this.cache.getOrSetCache(`learning:${moduleId}`, 900, () =>
+      this.fetchLearningModule(moduleId),
+    );
+  }
+
+  private async fetchLearningModule(moduleId: string) {
     const module = await this.prisma.learningModule.findUnique({
       where: { id: moduleId },
     });
