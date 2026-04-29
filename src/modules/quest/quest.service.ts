@@ -2304,6 +2304,15 @@ export class QuestService {
         status: true,
         latestVersionNo: true,
         rejectReason: true,
+        versions: {
+          orderBy: { versionNo: 'desc' },
+          take: 1,
+          select: {
+            payloadJson: true,
+            attachmentUrl: true,
+            createdAt: true,
+          },
+        },
       },
     });
 
@@ -2316,6 +2325,9 @@ export class QuestService {
           status: '',
           latestVersionNo: 0,
           rejectReason: null,
+          latestPayloadJson: null,
+          latestAttachmentUrl: null,
+          latestSubmittedAt: null,
         },
       };
     }
@@ -2344,6 +2356,9 @@ export class QuestService {
         status: submission.status,
         latestVersionNo: submission.latestVersionNo,
         rejectReason: submission.rejectReason,
+        latestPayloadJson: submission.versions[0]?.payloadJson ?? null,
+        latestAttachmentUrl: submission.versions[0]?.attachmentUrl ?? null,
+        latestSubmittedAt: submission.versions[0]?.createdAt ?? null,
       },
     };
   }
