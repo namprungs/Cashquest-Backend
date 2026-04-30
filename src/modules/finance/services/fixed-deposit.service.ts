@@ -67,6 +67,21 @@ export class FixedDepositService {
     const depositAmount = new Prisma.Decimal(dto.principal);
 
     return this.prisma.$transaction(async (tx) => {
+      const activeDeposit = await tx.fixedDeposit.findFirst({
+        where: {
+          studentProfileId: dto.studentProfileId,
+          fixedDepositBankId: dto.fixedDepositBankId,
+          status: 'ACTIVE',
+        },
+        select: { id: true },
+      });
+
+      if (activeDeposit) {
+        throw new BadRequestException(
+          'An active fixed deposit already exists for this bank',
+        );
+      }
+
       const wallet = await this.walletService.ensureWalletTx(
         tx,
         dto.studentProfileId,
@@ -289,6 +304,36 @@ export class FixedDepositService {
     }
 
     return { success: true, data: deposit };
+  }
+
+  async getFixedDepositBankInfo(fixedDepositBankId: string) {
+    const fdBank = await this.prisma.fixedDepositBank.findUnique({
+      where: { id: fixedDepositBankId },
+      include: { bank: { select: { id: true, name: true } } },
+    });
+
+    if (!fdBank) {
+      throw new NotFoundException('Fixed deposit bank config not found');
+    }
+
+    return {
+      success: true,
+      data: {
+        fixedDepositBankId: fdBank.id,
+        bankId: fdBank.bank.id,
+        accountTitle: 'บัญชีฝากประจำ',
+        bankName: fdBank.bank.name,
+        description:
+          'บัญชีฝากประจำดอกเบี้ยมาตรฐาน\nให้ผลตอบแทนมั่นคงตามระยะเวลา',
+        interestRate: fdBank.interestRate,
+        fixedDepositWeeks: fdBank.fixedDepositWeeks,
+        minPrincipal: fdBank.principal,
+        topUpAllowed: false,
+        earlyWithdrawalInterestPaid: false,
+        educationalNote:
+          'บัญชีนี้เป็นบัญชีจำลองเพื่อการศึกษา\nใช้สำหรับการเรียนรู้ด้านการออมและการจัดการเงินในสภาพแวดล้อมที่ปลอดภัย',
+      },
+    };
   }
 
   async listByStudent(studentProfileId: string) {
