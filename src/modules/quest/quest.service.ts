@@ -30,13 +30,17 @@ import {
   TeacherQuizDraftQuestionDto,
   TeacherQuizQuestDraftDto,
 } from './dto/teacher-quiz-quest.dto';
+import { RandomExpenseService } from '../random-expense/services/random-expense.service';
 type CurrentUser = User & { role?: { name?: string } | null };
 
 const TEACHER_QUIZ_DRAFT_CONTENT_TYPE = 'TEACHER_QUIZ_DRAFT_V1';
 
 @Injectable()
 export class QuestService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly randomExpenseService: RandomExpenseService,
+  ) {}
 
   private normalizeActionType(value: unknown) {
     return String(value ?? '')
@@ -1471,6 +1475,11 @@ export class QuestService {
         },
       },
     });
+
+    await this.randomExpenseService.autoPayPendingExpensesFromWalletTx(
+      tx,
+      studentProfileId,
+    );
   }
 
   private async approveSubmissionAndReward(

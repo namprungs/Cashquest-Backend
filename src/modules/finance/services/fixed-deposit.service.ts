@@ -10,6 +10,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateFixedDepositDto } from '../dto/create-fixed-deposit.dto';
 import { WithdrawFixedDepositDto } from '../dto/withdraw-fixed-deposit.dto';
 import { WalletService } from './wallet.service';
+import { RandomExpenseService } from 'src/modules/random-expense/services/random-expense.service';
 
 @Injectable()
 export class FixedDepositService {
@@ -18,6 +19,7 @@ export class FixedDepositService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService,
+    private readonly randomExpenseService: RandomExpenseService,
   ) {}
 
   async openFixedDeposit(dto: CreateFixedDepositDto) {
@@ -224,6 +226,12 @@ export class FixedDepositService {
           },
         });
 
+        const autoExpensePayment =
+          await this.randomExpenseService.autoPayPendingExpensesFromWalletTx(
+            tx,
+            fixedDeposit.studentProfileId,
+          );
+
         return {
           success: true,
           data: {
@@ -232,7 +240,8 @@ export class FixedDepositService {
             principal: fixedDeposit.principal,
             interestAmount: interestAmount.toString(),
             amountPaid: payoutAmount.toString(),
-            walletBalance: updatedWallet.balance.toString(),
+            walletBalance: autoExpensePayment.walletBalanceAfter.toString(),
+            autoExpensePayment,
           },
         };
       }
@@ -277,13 +286,20 @@ export class FixedDepositService {
         },
       });
 
+      const autoExpensePayment =
+        await this.randomExpenseService.autoPayPendingExpensesFromWalletTx(
+          tx,
+          fixedDeposit.studentProfileId,
+        );
+
       return {
         success: true,
         data: {
           fixedDepositId: fixedDeposit.id,
           status: 'WITHDRAWN_EARLY',
           amountPaid: fixedDeposit.principal,
-          walletBalance: updatedWallet.balance.toString(),
+          walletBalance: autoExpensePayment.walletBalanceAfter.toString(),
+          autoExpensePayment,
         },
       };
     });
@@ -491,6 +507,11 @@ export class FixedDepositService {
               description: 'Matured fixed deposit payout',
             },
           });
+
+          await this.randomExpenseService.autoPayPendingExpensesFromWalletTx(
+            tx,
+            deposit.studentProfileId,
+          );
         });
 
         processed += 1;

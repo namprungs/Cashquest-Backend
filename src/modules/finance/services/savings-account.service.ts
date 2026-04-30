@@ -11,6 +11,7 @@ import { CreateSavingsAccountDto } from '../dto/create-savings-account.dto';
 import { DepositSavingsDto } from '../dto/deposit-savings.dto';
 import { WithdrawSavingsDto } from '../dto/withdraw-savings.dto';
 import { WalletService } from './wallet.service';
+import { RandomExpenseService } from 'src/modules/random-expense/services/random-expense.service';
 
 @Injectable()
 export class SavingsAccountService {
@@ -20,6 +21,7 @@ export class SavingsAccountService {
     private readonly prisma: PrismaService,
     private readonly walletService: WalletService,
     private readonly questService: QuestService,
+    private readonly randomExpenseService: RandomExpenseService,
   ) {}
 
   /**
@@ -344,11 +346,21 @@ export class SavingsAccountService {
         });
       }
 
+      const autoExpensePayment =
+        await this.randomExpenseService.autoPayPendingExpensesFromWalletTx(
+          tx,
+          savingsAccount.studentProfile.id,
+        );
+
       return {
         success: true,
         data: {
           savingsAccount: updatedAccount,
-          wallet: updatedWallet,
+          wallet: {
+            ...updatedWallet,
+            balance: autoExpensePayment.walletBalanceAfter,
+          },
+          autoExpensePayment,
           fee: feeAmount,
           remainingWithdrawals: savingsAccount.savingsAccountBank
             .withdrawLimitPerTerm
