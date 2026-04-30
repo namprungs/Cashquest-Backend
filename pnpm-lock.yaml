@@ -59,6 +59,9 @@ importers:
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
+      cache:
+        specifier: ^3.0.0
+        version: 3.0.0
       cache-manager:
         specifier: ^7.2.8
         version: 7.2.8
@@ -77,6 +80,9 @@ importers:
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3
+      image:
+        specifier: ^1.0.2
+        version: 1.0.2
       keyv:
         specifier: ^5.6.0
         version: 5.6.0
@@ -2071,6 +2077,9 @@ packages:
     resolution: {integrity: sha512-cU8v/EGSrnH+HnxV2z0J7/blxH8gq7Xh2JFT6Aroax7UohdmiJJlxApMxtKfuI7z68NvvVcmR78k2LbT6efhRg==}
     engines: {node: '>= 18'}
 
+  bindings@1.1.0:
+    resolution: {integrity: sha512-OQIZVhw1kxFCHXG7Ks7IcMXODgcFhE6BRY8nQI0MIoGMoAkMEG8WLezPi3Snn5Ut4Eo33Esc0KuRMlUeNzUoUQ==}
+
   bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
 
@@ -2130,6 +2139,9 @@ packages:
 
   cache-manager@7.2.8:
     resolution: {integrity: sha512-0HDaDLBBY/maa/LmUVAr70XUOwsiQD+jyzCBjmUErYZUKdMS9dT59PqW59PpVqfGM7ve6H0J6307JTpkCYefHQ==}
+
+  cache@3.0.0:
+    resolution: {integrity: sha512-sNoM5jithfalxIceo/uFFm5bOlGjux2y8jEvjNb0F/cACWQaMmWuEPTLl6GzLHdFcNsbWBBdqkBd9NyefZ5UQQ==}
 
   cacheable@2.3.4:
     resolution: {integrity: sha512-djgxybDbw9fL/ZWMI3+CE8ZilNxcwFkVtDc1gJ+IlOSSWkSMPQabhV/XCHTQ6pwwN6aivXPZ43omTooZiX06Ew==}
@@ -2419,6 +2431,9 @@ packages:
   dotenv@17.2.3:
     resolution: {integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==}
     engines: {node: '>=12'}
+
+  ds@1.4.2:
+    resolution: {integrity: sha512-d5nMCjfod+srvE/1Bnt/u+L++6N8KJx3ZAi95AGp0g6RtfuGDNlGciWL/iiwKHsFVBVnA3/HEFUq5SW1NgTQ3Q==}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -2756,6 +2771,10 @@ packages:
   get-tsconfig@4.13.0:
     resolution: {integrity: sha512-1VKTZJCwBrvbd+Wn3AOgQP/2Av+TfTCOlE4AcRJE72W1ksZXbAx8PPBR9RzgTeSPzlPMHrbANMH3LbltH73wxQ==}
 
+  gif@2.0.2:
+    resolution: {integrity: sha512-1kEZRAur8JX0pDeKSHJvtZM+eaAoCRB1UZdAUKlAhjynJWfZ1vXI8Y3/Ij1aGu6T2SySynQyllA/q8iVpYTwPQ==}
+    engines: {node: '>= 0.8.0'}
+
   giget@2.0.0:
     resolution: {integrity: sha512-L5bGsVkxJbJgdnwyuheIunkGatUF/zssUoxxjACCseZYAVbaqdh9Tsmmlkl8vYan09H7sbvKt4pS8GqKLBrEzA==}
     hasBin: true
@@ -2872,6 +2891,10 @@ packages:
   ignore@7.0.5:
     resolution: {integrity: sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg==}
     engines: {node: '>= 4'}
+
+  image@1.0.2:
+    resolution: {integrity: sha512-4A5e7ScSvyOongci3ywgrzBj7Uh2/5y7jW30eghcQKFZxH3y0QEQHs+UYpV8gjs7FLaCEXqlKs6luxb99PpPYA==}
+    engines: {node: '>=0.1.93'}
 
   import-fresh@3.3.1:
     resolution: {integrity: sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ==}
@@ -3107,6 +3130,10 @@ packages:
   jiti@2.6.1:
     resolution: {integrity: sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==}
     hasBin: true
+
+  jpeg@2.0.0:
+    resolution: {integrity: sha512-4rDExzg3EeYfUUQYZtJ9tw/sU6oyU4XTb3J8bUEKZOqMErZ6No9nT7O/snTX72lgD5z6uIK9gJoCU7mpSzf+zQ==}
+    engines: {node: '>=0.1.93'}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -3619,6 +3646,10 @@ packages:
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
     engines: {node: '>=4'}
+
+  png@3.0.3:
+    resolution: {integrity: sha512-53npnXKg9Pecjt94DgXM52fbY7H/vfnvGhA2+7dG7c1YpptGHYwnbah2c3CQstZOXBtvcYooals4ZIOS/84rYw==}
+    engines: {node: '>=0.6.0'}
 
   postgres-array@2.0.0:
     resolution: {integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==}
@@ -6807,6 +6838,8 @@ snapshots:
       node-addon-api: 8.5.0
       node-gyp-build: 4.8.4
 
+  bindings@1.1.0: {}
+
   bl@4.1.0:
     dependencies:
       buffer: 5.7.1
@@ -6892,6 +6925,10 @@ snapshots:
     dependencies:
       '@cacheable/utils': 2.4.1
       keyv: 5.6.0
+
+  cache@3.0.0:
+    dependencies:
+      ds: 1.4.2
 
   cacheable@2.3.4:
     dependencies:
@@ -7126,6 +7163,8 @@ snapshots:
   dotenv@16.6.1: {}
 
   dotenv@17.2.3: {}
+
+  ds@1.4.2: {}
 
   dunder-proto@1.0.1:
     dependencies:
@@ -7554,6 +7593,10 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
+  gif@2.0.2:
+    dependencies:
+      bindings: 1.1.0
+
   giget@2.0.0:
     dependencies:
       citty: 0.1.6
@@ -7670,6 +7713,12 @@ snapshots:
   ignore@5.3.2: {}
 
   ignore@7.0.5: {}
+
+  image@1.0.2:
+    dependencies:
+      gif: 2.0.2
+      jpeg: 2.0.0
+      png: 3.0.3
 
   import-fresh@3.3.1:
     dependencies:
@@ -8080,6 +8129,8 @@ snapshots:
       - ts-node
 
   jiti@2.6.1: {}
+
+  jpeg@2.0.0: {}
 
   js-tokens@4.0.0: {}
 
@@ -8542,6 +8593,8 @@ snapshots:
       pathe: 2.0.3
 
   pluralize@8.0.0: {}
+
+  png@3.0.3: {}
 
   postgres-array@2.0.0: {}
 

@@ -10,11 +10,7 @@ http:
     - name: Authorization
       value: Bearer {{accessToken}}
   body:
-    type: multipart
-    data:
-      - name: file
-        type: file
-        src: ""
+    type: multipart-form
   auth: inherit
 
 settings:
