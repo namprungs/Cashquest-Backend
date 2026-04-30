@@ -1298,14 +1298,13 @@ export class QuestService {
       }
     }
 
-    const approvedSubmissions = studentProfileIds.length
+    const submissions = studentProfileIds.length
       ? await this.prisma.questSubmission.findMany({
           where: {
             studentProfileId: { in: studentProfileIds },
             questId: { in: [...questIds] },
-            status: QuestSubmissionStatus.APPROVED,
           },
-          select: { questId: true },
+          select: { questId: true, status: true },
         })
       : [];
 
@@ -1321,10 +1320,17 @@ export class QuestService {
       : [];
 
     const completedQuestIds = new Set(
-      approvedSubmissions.map((submission) => submission.questId),
+      submissions
+        .filter(
+          (submission) => submission.status === QuestSubmissionStatus.APPROVED,
+        )
+        .map((submission) => submission.questId),
     );
     const completedQuizIds = new Set(
       passedAttempts.map((attempt) => attempt.quizId),
+    );
+    const submissionStatusByQuestId = new Map(
+      submissions.map((submission) => [submission.questId, submission.status]),
     );
     const isQuestCompleted = (quest: (typeof quests)[number]) =>
       completedQuestIds.has(quest.id) ||
@@ -1333,11 +1339,13 @@ export class QuestService {
     const questsWithCompletion = quests.map((quest) => ({
       ...quest,
       isCompleted: isQuestCompleted(quest),
+      submissionStatus: submissionStatusByQuestId.get(quest.id) ?? null,
       children: (quest.children ?? []).map((child) => ({
         ...child,
         isCompleted:
           completedQuestIds.has(child.id) ||
           (!!child.quizId && completedQuizIds.has(child.quizId)),
+        submissionStatus: submissionStatusByQuestId.get(child.id) ?? null,
       })),
     }));
 

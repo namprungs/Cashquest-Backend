@@ -27,6 +27,14 @@ export class FixedDepositController {
     return this.fixedDepositService.processMaturedFixedDepositsNow();
   }
 
+  @Get('banks/:fixedDepositBankId/info')
+  @NeededPermissions([PERMISSIONS.FINANCE.FIXED_DEPOSIT_MANAGE_OWN])
+  async getFixedDepositBankInfo(
+    @Param('fixedDepositBankId') fixedDepositBankId: string,
+  ) {
+    return this.fixedDepositService.getFixedDepositBankInfo(fixedDepositBankId);
+  }
+
   @Get(':id')
   @NeededPermissions([PERMISSIONS.FINANCE.FIXED_DEPOSIT_MANAGE_OWN])
   async getFixedDeposit(@Param('id') id: string) {
