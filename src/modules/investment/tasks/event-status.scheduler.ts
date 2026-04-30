@@ -21,7 +21,7 @@ export class EventStatusScheduler {
    * - ACTIVE: 1 week after end week (peak market price impact)
    * - EXPIRED: After active period ends
    */
-  @Cron('0 * * * * *') // Every 10 seconds
+  @Cron('0 * * * *') // Every 1 hour
   async updateEventStatuses() {
     try {
       const termSimulations = await this.prisma.termSimulation.findMany({
