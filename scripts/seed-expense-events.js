@@ -339,7 +339,7 @@ async function seedExpenseEvents(prisma, academicData, lifeStages) {
         dayOfWeek: slot.dayOfWeek,
         amount: ev.baseAmount,
         remainingAmount: ev.baseAmount,
-        status: 'UNPAID',
+        status: 'PAID',
       },
     });
     assigned++;
