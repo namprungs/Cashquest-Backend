@@ -25,6 +25,7 @@ export class BankService {
       data: {
         termId: dto.termId,
         name: dto.name,
+        logoUrl: dto.logoUrl,
       },
     });
 
@@ -108,6 +109,7 @@ export class BankService {
       where: { id: bankId },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.logoUrl !== undefined && { logoUrl: dto.logoUrl }),
       },
     });
 

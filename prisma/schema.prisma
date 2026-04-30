@@ -11,13 +11,13 @@ datasource db {
 // ---------------------------------------------------------
 
 model User {
-  id       String  @id @default(uuid()) @db.Uuid
-  email    String  @unique
-  username String  @unique
-  password String
-  roleId   String? @db.Uuid
-  role     Role?   @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  isActive Boolean @default(true)
+  id              String  @id @default(uuid()) @db.Uuid
+  email           String  @unique
+  username        String  @unique
+  password        String
+  roleId          String? @db.Uuid
+  role            Role?   @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  isActive        Boolean @default(true)
   profileImageUrl String? @map("profile_image_url")
 
   // Relations
@@ -107,9 +107,9 @@ model RefreshToken {
 // ---------------------------------------------------------
 
 model School {
-  id   String @id @default(uuid()) @db.Uuid
-  name String
-  plan String @default("FREE")
+  id      String  @id @default(uuid()) @db.Uuid
+  name    String
+  plan    String  @default("FREE")
 
   // Relations
   users User[]
@@ -438,7 +438,8 @@ model Bank {
   termId String @db.Uuid
   term   Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
 
-  name String
+  name    String
+  logoUrl String? @map("logo_url")
 
   // Relations to service-specific bank configs (1-to-1 each)
   savingsAccountBank SavingsAccountBank?
@@ -838,7 +839,7 @@ model Quest {
 
   title          String
   description    String?
-  content        String?                        // เนื้อหา/บทความของเควส (รองรับบรรทัดใหม่)
+  content        String? // เนื้อหา/บทความของเควส (รองรับบรรทัดใหม่)
   isSystem       Boolean              @default(false) @map("is_system")
   rewardCoins    Int                  @default(0) @map("reward_coins")
   difficulty     QuestDifficulty      @default(EASY) @map("difficulty")
@@ -851,10 +852,10 @@ model Quest {
   // ── Hierarchical quest support ──
   // A "parent" quest (parentId = null) acts as a heading/topic.
   // A "child" quest has parentId set and orderNo for display (1.1, 1.2, etc.)
-  parentId String?  @db.Uuid
-  parent   Quest?   @relation("QuestHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children Quest[]  @relation("QuestHierarchy")
-  orderNo  Int?     @map("order_no")
+  parentId String? @db.Uuid
+  parent   Quest?  @relation("QuestHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Quest[] @relation("QuestHierarchy")
+  orderNo  Int?    @map("order_no")
 
   classrooms  QuestClassroom[]
   submissions QuestSubmission[]
@@ -1077,14 +1078,14 @@ model ProductSimulation {
   sigma        Decimal @db.Decimal(10, 6)
   dt           Decimal @db.Decimal(10, 6)
 
-  faceValue          Decimal? @map("face_value") @db.Decimal(18, 6)
-  couponRate         Decimal? @map("coupon_rate") @db.Decimal(10, 6)
-  initialYield       Decimal? @map("initial_yield") @db.Decimal(10, 6)
-  modifiedDuration   Decimal? @map("modified_duration") @db.Decimal(10, 6)
-  kappa              Decimal? @db.Decimal(10, 6)
-  theta              Decimal? @db.Decimal(10, 6)
-  sigmaYield         Decimal? @map("sigma_yield") @db.Decimal(10, 6)
-  yieldFloor         Decimal  @default(0.001) @map("yield_floor") @db.Decimal(10, 6)
+  faceValue        Decimal? @map("face_value") @db.Decimal(18, 6)
+  couponRate       Decimal? @map("coupon_rate") @db.Decimal(10, 6)
+  initialYield     Decimal? @map("initial_yield") @db.Decimal(10, 6)
+  modifiedDuration Decimal? @map("modified_duration") @db.Decimal(10, 6)
+  kappa            Decimal? @db.Decimal(10, 6)
+  theta            Decimal? @db.Decimal(10, 6)
+  sigmaYield       Decimal? @map("sigma_yield") @db.Decimal(10, 6)
+  yieldFloor       Decimal  @default(0.001) @map("yield_floor") @db.Decimal(10, 6)
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -1124,9 +1125,9 @@ model ProductPrice {
   close     Decimal @db.Decimal(18, 6)
   returnPct Decimal @map("return_pct") @db.Decimal(10, 6)
 
-  muUsed    Decimal? @map("mu_used") @db.Decimal(10, 6)
-  sigmaUsed Decimal? @map("sigma_used") @db.Decimal(10, 6)
-  yieldOpen Decimal? @map("yield_open") @db.Decimal(10, 6)
+  muUsed     Decimal? @map("mu_used") @db.Decimal(10, 6)
+  sigmaUsed  Decimal? @map("sigma_used") @db.Decimal(10, 6)
+  yieldOpen  Decimal? @map("yield_open") @db.Decimal(10, 6)
   yieldClose Decimal? @map("yield_close") @db.Decimal(10, 6)
 
   eventId        String?             @map("event_id") @db.Uuid
@@ -1155,8 +1156,8 @@ model ProductLivePriceTick {
   price     Decimal @db.Decimal(18, 6)
   returnPct Decimal @map("return_pct") @db.Decimal(10, 6)
 
-  muUsed    Decimal? @map("mu_used") @db.Decimal(10, 6)
-  sigmaUsed Decimal? @map("sigma_used") @db.Decimal(10, 6)
+  muUsed     Decimal? @map("mu_used") @db.Decimal(10, 6)
+  sigmaUsed  Decimal? @map("sigma_used") @db.Decimal(10, 6)
   yieldValue Decimal? @map("yield_value") @db.Decimal(10, 6)
 
   eventId        String?             @map("event_id") @db.Uuid
@@ -1373,12 +1374,12 @@ enum ExpensePaymentSourceType {
 model ExpenseEvent {
   id String @id @default(uuid()) @db.Uuid
 
-  termId      String @db.Uuid
-  term        Term   @relation(fields: [termId], references: [id], onDelete: Cascade)
-  lifeStageId String @db.Uuid
+  termId      String    @db.Uuid
+  term        Term      @relation(fields: [termId], references: [id], onDelete: Cascade)
+  lifeStageId String    @db.Uuid
   lifeStage   LifeStage @relation(fields: [lifeStageId], references: [id], onDelete: Cascade)
 
-  title       String  // e.g., "เรียกรถกลับบ้าน"
+  title       String // e.g., "เรียกรถกลับบ้าน"
   description String? // e.g., "ฝนตก ไม่สามารถเดินทางตามปกติได้"
   baseAmount  Decimal @db.Decimal(12, 2)
   iconUrl     String? @map("icon_url")
@@ -1400,15 +1401,15 @@ model StudentExpense {
   studentProfileId String         @db.Uuid
   studentProfile   StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
 
-  termId         String        @db.Uuid
-  term           Term          @relation(fields: [termId], references: [id], onDelete: Cascade)
-  expenseEventId String        @db.Uuid
-  expenseEvent   ExpenseEvent  @relation(fields: [expenseEventId], references: [id], onDelete: Cascade)
+  termId         String       @db.Uuid
+  term           Term         @relation(fields: [termId], references: [id], onDelete: Cascade)
+  expenseEventId String       @db.Uuid
+  expenseEvent   ExpenseEvent @relation(fields: [expenseEventId], references: [id], onDelete: Cascade)
 
   weekNo          Int
-  dayOfWeek       Int                   @map("day_of_week") // 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri
+  dayOfWeek       Int                  @map("day_of_week") // 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri
   amount          Decimal              @db.Decimal(12, 2)
-  remainingAmount Decimal              @db.Decimal(12, 2) @map("remaining_amount")
+  remainingAmount Decimal              @map("remaining_amount") @db.Decimal(12, 2)
   status          StudentExpenseStatus @default(UNPAID)
 
   acknowledgedAt DateTime? @map("acknowledged_at")
@@ -1428,11 +1429,11 @@ model StudentExpense {
 model ExpensePayment {
   id String @id @default(uuid()) @db.Uuid
 
-  studentExpenseId String              @db.Uuid
-  studentExpense   StudentExpense      @relation(fields: [studentExpenseId], references: [id], onDelete: Cascade)
+  studentExpenseId String         @db.Uuid
+  studentExpense   StudentExpense @relation(fields: [studentExpenseId], references: [id], onDelete: Cascade)
 
   sourceType ExpensePaymentSourceType @map("source_type")
-  amount     Decimal                   @db.Decimal(12, 2)
+  amount     Decimal                  @db.Decimal(12, 2)
 
   // Optional reference to the source (wallet_id, savings_account_id, etc.)
   sourceRef String? @map("source_ref") @db.Uuid

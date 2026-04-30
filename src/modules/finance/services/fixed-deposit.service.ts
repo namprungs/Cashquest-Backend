@@ -309,7 +309,7 @@ export class FixedDepositService {
   async getFixedDepositBankInfo(fixedDepositBankId: string) {
     const fdBank = await this.prisma.fixedDepositBank.findUnique({
       where: { id: fixedDepositBankId },
-      include: { bank: { select: { id: true, name: true } } },
+      include: { bank: { select: { id: true, name: true, logoUrl: true } } },
     });
 
     if (!fdBank) {
@@ -323,6 +323,7 @@ export class FixedDepositService {
         bankId: fdBank.bank.id,
         accountTitle: 'บัญชีฝากประจำ',
         bankName: fdBank.bank.name,
+        bankLogoUrl: fdBank.bank.logoUrl,
         description:
           'บัญชีฝากประจำดอกเบี้ยมาตรฐาน\nให้ผลตอบแทนมั่นคงตามระยะเวลา',
         interestRate: fdBank.interestRate,
