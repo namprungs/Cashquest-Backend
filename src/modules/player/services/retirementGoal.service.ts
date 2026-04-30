@@ -76,6 +76,7 @@ export class RetirementGoalService {
     const profile = await this.prisma.studentProfile.findUnique({
       where: { id: studentProfileId },
       select: {
+        termId: true,
         mainWallet: { select: { balance: true } },
         investmentWallet: { select: { balance: true } },
       },
@@ -84,7 +85,7 @@ export class RetirementGoalService {
     const walletBalance = this.toNumber(profile?.mainWallet?.balance);
     const investmentBalance = this.toNumber(profile?.investmentWallet?.balance);
 
-    const [savingsAggregate, fdAggregate] = await Promise.all([
+    const [savingsAggregate, fdAggregate, holdings] = await Promise.all([
       this.prisma.savingsAccount.aggregate({
         where: {
           studentProfileId,
@@ -103,12 +104,88 @@ export class RetirementGoalService {
           principal: true,
         },
       }),
+      this.prisma.holding.findMany({
+        where: {
+          studentProfileId,
+          termId: profile?.termId,
+          units: {
+            gt: 0,
+          },
+        },
+        select: {
+          productId: true,
+          units: true,
+          avgCost: true,
+        },
+      }),
     ]);
 
     const savingsBalance = this.toNumber(savingsAggregate._sum.balance);
     const fdBalance = this.toNumber(fdAggregate._sum.principal);
+    const productIds = holdings.map((holding) => holding.productId);
+    const [latestPrices, latestLiveTicks] =
+      profile?.termId && productIds.length
+        ? await Promise.all([
+            this.prisma.productPrice.findMany({
+              where: {
+                termId: profile.termId,
+                productId: {
+                  in: productIds,
+                },
+              },
+              orderBy: [{ weekNo: 'desc' }, { createdAt: 'desc' }],
+              select: {
+                productId: true,
+                close: true,
+              },
+            }),
+            this.prisma.productLivePriceTick.findMany({
+              where: {
+                termId: profile.termId,
+                productId: {
+                  in: productIds,
+                },
+              },
+              orderBy: [{ tickedAt: 'desc' }],
+              select: {
+                productId: true,
+                price: true,
+              },
+            }),
+          ])
+        : [[], []];
 
-    return walletBalance + investmentBalance + savingsBalance + fdBalance;
+    const latestPriceByProduct = new Map<string, number>();
+    for (const row of latestPrices) {
+      if (!latestPriceByProduct.has(row.productId)) {
+        latestPriceByProduct.set(row.productId, this.toNumber(row.close));
+      }
+    }
+
+    const latestLivePriceByProduct = new Map<string, number>();
+    for (const row of latestLiveTicks) {
+      if (!latestLivePriceByProduct.has(row.productId)) {
+        latestLivePriceByProduct.set(row.productId, this.toNumber(row.price));
+      }
+    }
+
+    const investmentMarketValue = holdings.reduce((sum, holding) => {
+      const units = this.toNumber(holding.units);
+      const price =
+        latestLivePriceByProduct.get(holding.productId) ??
+        latestPriceByProduct.get(holding.productId) ??
+        this.toNumber(holding.avgCost);
+
+      return sum + units * price;
+    }, 0);
+
+    return (
+      walletBalance +
+      investmentBalance +
+      savingsBalance +
+      fdBalance +
+      investmentMarketValue
+    );
   }
 
   async create(termId: string, userId: string, dto: CreateRetirementGoalDto) {
