@@ -313,8 +313,16 @@ export class InvestmentPortfolioService {
       );
     }
 
-    if (dto.quantity <= 0) {
+    if (dto.quantity === undefined && dto.amount === undefined) {
+      throw new BadRequestException('quantity or amount is required');
+    }
+
+    if (dto.quantity !== undefined && dto.quantity <= 0) {
       throw new BadRequestException('quantity must be greater than 0');
+    }
+
+    if (dto.amount !== undefined && dto.amount <= 0) {
+      throw new BadRequestException('amount must be greater than 0');
     }
 
     const profile = await this.core.getStudentProfileOrThrow(user.id, termId);
@@ -422,6 +430,27 @@ export class InvestmentPortfolioService {
       executedPrice = marketPrice;
     }
 
+    if (dto.amount !== undefined) {
+      if (dto.side !== OrderSide.BUY) {
+        throw new BadRequestException('amount order is only supported for BUY');
+      }
+
+      if (dto.orderType !== OrderType.MARKET || executedPrice === null) {
+        throw new BadRequestException(
+          'amount order is only supported for MARKET orders',
+        );
+      }
+    }
+
+    const orderQuantity =
+      dto.amount !== undefined && executedPrice !== null
+        ? dto.amount / executedPrice
+        : dto.quantity;
+
+    if (orderQuantity === undefined || orderQuantity <= 0) {
+      throw new BadRequestException('quantity must be greater than 0');
+    }
+
     const fee = dto.fee ?? 0;
 
     const created = await this.prisma.$transaction(async (tx) => {
@@ -434,7 +463,7 @@ export class InvestmentPortfolioService {
           orderType: dto.orderType,
           requestedPrice: dto.requestedPrice,
           executedPrice,
-          quantity: dto.quantity,
+          quantity: orderQuantity,
           fee,
           weekNo: currentWeek,
           status,
@@ -450,9 +479,10 @@ export class InvestmentPortfolioService {
           productType: product.type,
           currentWeek,
           side: dto.side,
-          quantity: dto.quantity,
+          quantity: orderQuantity,
           fee,
           executedPrice,
+          amountOverride: dto.amount,
           bondConfig:
             product.type === ProductType.BOND
               ? {
@@ -709,6 +739,7 @@ export class InvestmentPortfolioService {
       quantity: number;
       fee: number;
       executedPrice: number;
+      amountOverride?: number;
       bondConfig?: {
         faceValue: number;
         couponRate: number;
@@ -717,7 +748,8 @@ export class InvestmentPortfolioService {
       };
     },
   ) {
-    const amount = params.executedPrice * params.quantity;
+    const amount =
+      params.amountOverride ?? params.executedPrice * params.quantity;
 
     const investmentWallet = await tx.investmentWallet.findUnique({
       where: { studentProfileId: params.studentProfileId },
