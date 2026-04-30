@@ -1,4 +1,4 @@
-import { IsUUID, IsString } from 'class-validator';
+import { IsOptional, IsString, IsUrl, IsUUID } from 'class-validator';
 
 export class CreateBankDto {
   @IsUUID()
@@ -6,4 +6,8 @@ export class CreateBankDto {
 
   @IsString()
   name!: string;
+
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  logoUrl?: string;
 }
