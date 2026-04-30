@@ -17,6 +17,7 @@ async function seedEconomicEvents(prisma, academicData) {
 • ตลาดคาด กนง. อาจขึ้นดอกเบี้ยในการประชุมครั้งถัดไปเพื่อสกัดเงินเฟ้อ
 • อำนาจซื้อของผู้บริโภคลดลง เงินที่เก็บไว้ซื้อสินค้าได้น้อยลง
 `,
+      imageUrl: 'http://localhost:3000/uploads/1777576531099-cpi.png',
       eventType: EconomicEventType.VOLATILITY_SHOCK,
       defaultImpact: {
         global: { muAdjustment: -0.02, sigmaAdjustment: 0.05 },
@@ -40,6 +41,7 @@ async function seedEconomicEvents(prisma, academicData) {
 • ตราสารหนี้ที่ถืออยู่แล้ว — ดอกเบี้ยเท่าเดิม  |  offer ใหม่ — ขึ้น
 • หุ้นลง มูลค่า port ลง  |  DCA ได้หน่วยเพิ่มขึ้น
 `,
+      imageUrl: 'http://localhost:3000/uploads/1777576341408-a-a-a.jpg',
       eventType: EconomicEventType.MARKET_CRASH,
       defaultImpact: {
         global: { muAdjustment: -0.08, sigmaAdjustment: 0.1 },
@@ -62,6 +64,7 @@ async function seedEconomicEvents(prisma, academicData) {
 • ดัชนีหุ้น tech ปรับตัวขึ้นแรง GameHub ได้ sentiment บวกไปด้วย
 • หุ้น defensive ไม่ได้รับ sentiment บวกมากนัก
 `,
+      imageUrl: 'http://localhost:3000/uploads/1777576021960-TECH-STOCK.webp',
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         global: { muAdjustment: 0.05 },
@@ -81,6 +84,7 @@ async function seedEconomicEvents(prisma, academicData) {
 • ความเชื่อมั่นนักลงทุนเพิ่มขึ้น เม็ดเงินต่างชาติไหล เข้าตลาดหุ้นไทย
 • ตลาดหุ้นโดยรวมปรับตัวขึ้นพร้อมกัน
 `,
+      imageUrl: 'http://localhost:3000/uploads/1777576070074-gdp.jpg',
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         global: { muAdjustment: 0.07, sigmaAdjustment: -0.02 },
@@ -103,6 +107,7 @@ async function seedEconomicEvents(prisma, academicData) {
 • บริษัทที่รายได้เป็น USD ได้ประโยชน์ เมื่อแปลงกลับเป็นบาทได้มากขึ้น
 • บริษัทที่นำเข้าวัตถุดิบต้นทุนพุ่ง กระทบ margin
 `,
+      imageUrl: 'http://localhost:3000/uploads/1777576122876-baht_weak.webp',
       eventType: EconomicEventType.SECTOR_SPECIFIC,
       defaultImpact: {
         assets: {
@@ -120,6 +125,8 @@ async function seedEconomicEvents(prisma, academicData) {
 • GreenPower (M1) ซึ่งเน้นพลังงานทดแทนกลายเป็นหุ้นที่น่าสนใจมากขึ้น
 • ผู้บริโภคมีภาระค่าน้ำมันสูงขึ้น กระทบ disposable income
 `,
+      imageUrl:
+        'http://localhost:3000/uploads/1777576229956-a-a-2a-a-a-1-a-2a-a-a-a-1-a-2a-a-2569-05-01-a-1-a-a-a-2-02.09.57.png',
       eventType: EconomicEventType.SECTOR_SPECIFIC,
       defaultImpact: {
         assets: {
@@ -137,6 +144,8 @@ async function seedEconomicEvents(prisma, academicData) {
 • ผู้มีรายได้น้อยมีกำลังซื้อมากขึ้น consumer spending ในสินค้าจำเป็นดีขึ้น
 • ธุรกิจ tech และ digital ใช้แรงงานน้อยกว่า ได้รับผลกระทบน้อย
 `,
+      imageUrl:
+        'http://localhost:3000/uploads/1777576310502-a-a-a-1-a-a-a-1-a-2a-a-1-a-2a.jpg',
       eventType: EconomicEventType.VOLATILITY_SHOCK,
       defaultImpact: {
         assets: {
@@ -154,6 +163,7 @@ async function seedEconomicEvents(prisma, academicData) {
 • ตราสารหนี้ที่ถืออยู่ราคาขึ้น (yield ลด)  offer ใหม่ผลตอบแทนลดลง
 • DCA ได้หน่วยน้อยลง (ราคาหุ้นขึ้น)
 `,
+      imageUrl: 'http://localhost:3000/uploads/1777576341408-a-a-a.jpg',
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         global: { muAdjustment: 0.08 },
@@ -173,6 +183,7 @@ async function seedEconomicEvents(prisma, academicData) {
 • ตลาดหุ้นเกิด "relief rally" ความไม่แน่นอนลดลงทันที
 • นักลงทุนที่เตรียม short bond ขาดทุน ราคา bond ขึ้นกะทันหัน
 `,
+      imageUrl: 'http://localhost:3000/uploads/1777576341408-a-a-a.jpg',
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         assets: {
@@ -189,6 +200,7 @@ async function seedEconomicEvents(prisma, academicData) {
 • หุ้น H2 ร่วงแรงทันที ลาก sentiment หุ้น tech/growth อื่นลงด้วย
 • นักลงทุนตั้งคำถามว่าหุ้น high-risk "คุ้มค่า" หรือไม่
 `,
+      imageUrl: 'http://localhost:3000/uploads/1777576371202-game.jpg',
       eventType: EconomicEventType.MARKET_CRASH,
       defaultImpact: {
         assets: {
@@ -205,6 +217,7 @@ async function seedEconomicEvents(prisma, academicData) {
 • ราคาหุ้น L2 ตอบรับบวกแรง เป็น catalyst เฉพาะตัว
 • หุ้นตัวอื่นไม่ได้รับผลกระทบโดยตรง
 `,
+      imageUrl: 'http://localhost:3000/uploads/1777576418237-health.jpg',
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         assets: {
@@ -220,6 +233,7 @@ async function seedEconomicEvents(prisma, academicData) {
 • ตลาดตอบรับดี M1 ขึ้น sector sentiment พลังงานสีเขียวดีขึ้น
 • หุ้น sector อื่นไม่ได้รับผลกระทบโดยตรง
 `,
+      imageUrl: 'http://localhost:3000/uploads/1777576444294-solar.jpg',
       eventType: EconomicEventType.DRIFT_SHIFT,
       defaultImpact: {
         assets: {
@@ -241,6 +255,8 @@ async function seedEconomicEvents(prisma, academicData) {
       const updated = await prisma.economicEvent.update({
         where: { id: existing.id },
         data: {
+          description: config.description,
+          imageUrl: config.imageUrl ?? null,
           eventType: config.eventType,
           defaultImpact: config.defaultImpact,
           isRepeatable: true,
@@ -252,6 +268,7 @@ async function seedEconomicEvents(prisma, academicData) {
         data: {
           title: config.title,
           description: config.description,
+          imageUrl: config.imageUrl ?? null,
           eventType: config.eventType,
           defaultImpact: config.defaultImpact,
           isRepeatable: true,

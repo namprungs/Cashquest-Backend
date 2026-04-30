@@ -11,6 +11,10 @@ http:
       value: Bearer {{accessToken}}
   body:
     type: multipart-form
+    data:
+      - name: file
+        type: file
+        value: []
   auth: inherit
 
 settings:
