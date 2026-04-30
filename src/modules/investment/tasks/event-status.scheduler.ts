@@ -2,12 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { TermEventStatus } from '@prisma/client';
+import { InvestmentCoreService } from '../services/investment/investment-core.service';
 
 @Injectable()
 export class EventStatusScheduler {
   private readonly logger = new Logger(EventStatusScheduler.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly core: InvestmentCoreService,
+  ) {}
 
   /**
    * 🕐 Runs every hour to update event statuses
@@ -17,19 +21,17 @@ export class EventStatusScheduler {
    * - ACTIVE: 1 week after end week (peak market price impact)
    * - EXPIRED: After active period ends
    */
-  @Cron('0 * * * *') // Every hour
+  @Cron('* * * * * *') // Every 10 seconds
   async updateEventStatuses() {
     try {
       const termSimulations = await this.prisma.termSimulation.findMany({
         select: {
           termId: true,
-          currentWeek: true,
         },
       });
 
       for (const termSim of termSimulations) {
-        const currentWeek = termSim.currentWeek || 1;
-
+        const currentWeek = await this.core.getCurrentWeek(termSim.termId);
         // Get term events that need status updates
         const termEvents = await this.prisma.termEvent.findMany({
           where: {

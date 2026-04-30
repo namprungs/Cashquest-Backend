@@ -102,11 +102,82 @@ export class InvestmentCoreService {
     termId: string,
     tx: PrismaService | TxClient = this.prisma,
   ) {
-    const simulation = await tx.termSimulation.findUnique({
-      where: { termId },
-      select: { currentWeek: true },
+    const [simulation, calendarWeek] = await Promise.all([
+      tx.termSimulation.findUnique({
+        where: { termId },
+        select: { currentWeek: true },
+      }),
+      this.getCalendarCurrentWeek(termId, tx),
+    ]);
+
+    const simulationWeek = simulation?.currentWeek ?? 1;
+    const currentWeek = Math.max(simulationWeek, calendarWeek);
+
+    if (currentWeek > simulationWeek) {
+      await tx.termSimulation.upsert({
+        where: { termId },
+        update: { currentWeek },
+        create: {
+          termId,
+          randomSeed: 0,
+          currentWeek,
+          engineVersion: 'calendar-sync-v1',
+        },
+      });
+    }
+
+    return currentWeek;
+  }
+
+  private async getCalendarCurrentWeek(
+    termId: string,
+    tx: PrismaService | TxClient = this.prisma,
+  ) {
+    const term = await tx.term.findUnique({
+      where: { id: termId },
+      select: {
+        startDate: true,
+        totalWeeks: true,
+        termWeeks: {
+          orderBy: { weekNo: 'asc' },
+          select: {
+            weekNo: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+      },
     });
-    return simulation?.currentWeek ?? 1;
+
+    if (!term) {
+      return 1;
+    }
+
+    const now = new Date();
+    const activeWeek = term.termWeeks.find(
+      (week) => week.startDate <= now && week.endDate >= now,
+    );
+
+    if (activeWeek) {
+      return activeWeek.weekNo;
+    }
+
+    const firstWeek = term.termWeeks[0];
+    const lastWeek = term.termWeeks[term.termWeeks.length - 1];
+
+    if (firstWeek && now < firstWeek.startDate) {
+      return firstWeek.weekNo;
+    }
+
+    if (lastWeek && now > lastWeek.endDate) {
+      return lastWeek.weekNo;
+    }
+
+    const diffDays = Math.floor(
+      (now.getTime() - term.startDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    return Math.min(Math.max(Math.floor(diffDays / 7) + 1, 1), term.totalWeeks);
   }
 
   gaussianRandom() {

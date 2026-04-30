@@ -90,10 +90,19 @@ const addDays = (date, days) => {
   return d;
 };
 
+const calculateCurrentMarketWeek = (term, totalWeeks) => {
+  const now = new Date();
+  const diffDays = Math.floor(
+    (now.getTime() - term.startDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  return Math.min(Math.max(Math.floor(diffDays / 7) + 1, 1), totalWeeks);
+};
+
 async function seedTermSimulation(prisma, academicData) {
   const { term, totalWeeks } = academicData;
 
-  const currentMarketWeek = Math.min(6, totalWeeks);
+  const currentMarketWeek = calculateCurrentMarketWeek(term, totalWeeks);
 
   await prisma.termSimulation.upsert({
     where: { termId: term.id },
