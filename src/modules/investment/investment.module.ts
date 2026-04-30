@@ -9,9 +9,10 @@ import { InvestmentPortfolioService } from './services/investment/investment-por
 import { LivePriceTickScheduler } from './tasks/live-price-tick.scheduler';
 import { EventStatusScheduler } from './tasks/event-status.scheduler';
 import { AppCacheModule } from '../cache/app-cache.module';
+import { RandomExpenseModule } from '../random-expense/random-expense.module';
 
 @Module({
-  imports: [AppCacheModule],
+  imports: [AppCacheModule, RandomExpenseModule],
   controllers: [InvestmentController],
   providers: [
     InvestmentCoreService,

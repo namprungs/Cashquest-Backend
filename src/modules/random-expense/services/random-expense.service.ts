@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
-import { WalletService } from '../../finance/services/wallet.service';
 import {
   GetPendingExpensesDto,
   GetExpenseHistoryDto,
@@ -18,10 +17,118 @@ import {
 export class RandomExpenseService {
   private readonly logger = new Logger(RandomExpenseService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly walletService: WalletService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
+
+  async autoPayPendingExpensesFromWalletTx(
+    tx: Prisma.TransactionClient,
+    studentProfileId: string,
+  ) {
+    const wallet = await tx.wallet.findUnique({
+      where: { studentProfileId },
+      select: { id: true, balance: true },
+    });
+
+    if (!wallet) {
+      return {
+        paidCount: 0,
+        totalPaid: new Prisma.Decimal(0),
+        walletBalanceAfter: new Prisma.Decimal(0),
+      };
+    }
+
+    let walletBalance = new Prisma.Decimal(wallet.balance);
+    let totalPaid = new Prisma.Decimal(0);
+    let paidCount = 0;
+
+    if (walletBalance.lte(0)) {
+      return { paidCount, totalPaid, walletBalanceAfter: walletBalance };
+    }
+
+    const pendingExpenses = await tx.studentExpense.findMany({
+      where: {
+        studentProfileId,
+        status: { in: ['UNPAID', 'PARTIAL'] },
+        remainingAmount: { gt: 0 },
+      },
+      include: {
+        expenseEvent: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+      orderBy: [{ createdAt: 'asc' }],
+    });
+
+    for (const expense of pendingExpenses) {
+      if (walletBalance.lte(0)) {
+        break;
+      }
+
+      const remainingAmount = new Prisma.Decimal(expense.remainingAmount);
+      const amountToPay = walletBalance.lt(remainingAmount)
+        ? walletBalance
+        : remainingAmount;
+
+      if (amountToPay.lte(0)) {
+        continue;
+      }
+
+      const balanceBefore = walletBalance;
+      const balanceAfter = balanceBefore.sub(amountToPay);
+      const remainingAfter = remainingAmount.sub(amountToPay);
+
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: balanceAfter },
+      });
+
+      await tx.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'FINE_PAYMENT',
+          amount: amountToPay.neg(),
+          balanceBefore,
+          balanceAfter,
+          metadata: {
+            source: 'RANDOM_EXPENSE_AUTO_PAYMENT_ON_WALLET_INCOME',
+            studentExpenseId: expense.id,
+            expenseEventId: expense.expenseEventId,
+            weekNo: expense.weekNo,
+          },
+          description: `ชำระค่าใช้จ่ายค้างชำระอัตโนมัติ: ${expense.expenseEvent.title}`,
+        },
+      });
+
+      await tx.expensePayment.create({
+        data: {
+          studentExpenseId: expense.id,
+          sourceType: 'WALLET',
+          amount: amountToPay,
+          sourceRef: wallet.id,
+        },
+      });
+
+      await tx.studentExpense.update({
+        where: { id: expense.id },
+        data: {
+          status: remainingAfter.lte(0) ? 'PAID' : 'PARTIAL',
+          remainingAmount: remainingAfter,
+        },
+      });
+
+      walletBalance = balanceAfter;
+      totalPaid = totalPaid.add(amountToPay);
+      paidCount += 1;
+    }
+
+    return {
+      paidCount,
+      totalPaid,
+      walletBalanceAfter: walletBalance,
+    };
+  }
 
   // ──────────────────────────────────────────────
   //  CORE: Generate random expenses for all students

@@ -22,12 +22,14 @@ import {
   InvestmentCoreService,
   TxClient,
 } from './investment-core.service';
+import { RandomExpenseService } from 'src/modules/random-expense/services/random-expense.service';
 
 @Injectable()
 export class InvestmentPortfolioService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly core: InvestmentCoreService,
+    private readonly randomExpenseService: RandomExpenseService,
   ) {}
 
   async getMyPortfolio(termId: string, user: CurrentUser) {
@@ -157,9 +159,7 @@ export class InvestmentPortfolioService {
       marketValue += currentValue;
 
       // Track market value by product type
-      const productType = (
-        holding.product?.type ?? ''
-      ).toUpperCase();
+      const productType = (holding.product?.type ?? '').toUpperCase();
       if (productType === 'STOCK') {
         stockMarketValue += currentValue;
       } else if (productType === 'FUND') {
@@ -708,11 +708,19 @@ export class InvestmentPortfolioService {
         },
       });
 
+      const autoExpensePayment =
+        await this.randomExpenseService.autoPayPendingExpensesFromWalletTx(
+          tx,
+          profile.id,
+        );
+
       return {
         mainWallet: {
           id: mainWallet.id,
           balanceBefore: mainBefore,
-          balanceAfter: mainAfter,
+          balanceAfter: this.core.toNumber(
+            autoExpensePayment.walletBalanceAfter,
+          ),
         },
         investmentWallet: {
           id: investmentWallet.id,
@@ -720,6 +728,7 @@ export class InvestmentPortfolioService {
           balanceAfter: investmentAfter,
         },
         amount,
+        autoExpensePayment,
       };
     });
 

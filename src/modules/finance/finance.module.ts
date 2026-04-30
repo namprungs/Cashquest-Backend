@@ -16,9 +16,10 @@ import { SavingsInterestService } from './services/savings-interest.service';
 import { MeFinanceController } from './controllers/me-finance.controller';
 import { MeFinanceService } from './services/me-finance.service';
 import { QuestModule } from '../quest/quest.module';
+import { RandomExpenseModule } from '../random-expense/random-expense.module';
 
 @Module({
-  imports: [ScheduleModule.forRoot(), QuestModule],
+  imports: [ScheduleModule.forRoot(), QuestModule, RandomExpenseModule],
   controllers: [
     BankController,
     SavingsAccountController,
