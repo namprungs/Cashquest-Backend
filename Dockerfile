@@ -31,11 +31,10 @@ COPY prisma ./prisma
 
 RUN pnpm install --prod --frozen-lockfile
 
-# copy built files
-COPY --from=builder /app/dist ./dist
+# สำคัญ: generate Prisma Client ใน runtime image
+RUN pnpm prisma generate
 
-# copy generated Prisma client
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 CMD ["node", "dist/src/main.js"]
