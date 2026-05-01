@@ -31,8 +31,8 @@ COPY prisma ./prisma
 
 RUN pnpm install --prod --frozen-lockfile
 
-# สำคัญ: generate Prisma Client ใน runtime image
-RUN pnpm prisma generate
+# ใช้ dlx เพราะ prisma CLI ไม่ได้อยู่ใน prod dependencies
+RUN pnpm dlx prisma generate
 
 COPY --from=builder /app/dist ./dist
 
