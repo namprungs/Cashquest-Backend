@@ -16,7 +16,7 @@ async function loadPermissions() {
     // Try to load from compiled dist first
     const permissionsPath = path.resolve(
       __dirname,
-      '../dist/common/constants/permissions.constant.js',
+      '../dist/src/common/constants/permissions.constant.js',
     );
     const module = await import('file://' + permissionsPath);
     PERMISSIONS = module.PERMISSIONS;

@@ -1,22 +1,45 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
+  private readonly pool: Pool;
+
   constructor() {
-    // 1. สร้าง Connection Pool ของ Database
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: parsePositiveInt(process.env.DATABASE_POOL_MAX, 5),
+      idleTimeoutMillis: parsePositiveInt(
+        process.env.DATABASE_POOL_IDLE_TIMEOUT_MS,
+        300000,
+      ),
+      connectionTimeoutMillis: parsePositiveInt(
+        process.env.DATABASE_POOL_CONNECTION_TIMEOUT_MS,
+        10000,
+      ),
+    });
 
-    // 2. สร้าง Adapter
     const adapter = new PrismaPg(pool);
-
-    // 3. ส่ง adapter เข้าไปใน super() ตามกฎใหม่ของ Prisma 7
     super({ adapter });
+    this.pool = pool;
   }
 
   async onModuleInit() {
     await this.$connect();
   }
+
+  async onModuleDestroy() {
+    await this.$disconnect();
+    await this.pool.end();
+  }
+}
+
+function parsePositiveInt(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }

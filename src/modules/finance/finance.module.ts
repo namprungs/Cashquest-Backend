@@ -11,7 +11,6 @@ import { SavingsAccountController } from './controllers/savings-account.controll
 import { WalletController } from './controllers/wallet.controller';
 import { FixedDepositController } from './controllers/fixed-deposit.controller';
 import { SavingsInterestController } from './controllers/savings-interest.controller';
-import { ScheduleModule } from '@nestjs/schedule';
 import { SavingsInterestService } from './services/savings-interest.service';
 import { MeFinanceController } from './controllers/me-finance.controller';
 import { MeFinanceService } from './services/me-finance.service';
@@ -19,7 +18,7 @@ import { QuestModule } from '../quest/quest.module';
 import { RandomExpenseModule } from '../random-expense/random-expense.module';
 
 @Module({
-  imports: [ScheduleModule.forRoot(), QuestModule, RandomExpenseModule],
+  imports: [QuestModule, RandomExpenseModule],
   controllers: [
     BankController,
     SavingsAccountController,
