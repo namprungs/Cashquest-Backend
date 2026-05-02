@@ -1,4 +1,9 @@
-const { OrderSide, OrderType, OrderStatus, InvestmentTransactionType } = require('@prisma/client');
+const {
+  OrderSide,
+  OrderType,
+  OrderStatus,
+  InvestmentTransactionType,
+} = require('@prisma/client');
 
 /**
  * Seed market demo students with investment portfolios
@@ -19,9 +24,10 @@ async function seedMarketStudents(
 
   const { term } = academicData;
   const studentRole = roles.studentRole;
-  
+
   // Use the same hashed password as in seed-users.js (Student@1234 hashed)
-  const studentPassword = '$2b$10$aMdsmLCy1kJN8YEjO0qkfO.dZT.LJ6gVlxN8KJEIqRJ5Ay2Lqk3R2';
+  const studentPassword =
+    '$2b$10$aMdsmLCy1kJN8YEjO0qkfO.dZT.LJ6gVlxN8KJEIqRJ5Ay2Lqk3R2';
 
   // Get latest prices for market valuation
   const latestPriceRows = await prisma.productPrice.findMany({
@@ -89,6 +95,7 @@ async function seedMarketStudents(
       update: {
         username: studentSeed.username,
         roleId: studentRole.id,
+        schoolId: term.schoolId,
         isActive: true,
       },
       create: {
@@ -96,6 +103,7 @@ async function seedMarketStudents(
         username: studentSeed.username,
         password: studentPassword,
         roleId: studentRole.id,
+        schoolId: term.schoolId,
         isActive: true,
       },
     });
