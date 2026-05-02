@@ -14,7 +14,8 @@ http:
     data:
       - name: file
         type: file
-        value: []
+        value:
+          - /Users/torrak.c/Downloads/cpi.png
   auth: inherit
 
 settings:
