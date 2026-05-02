@@ -30,9 +30,7 @@ COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma
 
 RUN pnpm install --prod --frozen-lockfile
-
-# ใช้ dlx เพราะ prisma CLI ไม่ได้อยู่ใน prod dependencies
-RUN pnpm dlx prisma generate
+RUN pnpm prisma generate
 
 COPY --from=builder /app/dist ./dist
 
