@@ -19,7 +19,10 @@ const { seedBadges } = require('./seed-badges');
 const { seedMarketProducts } = require('./seed-market-products');
 const { seedEconomicEvents } = require('./seed-economic-events');
 const { seedMarketRegimes } = require('./seed-market-regimes');
-const { seedTermSimulation, seedProductPrices } = require('./seed-product-prices');
+const {
+  seedTermSimulation,
+  seedProductPrices,
+} = require('./seed-product-prices');
 const { seedMarketStudents } = require('./seed-market-students');
 const { seedExpenseEvents } = require('./seed-expense-events');
 
@@ -59,7 +62,12 @@ async function main() {
 
     // 6. Quizzes
     console.log('\n=== 6️⃣  QUIZZES ===');
-    await seedQuizzes(prisma, academicData, users.teacherUser, academicData.classroom);
+    await seedQuizzes(
+      prisma,
+      academicData,
+      users.teacherUser,
+      academicData.classroom,
+    );
 
     // 7. Banks
     console.log('\n=== 7️⃣  BANKS ===');
@@ -73,17 +81,17 @@ async function main() {
     console.log('\n=== 9️⃣  MARKET PRODUCTS ===');
     const products = await seedMarketProducts(prisma, academicData);
 
-    // 10. Economic Events
-    console.log('\n=== 🔟  ECONOMIC EVENTS ===');
+    // 10. Term Simulation (must run before economic events so currentWeek is available)
+    console.log('\n=== 🔟  TERM SIMULATION ===');
+    await seedTermSimulation(prisma, academicData);
+
+    // 11. Economic Events (needs currentWeek from term simulation)
+    console.log('\n=== 1️⃣1️⃣  ECONOMIC EVENTS ===');
     await seedEconomicEvents(prisma, academicData);
 
-    // 11. Market Regimes
-    console.log('\n=== 1️⃣1️⃣  MARKET REGIMES ===');
+    // 12. Market Regimes
+    console.log('\n=== 1️⃣2️⃣  MARKET REGIMES ===');
     await seedMarketRegimes(prisma, academicData);
-
-    // 12. Term Simulation
-    console.log('\n=== 1️⃣2️⃣  TERM SIMULATION ===');
-    await seedTermSimulation(prisma, academicData);
 
     // 13. Product Prices
     console.log('\n=== 1️⃣3️⃣  PRODUCT PRICES ===');
@@ -91,7 +99,13 @@ async function main() {
 
     // 14. Market Students
     console.log('\n=== 1️⃣4️⃣  MARKET STUDENTS ===');
-    await seedMarketStudents(prisma, academicData, products, academicData.classroom, roles);
+    await seedMarketStudents(
+      prisma,
+      academicData,
+      products,
+      academicData.classroom,
+      roles,
+    );
 
     // 15. Expense Events
     console.log('\n=== 1️⃣5️⃣  EXPENSE EVENTS ===');

@@ -291,23 +291,46 @@ async function seedEconomicEvents(prisma, academicData) {
     ];
   }
 
-  // Assign events to weeks 1-16
+  // Get current market week from term simulation
+  const termSim = await prisma.termSimulation.findUnique({
+    where: { termId: term.id },
+  });
+  const currentWeek = termSim?.currentWeek ?? 1;
+
+  // Assign events to weeks 1-16 with proper status based on current week
   const termTotalWeeks = Math.min(16, totalWeeks);
   for (let week = 1; week <= termTotalWeeks; week++) {
     const eventIndex = (week - 1) % shuffledEvents.length;
+
+    // Determine status based on current week (same logic as EventStatusScheduler)
+    let status;
+    if (currentWeek > week + 1) {
+      // After active period (1 week after endWeek), mark as expired
+      status = TermEventStatus.EXPIRED;
+    } else if (currentWeek === week + 1) {
+      // 1 week after endWeek, mark as active (peak impact on prices)
+      status = TermEventStatus.ACTIVE;
+    } else if (currentWeek >= week && currentWeek <= week) {
+      // During event period, mark as announced (learning/awareness period)
+      status = TermEventStatus.ANNOUNCED;
+    } else {
+      // Before event starts
+      status = TermEventStatus.SCHEDULED;
+    }
+
     await prisma.termEvent.create({
       data: {
         termId: term.id,
         eventId: shuffledEvents[eventIndex].id,
         startWeek: week,
         endWeek: week,
-        status: TermEventStatus.PENDING,
+        status,
       },
     });
   }
 
   console.log(
-    `✅ สร้างเหตุการณ์ 16 อย่างและกำหนดให้กับสัปดาห์ 1-${termTotalWeeks}`,
+    `✅ สร้างเหตุการณ์ 16 อย่างและกำหนดให้กับสัปดาห์ 1-${termTotalWeeks} (current week: ${currentWeek})`,
   );
 }
 
