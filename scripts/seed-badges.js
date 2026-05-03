@@ -10,7 +10,7 @@ async function seedBadges(prisma, academicData) {
   const badgeSeeds = [
     {
       code: 'FIRST_LOGIN',
-      name: 'หมีเรื่องแน่',
+      name: 'หมีตื่นเช้า',
       description: 'เข้าใช้งานครั้งแรกสำเร็จ',
       imageUrl: 'assets/vectors/badge/bear.svg',
       ruleJson: {
@@ -21,7 +21,7 @@ async function seedBadges(prisma, academicData) {
     },
     {
       code: 'QUIZ_BEGINNER',
-      name: 'หมีไหลป่าว',
+      name: 'หมาตอบถูก',
       description: 'ทำแบบทดสอบผ่านอย่างน้อย 1 ครั้ง',
       imageUrl: 'assets/vectors/badge/dog.svg',
       ruleJson: {
@@ -33,7 +33,7 @@ async function seedBadges(prisma, academicData) {
     },
     {
       code: 'FIRST_SAVE',
-      name: 'หมีตื่นเช้า',
+      name: 'ผึ้งทำงาน',
       description: 'เปิดบัญชีออมทรัพย์ครั้งแรก',
       imageUrl: 'assets/vectors/badge/honeybee.svg',
       ruleJson: {
@@ -44,7 +44,7 @@ async function seedBadges(prisma, academicData) {
     },
     {
       code: 'SAVER_LEVEL_1',
-      name: 'หมีคนเส๋า',
+      name: 'หมูออมเงิน',
       description: 'สะสมเงินออมรวมครบ 10,000',
       imageUrl: 'assets/vectors/badge/pig.svg',
       ruleJson: {
@@ -56,8 +56,8 @@ async function seedBadges(prisma, academicData) {
     },
     {
       code: 'INVESTOR_BEGINNER',
-      name: 'สิงโตนักลงทุน',
-      description: 'เริ่มต้นลงทุนครั้งแรก',
+      name: 'สิงโตเล่นหุ้น',
+      description: 'เริ่มต้นเล่นหุ้นครั้งแรก',
       imageUrl: 'assets/vectors/badge/lion.svg',
       ruleJson: {
         type: 'event',
@@ -67,7 +67,7 @@ async function seedBadges(prisma, academicData) {
     },
     {
       code: 'RETIREMENT_PLANNER',
-      name: 'เต่าวางแผน',
+      name: 'เต่าเกษียณ',
       description: 'ตั้งเป้าหมายเกษียณสำเร็จ',
       imageUrl: 'assets/vectors/badge/noto-v1_turtle.svg',
       ruleJson: {
