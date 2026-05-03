@@ -16,6 +16,10 @@ export class UpdateBadgeDto {
   description?: string;
 
   @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
   @IsObject()
   ruleJson?: Record<string, unknown>;
 }

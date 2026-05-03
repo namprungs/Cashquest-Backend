@@ -312,6 +312,7 @@ model Badge {
   code        String
   name        String
   description String?
+  imageUrl    String? @map("image_url")
   ruleJson    Json    @db.JsonB
 
   studentBadges StudentBadge[]

@@ -29,6 +29,7 @@ export class BadgeService {
         code: dto.code,
         name: dto.name,
         description: dto.description,
+        imageUrl: dto.imageUrl,
         ruleJson: dto.ruleJson as Prisma.InputJsonValue,
       },
     });
@@ -110,6 +111,7 @@ export class BadgeService {
           code: badge.code,
           name: badge.name,
           description: badge.description,
+          imageUrl: badge.imageUrl,
           ruleJson: badge.ruleJson,
           earned: Boolean(earnedRecord),
           earnedAt: earnedRecord?.earnedAt ?? null,
@@ -167,6 +169,7 @@ export class BadgeService {
         code: badge.code,
         name: badge.name,
         description: badge.description,
+        imageUrl: badge.imageUrl,
         ruleJson: badge.ruleJson,
         earned: Boolean(earnedRecord),
         earnedAt: earnedRecord?.earnedAt ?? null,
@@ -215,6 +218,7 @@ export class BadgeService {
         code: dto.code,
         name: dto.name,
         description: dto.description,
+        imageUrl: dto.imageUrl,
         ruleJson:
           dto.ruleJson === undefined
             ? undefined

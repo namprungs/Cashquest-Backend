@@ -21,6 +21,10 @@ export class CreateBadgeDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
   @IsObject()
   ruleJson!: Record<string, unknown>;
 }

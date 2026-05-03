@@ -794,6 +794,7 @@ export class ClassroomService {
             code: badge.code,
             title: badge.name,
             description: badge.description,
+            imageUrl: badge.imageUrl,
             earned: Boolean(earned),
             earnedAt: earned?.earnedAt ?? null,
           };
