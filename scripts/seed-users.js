@@ -75,7 +75,39 @@ async function seedUsers(prisma, roles) {
     },
   });
 
-  return { teacherUser, studentUser, staffUser };
+  const student2User = await prisma.user.upsert({
+    where: { email: 'student2@school.com' },
+    update: {
+      username: 'student_demo_2',
+      roleId: roles.studentRole.id,
+      isActive: true,
+    },
+    create: {
+      email: 'student2@school.com',
+      username: 'student_demo_2',
+      password: studentPassword,
+      roleId: roles.studentRole.id,
+      isActive: true,
+    },
+  });
+
+  const student3User = await prisma.user.upsert({
+    where: { email: 'student3@school.com' },
+    update: {
+      username: 'student_demo_3',
+      roleId: roles.studentRole.id,
+      isActive: true,
+    },
+    create: {
+      email: 'student3@school.com',
+      username: 'student_demo_3',
+      password: studentPassword,
+      roleId: roles.studentRole.id,
+      isActive: true,
+    },
+  });
+
+  return { teacherUser, studentUser, staffUser, student2User, student3User };
 }
 
 module.exports = { seedUsers };
