@@ -35,11 +35,14 @@ type CurrentUser = User & { role?: { name?: string } | null };
 
 const TEACHER_QUIZ_DRAFT_CONTENT_TYPE = 'TEACHER_QUIZ_DRAFT_V1';
 
+import { AppCacheService } from '../cache/app-cache.service';
+
 @Injectable()
 export class QuestService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly randomExpenseService: RandomExpenseService,
+    private readonly cache: AppCacheService,
   ) {}
 
   private normalizeActionType(value: unknown) {
@@ -2095,6 +2098,7 @@ export class QuestService {
             id: true,
             title: true,
             rewardCoins: true,
+            classrooms: { select: { classroomId: true } },
           },
         },
         versions: {
@@ -2144,6 +2148,10 @@ export class QuestService {
       });
     });
 
+    for (const c of submission.quest.classrooms) {
+      await this.cache.delete(`classroom:home:${c.classroomId}`);
+    }
+
     return { success: true, data: updated };
   }
 
@@ -2161,6 +2169,11 @@ export class QuestService {
         status: true,
         updatedAt: true,
         studentProfileId: true,
+        quest: {
+          select: {
+            classrooms: { select: { classroomId: true } },
+          },
+        },
       },
     });
 
@@ -2188,6 +2201,10 @@ export class QuestService {
         },
       },
     });
+
+    for (const c of submission.quest.classrooms) {
+      await this.cache.delete(`classroom:home:${c.classroomId}`);
+    }
 
     return { success: true, data: updated };
   }
