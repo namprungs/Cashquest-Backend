@@ -360,6 +360,7 @@ export class InvestmentCoreService {
       FSTFIN: 'M2',
       TWAV: 'H1',
       GHUB: 'H2',
+      TGBOND: 'B1',
     };
 
     return [
