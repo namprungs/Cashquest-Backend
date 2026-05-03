@@ -638,6 +638,8 @@ export class InvestmentMarketService {
       > = [];
 
       for (const sim of simulations) {
+        if (this.isBondSimulation(sim)) continue;
+
         const previousTick = await tx.productLivePriceTick.findFirst({
           where: {
             termId,
@@ -1095,6 +1097,8 @@ export class InvestmentMarketService {
       [];
 
     for (const sim of simulations) {
+      if (this.isBondSimulation(sim)) continue;
+
       const previous = await tx.productPrice.findFirst({
         where: {
           termId,

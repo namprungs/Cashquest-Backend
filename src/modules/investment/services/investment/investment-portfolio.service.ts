@@ -142,24 +142,59 @@ export class InvestmentPortfolioService {
     let fundMarketValue = 0;
     let bondMarketValue = 0;
 
+    // Pre-fetch bond positions for bond valuation (constant value, no volatility)
+    const bondPurchaseValueByHolding = new Map<string, number>();
+    const bondHoldings = holdings.filter(
+      (h) => (h.product?.type ?? '').toUpperCase() === 'BOND',
+    );
+    if (bondHoldings.length) {
+      const bondPositions = await this.prisma.bondPosition.findMany({
+        where: {
+          termId,
+          holding: { studentProfileId: profile.id },
+          status: BondPositionStatus.ACTIVE,
+        },
+        select: { holdingId: true, units: true, purchasePrice: true },
+      });
+      for (const bp of bondPositions) {
+        const val =
+          this.core.toNumber(bp.units) * this.core.toNumber(bp.purchasePrice);
+        bondPurchaseValueByHolding.set(
+          bp.holdingId,
+          (bondPurchaseValueByHolding.get(bp.holdingId) ?? 0) + val,
+        );
+      }
+    }
+
     const items = holdings.map((holding) => {
       const units = this.core.toNumber(holding.units);
       const avgCost = this.core.toNumber(holding.avgCost);
-      const latest = latestPriceByProduct.get(holding.productId);
-      const latestLiveTick = latestLiveTickByProduct.get(holding.productId);
-      const lastPrice = this.core.toNumber(
-        latestLiveTick?.price ?? latest?.close ?? 0,
-      );
+      const productType = (holding.product?.type ?? '').toUpperCase();
 
-      const costValue = units * avgCost;
-      const currentValue = units * lastPrice;
+      let costValue: number;
+      let currentValue: number;
+
+      if (productType === 'BOND') {
+        const bondValue = bondPurchaseValueByHolding.get(holding.id) ?? 0;
+        costValue = bondValue;
+        currentValue = bondValue;
+      } else {
+        const latest = latestPriceByProduct.get(holding.productId);
+        const latestLiveTick = latestLiveTickByProduct.get(
+          holding.productId,
+        );
+        const lastPrice = this.core.toNumber(
+          latestLiveTick?.price ?? latest?.close ?? 0,
+        );
+        costValue = units * avgCost;
+        currentValue = units * lastPrice;
+      }
+
       const unrealizedPnL = currentValue - costValue;
 
       investedValue += costValue;
       marketValue += currentValue;
 
-      // Track market value by product type
-      const productType = (holding.product?.type ?? '').toUpperCase();
       if (productType === 'STOCK') {
         stockMarketValue += currentValue;
       } else if (productType === 'FUND') {
@@ -168,12 +203,30 @@ export class InvestmentPortfolioService {
         bondMarketValue += currentValue;
       }
 
+      const effectivePrice =
+        productType === 'BOND'
+          ? units > 0
+            ? currentValue / units
+            : 0
+          : this.core.toNumber(
+              latestLiveTickByProduct.get(holding.productId)?.price ??
+                latestPriceByProduct.get(holding.productId)?.close ??
+                0,
+            );
+
       return {
         holding,
-        latestPrice: latest,
-        liveTickPrice: latestLiveTick?.price ?? null,
-        liveTickAt: latestLiveTick?.tickedAt ?? null,
-        effectivePrice: lastPrice,
+        latestPrice: latestPriceByProduct.get(holding.productId),
+        liveTickPrice:
+          productType === 'BOND'
+            ? null
+            : latestLiveTickByProduct.get(holding.productId)?.price ?? null,
+        liveTickAt:
+          productType === 'BOND'
+            ? null
+            : latestLiveTickByProduct.get(holding.productId)?.tickedAt ??
+              null,
+        effectivePrice,
         metrics: {
           costValue,
           currentValue,
@@ -916,6 +969,8 @@ export class InvestmentPortfolioService {
             couponIntervalWeeks: bondConfig.couponIntervalWeeks,
             startWeekNo: params.currentWeek,
             maturityWeekNo: params.currentWeek + bondConfig.maturityWeeks,
+            purchasePrice: params.executedPrice,
+            purchaseAmount: params.quantity * params.executedPrice,
           },
         });
       }

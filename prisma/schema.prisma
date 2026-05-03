@@ -1266,6 +1266,9 @@ model BondPosition {
   startWeekNo         Int     @map("start_week_no")
   maturityWeekNo      Int     @map("maturity_week_no")
 
+  purchasePrice  Decimal @map("purchase_price")  @db.Decimal(18, 6)
+  purchaseAmount Decimal @map("purchase_amount") @db.Decimal(18, 6)
+
   status BondPositionStatus @default(ACTIVE)
 
   couponPayouts BondCouponPayout[]
