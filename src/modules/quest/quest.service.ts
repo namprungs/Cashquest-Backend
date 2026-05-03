@@ -1311,7 +1311,7 @@ export class QuestService {
             studentProfileId: { in: studentProfileIds },
             questId: { in: [...questIds] },
           },
-          select: { id: true, questId: true, status: true },
+          select: { id: true, questId: true, status: true, createdAt: true },
         })
       : [];
 
@@ -1374,6 +1374,12 @@ export class QuestService {
     const submissionByQuestId = new Map(
       submissions.map((submission) => [submission.questId, submission]),
     );
+    const submissionCreatedAtByQuestId = new Map(
+      submissions.map((submission) => [
+        submission.questId,
+        submission.createdAt,
+      ]),
+    );
     const isQuestCompleted = (quest: (typeof quests)[number]) =>
       completedQuestIds.has(quest.id) ||
       (!!quest.quizId && completedQuizIds.has(quest.quizId));
@@ -1385,20 +1391,37 @@ export class QuestService {
       );
     };
 
-    const questsWithCompletion = quests.map((quest) => ({
-      ...quest,
-      isCompleted: isQuestCompleted(quest),
-      isClaimed: isQuestClaimed(quest),
-      submissionStatus: submissionStatusByQuestId.get(quest.id) ?? null,
-      children: (quest.children ?? []).map((child) => ({
-        ...child,
-        isCompleted:
-          completedQuestIds.has(child.id) ||
-          (!!child.quizId && completedQuizIds.has(child.quizId)),
-        isClaimed: isQuestClaimed(child),
-        submissionStatus: submissionStatusByQuestId.get(child.id) ?? null,
-      })),
-    }));
+    const questsWithCompletion = quests.map((quest) => {
+      const subCreatedAt = submissionCreatedAtByQuestId.get(quest.id);
+      const isLate =
+        !!quest.deadlineAt &&
+        !!subCreatedAt &&
+        subCreatedAt > quest.deadlineAt;
+      return {
+        ...quest,
+        isCompleted: isQuestCompleted(quest),
+        isClaimed: isQuestClaimed(quest),
+        submissionStatus: submissionStatusByQuestId.get(quest.id) ?? null,
+        isLate,
+        children: (quest.children ?? []).map((child) => {
+          const childSubCreatedAt =
+            submissionCreatedAtByQuestId.get(child.id);
+          const childIsLate =
+            !!child.deadlineAt &&
+            !!childSubCreatedAt &&
+            childSubCreatedAt > child.deadlineAt;
+          return {
+            ...child,
+            isCompleted:
+              completedQuestIds.has(child.id) ||
+              (!!child.quizId && completedQuizIds.has(child.quizId)),
+            isClaimed: isQuestClaimed(child),
+            submissionStatus: submissionStatusByQuestId.get(child.id) ?? null,
+            isLate: childIsLate,
+          };
+        }),
+      };
+    });
 
     return { success: true, data: questsWithCompletion };
   }
