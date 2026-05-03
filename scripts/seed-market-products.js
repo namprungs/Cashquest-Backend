@@ -21,6 +21,8 @@ async function seedMarketProducts(prisma, academicData) {
       type: ProductType.STOCK,
       symbol: 'SCHMART',
       name: 'SchoolMart',
+      description:
+        'ร้านสหกรณ์ภายในโรงเรียน รายได้สม่ำเสมอ ไม่ขึ้นกับเทรนด์ ความเสี่ยงต่ำ',
       riskLevel: RiskLevel.LOW,
       sector: 'CONSUMER',
       isActive: true,
@@ -33,6 +35,8 @@ async function seedMarketProducts(prisma, academicData) {
       type: ProductType.STOCK,
       symbol: 'HLTHPLS',
       name: 'HealthPlus',
+      description:
+        'โรงพยาบาลเอกชนขนาดกลาง รายได้ไม่ขึ้นกับวัฏจักรเศรษฐกิจ ความต้องการรักษาพยาบาลคงที่ทุกสภาวะ',
       riskLevel: RiskLevel.LOW,
       sector: 'HEALTHCARE',
       isActive: true,
@@ -47,6 +51,8 @@ async function seedMarketProducts(prisma, academicData) {
       type: ProductType.STOCK,
       symbol: 'GRNPWR',
       name: 'GreenPower',
+      description:
+        'พลังงานทดแทน รายได้ค่อนข้างสม่ำเสมอ แต่ขึ้นกับนโยบายรัฐและราคาน้ำมัน',
       riskLevel: RiskLevel.MED,
       sector: 'ENERGY',
       isActive: true,
@@ -59,6 +65,8 @@ async function seedMarketProducts(prisma, academicData) {
       type: ProductType.STOCK,
       symbol: 'FSTFIN',
       name: 'FastFinance',
+      description:
+        'บริษัทสินเชื่อและ digital banking รายได้ขึ้นกับดอกเบี้ยนโยบายและปริมาณสินเชื่อในระบบ',
       riskLevel: RiskLevel.MED,
       sector: 'FINANCIAL',
       isActive: true,
@@ -72,6 +80,7 @@ async function seedMarketProducts(prisma, academicData) {
       type: ProductType.STOCK,
       symbol: 'TWAV',
       name: 'TechWave',
+      description: 'บริษัท tech เติบโตเร็ว ผันผวนตาม sentiment ตลาดและกระแส',
       riskLevel: RiskLevel.HIGH,
       sector: 'TECH',
       isActive: true,
@@ -83,6 +92,8 @@ async function seedMarketProducts(prisma, academicData) {
       type: ProductType.STOCK,
       symbol: 'GHUB',
       name: 'GameHub',
+      description:
+        'บริษัทเกมและ content ดิจิทัล เติบโตตาม trend แต่ผันผวนสูงตาม sentiment และ discretionary spending',
       riskLevel: RiskLevel.HIGH,
       sector: 'GAMING',
       isActive: true,
@@ -92,92 +103,34 @@ async function seedMarketProducts(prisma, academicData) {
     },
     {
       type: ProductType.BOND,
-      symbol: 'TGBSHORT',
-      name: 'ThaiGovBond Short',
+      symbol: 'TGBOND',
+      name: 'ThaiGovBond',
+      description:
+        'พันธบัตรรัฐบาลไทย อัตราดอกเบี้ย 2.8% ต่อปี อายุ 10 สัปดาห์ จ่ายดอกทุก 2 วัน ผลตอบแทนรวม +70%',
       riskLevel: RiskLevel.LOW,
       sector: 'GOVERNMENT_BOND',
       isActive: true,
       isDividendEnabled: true,
-      dividendPayoutIntervalWeeks: 4,
+      dividendPayoutIntervalWeeks: 1,
       metaJson: {
         tag: 'B1',
-        durationYears: 2,
-        maturityWeeks: 16,
-        weeklyPriceVolPct: 0.26,
+        maturityWeeks: 10,
+        weeklyPriceVolPct: 0.5,
+        minPurchase: 10000,
       },
       simulation: {
         model: 'VASICEK',
-        initialPrice: 1000,
+        initialPrice: 10000,
         mu: 0,
         sigma: 0,
         dt: 1 / 52,
-        faceValue: 1000,
-        couponRate: 0.02,
-        initialYield: 0.02,
-        modifiedDuration: 1.96,
-        kappa: 0.8,
-        theta: 0.02,
-        sigmaYield: 0.006,
-      },
-    },
-    {
-      type: ProductType.BOND,
-      symbol: 'TGBMED',
-      name: 'ThaiGovBond Medium',
-      riskLevel: RiskLevel.LOW,
-      sector: 'GOVERNMENT_BOND',
-      isActive: true,
-      isDividendEnabled: true,
-      dividendPayoutIntervalWeeks: 4,
-      metaJson: {
-        tag: 'B2',
-        durationYears: 5,
-        maturityWeeks: 16,
-        weeklyPriceVolPct: 0.53,
-      },
-      simulation: {
-        model: 'VASICEK',
-        initialPrice: 1000,
-        mu: 0,
-        sigma: 0,
-        dt: 1 / 52,
-        faceValue: 1000,
-        couponRate: 0.025,
-        initialYield: 0.025,
-        modifiedDuration: 4.76,
-        kappa: 0.5,
-        theta: 0.025,
-        sigmaYield: 0.008,
-      },
-    },
-    {
-      type: ProductType.BOND,
-      symbol: 'TGBLONG',
-      name: 'ThaiGovBond Long',
-      riskLevel: RiskLevel.MED,
-      sector: 'GOVERNMENT_BOND',
-      isActive: true,
-      isDividendEnabled: true,
-      dividendPayoutIntervalWeeks: 4,
-      metaJson: {
-        tag: 'B3',
-        durationYears: 10,
-        maturityWeeks: 16,
-        weeklyPriceVolPct: 1.27,
-      },
-      simulation: {
-        model: 'VASICEK',
-        initialPrice: 1000,
-        mu: 0,
-        sigma: 0,
-        dt: 1 / 52,
-        faceValue: 1000,
-        couponRate: 0.03,
-        initialYield: 0.03,
+        faceValue: 10000,
+        couponRate: 0.028,
+        initialYield: 0.028,
         modifiedDuration: 9.17,
         kappa: 0.3,
-        theta: 0.03,
-        sigmaYield: 0.01,
+        theta: 0.028,
+        sigmaYield: 0.008,
       },
     },
   ];
@@ -253,6 +206,17 @@ async function seedMarketProducts(prisma, academicData) {
       simulation,
     });
   }
+
+  // Deactivate old bonds that are no longer in the seed
+  const activeSymbols = productSeeds.map((s) => s.symbol);
+  await prisma.product.updateMany({
+    where: {
+      type: ProductType.BOND,
+      symbol: { notIn: activeSymbols },
+      isActive: true,
+    },
+    data: { isActive: false },
+  });
 
   console.log(`✅ ${products.length} products seeded`);
   return products;

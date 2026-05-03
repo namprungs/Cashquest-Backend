@@ -107,9 +107,9 @@ model RefreshToken {
 // ---------------------------------------------------------
 
 model School {
-  id      String  @id @default(uuid()) @db.Uuid
-  name    String
-  plan    String  @default("FREE")
+  id   String @id @default(uuid()) @db.Uuid
+  name String
+  plan String @default("FREE")
 
   // Relations
   users User[]
@@ -1043,6 +1043,7 @@ model Product {
   type                        ProductType
   symbol                      String      @unique
   name                        String
+  description                 String?
   riskLevel                   RiskLevel   @map("risk_level")
   sector                      String?
   metaJson                    Json?       @map("meta_json")
@@ -1266,7 +1267,7 @@ model BondPosition {
   startWeekNo         Int     @map("start_week_no")
   maturityWeekNo      Int     @map("maturity_week_no")
 
-  purchasePrice  Decimal @map("purchase_price")  @db.Decimal(18, 6)
+  purchasePrice  Decimal @map("purchase_price") @db.Decimal(18, 6)
   purchaseAmount Decimal @map("purchase_amount") @db.Decimal(18, 6)
 
   status BondPositionStatus @default(ACTIVE)
