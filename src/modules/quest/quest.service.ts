@@ -1308,7 +1308,7 @@ export class QuestService {
             studentProfileId: { in: studentProfileIds },
             questId: { in: [...questIds] },
           },
-          select: { questId: true, status: true },
+          select: { id: true, questId: true, status: true },
         })
       : [];
 
@@ -1336,19 +1336,63 @@ export class QuestService {
     const submissionStatusByQuestId = new Map(
       submissions.map((submission) => [submission.questId, submission.status]),
     );
+
+    const rewardTransactions = studentProfileIds.length
+      ? await this.prisma.walletTransaction.findMany({
+          where: {
+            wallet: {
+              studentProfileId: { in: studentProfileIds },
+            },
+            type: TransactionType.QUEST_REWARD,
+          },
+          select: { metadata: true },
+        })
+      : [];
+
+    const claimedSubmissionIds = new Set<string>();
+    const claimedQuestIds = new Set<string>();
+
+    for (const transaction of rewardTransactions) {
+      const metadata =
+        transaction.metadata &&
+        typeof transaction.metadata === 'object' &&
+        !Array.isArray(transaction.metadata)
+          ? (transaction.metadata as Record<string, unknown>)
+          : null;
+
+      if (typeof metadata?.refId === 'string') {
+        claimedSubmissionIds.add(metadata.refId);
+      }
+      if (typeof metadata?.questId === 'string') {
+        claimedQuestIds.add(metadata.questId);
+      }
+    }
+
+    const submissionByQuestId = new Map(
+      submissions.map((submission) => [submission.questId, submission]),
+    );
     const isQuestCompleted = (quest: (typeof quests)[number]) =>
       completedQuestIds.has(quest.id) ||
       (!!quest.quizId && completedQuizIds.has(quest.quizId));
+    const isQuestClaimed = (quest: { id: string }) => {
+      const submission = submissionByQuestId.get(quest.id);
+      return (
+        claimedQuestIds.has(quest.id) ||
+        (submission ? claimedSubmissionIds.has(submission.id) : false)
+      );
+    };
 
     const questsWithCompletion = quests.map((quest) => ({
       ...quest,
       isCompleted: isQuestCompleted(quest),
+      isClaimed: isQuestClaimed(quest),
       submissionStatus: submissionStatusByQuestId.get(quest.id) ?? null,
       children: (quest.children ?? []).map((child) => ({
         ...child,
         isCompleted:
           completedQuestIds.has(child.id) ||
           (!!child.quizId && completedQuizIds.has(child.quizId)),
+        isClaimed: isQuestClaimed(child),
         submissionStatus: submissionStatusByQuestId.get(child.id) ?? null,
       })),
     }));
