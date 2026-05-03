@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { createUploadKey } from './file-key.util';
@@ -6,10 +6,11 @@ import { StorageService, StoredFile, UploadFile } from './storage.types';
 
 @Injectable()
 export class S3StorageService implements StorageService {
+  private readonly logger = new Logger(S3StorageService.name);
   private readonly client: S3Client;
 
   constructor(private readonly config: ConfigService) {
-    console.log('initial s3');
+    this.logger.log('Initializing S3 storage client');
     const endpoint = this.config.get<string>('S3_ENDPOINT');
 
     this.client = new S3Client({

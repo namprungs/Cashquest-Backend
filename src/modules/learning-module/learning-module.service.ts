@@ -10,8 +10,8 @@ import { CreateLearningModuleDto } from './dto/create-learning-module.dto';
 import { UpdateLearningModuleDto } from './dto/update-learning-module.dto';
 import { ListLearningModulesQueryDto } from './dto/list-learning-modules-query.dto';
 import { AppCacheService } from '../cache/app-cache.service';
-
-type CurrentUser = User & { role?: { name?: string } | null };
+import type { CurrentUser } from 'src/common/types/current-user.type';
+import { assertTeacherOrAdmin } from 'src/common/utils/role.utils';
 
 @Injectable()
 export class LearningModuleService {
@@ -19,15 +19,6 @@ export class LearningModuleService {
     private readonly prisma: PrismaService,
     private readonly cache: AppCacheService,
   ) {}
-
-  private assertTeacherOrAdmin(user: CurrentUser) {
-    const roleName = user?.role?.name?.toUpperCase?.();
-    if (!roleName || !['TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(roleName)) {
-      throw new ForbiddenException(
-        'Only teacher/admin can perform this action',
-      );
-    }
-  }
 
   private async assertTermExists(termId: string) {
     const term = await this.prisma.term.findUnique({
@@ -61,7 +52,7 @@ export class LearningModuleService {
   }
 
   async create(user: CurrentUser, dto: CreateLearningModuleDto) {
-    this.assertTeacherOrAdmin(user);
+    assertTeacherOrAdmin(user);
     await this.assertTermExists(dto.termId);
     await this.ensureOrderNoAvailable(dto.termId, dto.orderNo);
 
@@ -84,7 +75,7 @@ export class LearningModuleService {
     user: CurrentUser,
     dto: UpdateLearningModuleDto,
   ) {
-    this.assertTeacherOrAdmin(user);
+    assertTeacherOrAdmin(user);
 
     const existing = await this.prisma.learningModule.findUnique({
       where: { id: moduleId },
@@ -120,7 +111,7 @@ export class LearningModuleService {
   }
 
   async remove(moduleId: string, user: CurrentUser) {
-    this.assertTeacherOrAdmin(user);
+    assertTeacherOrAdmin(user);
 
     const existing = await this.prisma.learningModule.findUnique({
       where: { id: moduleId },
@@ -149,7 +140,7 @@ export class LearningModuleService {
   }
 
   async setActive(moduleId: string, user: CurrentUser, isActive: boolean) {
-    this.assertTeacherOrAdmin(user);
+    assertTeacherOrAdmin(user);
 
     const module = await this.prisma.learningModule.findUnique({
       where: { id: moduleId },

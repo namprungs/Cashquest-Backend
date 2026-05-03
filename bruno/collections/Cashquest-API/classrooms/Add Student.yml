@@ -1,0 +1,29 @@
+info:
+  name: Add Student
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/academic/classrooms/{{classroomId}}/students"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "studentId": ""
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: classroomId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

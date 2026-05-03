@@ -1,0 +1,32 @@
+info:
+  name: Submit Quest
+  type: http
+  seq: 18
+
+http:
+  method: POST
+  url: "{{baseUrl}}/quests/{{questId}}/submissions/me"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "payloadJson": {
+        "answers": [
+      }
+                      { "questionId": "", "answerText": "My answer" }
+                  ]
+  auth: inherit
+
+runtime:
+  variables:
+    - name: questId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

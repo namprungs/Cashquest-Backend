@@ -1,0 +1,29 @@
+info:
+  name: Create Classroom
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/academic/terms/{{termId}}/classrooms"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Class A"
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: termId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,23 @@
+info:
+  name: List Terms
+  type: http
+  seq: 13
+
+http:
+  method: GET
+  url: "{{baseUrl}}/academic/schools/{{schoolId}}/terms"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: schoolId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

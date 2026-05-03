@@ -1,0 +1,34 @@
+info:
+  name: Create Badge
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/badges/terms/{{termId}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "name": "First Quest",
+        "description": "Complete your first quest",
+        "iconUrl": "",
+        "condition": {
+        "type": "QUEST_COUNT",
+        "threshold": 1
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: termId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

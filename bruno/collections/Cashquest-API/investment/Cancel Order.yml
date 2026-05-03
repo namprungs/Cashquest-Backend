@@ -1,0 +1,25 @@
+info:
+  name: Cancel Order
+  type: http
+  seq: 1
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/market/terms/{{termId}}/orders/{{orderId}}/cancel"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: termId
+      value: ""
+    - name: orderId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

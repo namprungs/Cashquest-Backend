@@ -1,0 +1,25 @@
+info:
+  name: Remove Student
+  type: http
+  seq: 8
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/academic/classrooms/{{classroomId}}/students/{{studentId}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: classroomId
+      value: ""
+    - name: studentId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

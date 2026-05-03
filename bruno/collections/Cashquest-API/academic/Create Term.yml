@@ -1,0 +1,32 @@
+info:
+  name: Create Term
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/academic/schools/{{schoolId}}/terms"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Term 1/2026",
+        "startDate": "2026-06-01T00:00:00.000Z",
+        "endDate": "2026-09-30T00:00:00.000Z",
+        "totalWeeks": 16
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: schoolId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

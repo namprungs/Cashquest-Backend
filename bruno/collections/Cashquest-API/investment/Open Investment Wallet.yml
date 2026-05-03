@@ -1,0 +1,23 @@
+info:
+  name: Open Investment Wallet
+  type: http
+  seq: 13
+
+http:
+  method: POST
+  url: "{{baseUrl}}/market/terms/{{termId}}/investment-wallet/open"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: termId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

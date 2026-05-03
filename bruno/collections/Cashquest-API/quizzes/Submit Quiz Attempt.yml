@@ -1,0 +1,23 @@
+info:
+  name: Submit Quiz Attempt
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/quizzes/{{quizId}}/attempts"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: quizId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

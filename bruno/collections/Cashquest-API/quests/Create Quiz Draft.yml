@@ -1,0 +1,36 @@
+info:
+  name: Create Quiz Draft
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/quests/quiz-draft"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "termId": "",
+        "classroomIds": [],
+        "title": "Quiz Quest Draft",
+        "description": "Answer the questions",
+        "rewardCoins": 50,
+        "questions": [
+      }
+                  {
+                      "type": "choice",
+                      "question": "What is 2+2?",
+                      "choices": ["3", "4", "5"],
+                      "correctIndex": 1
+                  }
+              ]
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

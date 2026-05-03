@@ -1,0 +1,29 @@
+info:
+  name: Update Learning Module
+  type: http
+  seq: 5
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/learning-modules/{{moduleId}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Updated Module Title"
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: moduleId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

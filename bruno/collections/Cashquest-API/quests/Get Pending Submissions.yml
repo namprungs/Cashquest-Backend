@@ -1,0 +1,27 @@
+info:
+  name: Get Pending Submissions
+  type: http
+  seq: 9
+
+http:
+  method: GET
+  url: "{{baseUrl}}/quests/classrooms/{{classroomId}}/pending-submissions"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: limit
+      value: "50"
+      type: query
+  auth: inherit
+
+runtime:
+  variables:
+    - name: classroomId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

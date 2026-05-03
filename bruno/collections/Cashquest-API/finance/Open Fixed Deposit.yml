@@ -1,0 +1,26 @@
+info:
+  name: Open Fixed Deposit
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/fixed-deposits/open"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "fixedDepositBankId": "",
+        "studentProfileId": "",
+        "amount": 500
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

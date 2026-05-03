@@ -1,0 +1,18 @@
+info:
+  name: Trigger Interest Calculation
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{baseUrl}}/admin/savings-interest/trigger"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

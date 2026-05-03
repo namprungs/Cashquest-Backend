@@ -1,0 +1,25 @@
+info:
+  name: Get Leaderboard
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/me/leaderboard"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: termId
+      value: ""
+      type: query
+    - name: limit
+      value: "10"
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

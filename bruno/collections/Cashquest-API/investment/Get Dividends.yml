@@ -1,0 +1,23 @@
+info:
+  name: Get Dividends
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{baseUrl}}/market/terms/{{termId}}/dividends/me"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: termId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

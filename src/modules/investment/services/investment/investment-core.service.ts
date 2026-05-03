@@ -1,12 +1,8 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { Prisma, type User } from '@prisma/client';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { toNumber as _toNumber } from 'src/common/utils/number.utils';
 
-export type CurrentUser = User & { role?: { name?: string } | null };
 export type TxClient = Prisma.TransactionClient;
 type EventProductContext = {
   symbol?: string | null;
@@ -22,29 +18,6 @@ type EventAdjustments = {
 @Injectable()
 export class InvestmentCoreService {
   constructor(private readonly prisma: PrismaService) {}
-
-  assertTeacherOrAdmin(user: CurrentUser) {
-    const roleName = user?.role?.name?.toUpperCase?.();
-    if (!roleName || !['TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(roleName)) {
-      throw new ForbiddenException(
-        'Only teacher/admin can perform this action',
-      );
-    }
-  }
-
-  assertStudent(user: CurrentUser) {
-    const roleName = user?.role?.name?.toUpperCase?.();
-    if (!roleName || roleName !== 'STUDENT') {
-      throw new ForbiddenException('Only student can perform this action');
-    }
-  }
-
-  toNumber(value: unknown): number {
-    if (value === null || value === undefined) {
-      return 0;
-    }
-    return Number(value);
-  }
 
   toInputJson(
     value: Record<string, unknown> | undefined,
@@ -206,21 +179,21 @@ export class InvestmentCoreService {
     return impactParts.reduce<EventAdjustments>(
       (acc, item) => {
         const muAdjustment =
-          this.toNumber(item.muAdjustment) ||
-          this.toNumber(item.driftShift) ||
-          this.toNumber(item.muShift) ||
-          this.toNumber(item.mu) ||
+          _toNumber(item.muAdjustment) ||
+          _toNumber(item.driftShift) ||
+          _toNumber(item.muShift) ||
+          _toNumber(item.mu) ||
           0;
 
         const sigmaAdjustment =
-          this.toNumber(item.sigmaAdjustment) ||
-          this.toNumber(item.volatilityShift) ||
-          this.toNumber(item.sigma) ||
+          _toNumber(item.sigmaAdjustment) ||
+          _toNumber(item.volatilityShift) ||
+          _toNumber(item.sigma) ||
           0;
 
         const sigmaMultiplier =
-          this.toNumber(item.sigmaMultiplier) ||
-          this.toNumber(item.volatilityMultiplier) ||
+          _toNumber(item.sigmaMultiplier) ||
+          _toNumber(item.volatilityMultiplier) ||
           1;
 
         return {

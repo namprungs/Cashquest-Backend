@@ -1,0 +1,31 @@
+info:
+  name: Create Term Stage Rule
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/academic/terms/{{termId}}/stage-rules"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "lifeStageId": "",
+        "startWeek": 1,
+        "endWeek": 4
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: termId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

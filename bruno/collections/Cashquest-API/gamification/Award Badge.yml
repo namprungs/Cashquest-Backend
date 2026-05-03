@@ -1,0 +1,31 @@
+info:
+  name: Award Badge
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/badges/terms/{{termId}}/{{badgeId}}/award"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "studentProfileId": ""
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: termId
+      value: ""
+    - name: badgeId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

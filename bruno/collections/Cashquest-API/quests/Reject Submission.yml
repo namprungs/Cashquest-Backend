@@ -1,0 +1,29 @@
+info:
+  name: Reject Submission
+  type: http
+  seq: 17
+
+http:
+  method: POST
+  url: "{{baseUrl}}/quests/submissions/{{submissionId}}/reject"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "rejectReason": "Incomplete work"
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: submissionId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

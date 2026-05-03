@@ -1,0 +1,23 @@
+info:
+  name: Publish Term
+  type: http
+  seq: 14
+
+http:
+  method: POST
+  url: "{{baseUrl}}/academic/terms/{{termId}}/publish"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: termId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

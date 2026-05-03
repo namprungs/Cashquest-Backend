@@ -1,0 +1,7 @@
+info:
+  name: Investment
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit

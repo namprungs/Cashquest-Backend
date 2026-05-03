@@ -1,0 +1,23 @@
+info:
+  name: Bootstrap Player
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/player/terms/{{termId}}/bootstrap"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: termId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

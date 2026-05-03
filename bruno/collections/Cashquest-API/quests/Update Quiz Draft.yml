@@ -1,0 +1,39 @@
+info:
+  name: Update Quiz Draft
+  type: http
+  seq: 20
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/quests/{{questId}}/quiz-draft"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "termId": "",
+        "classroomIds": [],
+        "title": "Updated Quiz",
+        "questions": [
+      }
+                  {
+                      "type": "choice",
+                      "question": "What is 3+3?",
+                      "choices": ["5", "6", "7"],
+                      "correctIndex": 1
+                  }
+              ]
+  auth: inherit
+
+runtime:
+  variables:
+    - name: questId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

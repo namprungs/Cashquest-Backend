@@ -1,0 +1,23 @@
+info:
+  name: Get Wallet Transactions
+  type: http
+  seq: 11
+
+http:
+  method: GET
+  url: "{{baseUrl}}/wallets/{{walletId}}/transactions"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: walletId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

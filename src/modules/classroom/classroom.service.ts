@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { QuestStatus, QuestSubmissionStatus } from '@prisma/client';
@@ -8,9 +9,13 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { PlayerService } from 'src/modules/player/services/studentProfile.service';
 import { QuestService } from '../quest/quest.service';
 import { AppCacheService } from '../cache/app-cache.service';
+import { toNumber, round2 } from 'src/common/utils/number.utils';
+import { getCurrentWeekNo } from 'src/common/utils/term.utils';
 
 @Injectable()
 export class ClassroomService {
+  private readonly logger = new Logger(ClassroomService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly playerService: PlayerService,
@@ -18,51 +23,11 @@ export class ClassroomService {
     private readonly cache: AppCacheService,
   ) {}
 
-  private toNumber(value: unknown): number {
-    if (value === null || value === undefined) return 0;
-    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-    if (typeof value === 'string') {
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-    if (
-      typeof value === 'object' &&
-      value !== null &&
-      'toNumber' in value &&
-      typeof (value as { toNumber: unknown }).toNumber === 'function'
-    ) {
-      const parsed = (value as { toNumber: () => number }).toNumber();
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-    return 0;
-  }
-
-  private round2(value: number): number {
-    return Math.round(value * 100) / 100;
-  }
+  private toNumber = toNumber;
+  private round2 = round2;
 
   private async getCurrentWeekNo(termId: string) {
-    const term = await this.prisma.term.findUnique({
-      where: { id: termId },
-      select: { startDate: true, totalWeeks: true },
-    });
-    if (!term) return null;
-
-    const now = new Date();
-    const termWeek = await this.prisma.termWeek.findFirst({
-      where: {
-        termId,
-        startDate: { lte: now },
-        endDate: { gte: now },
-      },
-      select: { weekNo: true },
-    });
-    if (termWeek) return termWeek.weekNo;
-
-    const diffDays = Math.floor(
-      (now.getTime() - term.startDate.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    return Math.min(Math.max(Math.floor(diffDays / 7) + 1, 1), term.totalWeeks);
+    return getCurrentWeekNo(this.prisma, termId);
   }
 
   private async getLatestPriceByProduct(termId: string, productIds: string[]) {
@@ -346,7 +311,7 @@ export class ClassroomService {
       });
       return { success: true, data: record };
     } catch (err) {
-      console.log(err);
+      this.logger.error('Failed to add student to classroom', (err as Error).stack);
       throw new BadRequestException('Student already in classroom');
     }
   }

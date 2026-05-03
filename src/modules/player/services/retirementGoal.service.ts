@@ -3,39 +3,22 @@ import {
   HttpException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateRetirementGoalDto } from '../dto/create-retirement-goal.dto';
 import { UpdateRetirementGoalDto } from '../dto/update-retirement-goal.dto';
+import { toNumber } from 'src/common/utils/number.utils';
 
 @Injectable()
 export class RetirementGoalService {
+  private readonly logger = new Logger(RetirementGoalService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
-  private toNumber(value: unknown): number {
-    if (value === null || value === undefined) return 0;
-
-    if (typeof value === 'number') return value;
-
-    if (typeof value === 'string') {
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-
-    if (
-      typeof value === 'object' &&
-      value !== null &&
-      'toNumber' in value &&
-      typeof (value as { toNumber: unknown }).toNumber === 'function'
-    ) {
-      const parsed = (value as { toNumber: () => number }).toNumber();
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-
-    return 0;
-  }
+  private toNumber = toNumber;
 
   private handleError(error: unknown): never {
     if (error instanceof HttpException) throw error;
@@ -209,7 +192,7 @@ export class RetirementGoalService {
 
       return { success: true, data: created };
     } catch (e) {
-      console.log(e);
+      this.logger.error('Failed to create retirement goal', (e as Error).stack);
       this.handleError(e);
     }
   }

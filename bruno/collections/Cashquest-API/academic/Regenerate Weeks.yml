@@ -1,0 +1,29 @@
+info:
+  name: Regenerate Weeks
+  type: http
+  seq: 15
+
+http:
+  method: POST
+  url: "{{baseUrl}}/academic/terms/{{termId}}/weeks/regenerate"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "overrides": []
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: termId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

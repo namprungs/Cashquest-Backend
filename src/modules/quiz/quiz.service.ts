@@ -16,32 +16,16 @@ import { CreateQuizSnapshotDto } from './dto/create-quiz-snapshot.dto';
 import { UpdateQuizSnapshotDto } from './dto/update-quiz-snapshot.dto';
 import { ListQuizzesQueryDto } from './dto/list-quizzes-query.dto';
 import { SubmitAttemptDto } from './dto/submit-attempt.dto';
+import type { CurrentUser } from 'src/common/types/current-user.type';
+import { assertTeacherOrAdmin, assertStudent } from 'src/common/utils/role.utils';
 
 type QuizQuestionWithChoices = Prisma.QuizQuestionGetPayload<{
   include: { choices: true };
 }>;
 
-type CurrentUser = User & { role?: { name?: string } | null };
-
 @Injectable()
 export class QuizService {
   constructor(private readonly prisma: PrismaService) {}
-
-  private assertTeacherOrAdmin(user: CurrentUser) {
-    const roleName = user?.role?.name?.toUpperCase?.();
-    if (!roleName || !['TEACHER', 'ADMIN', 'SUPER_ADMIN'].includes(roleName)) {
-      throw new ForbiddenException(
-        'Only teacher/admin can perform this action',
-      );
-    }
-  }
-
-  private assertStudent(user: CurrentUser) {
-    const roleName = user?.role?.name?.toUpperCase?.();
-    if (!roleName || roleName !== 'STUDENT') {
-      throw new ForbiddenException('Only student can perform this action');
-    }
-  }
 
   private validateSnapshotPayload(
     dto: CreateQuizSnapshotDto | UpdateQuizSnapshotDto,
@@ -85,7 +69,7 @@ export class QuizService {
   }
 
   async createQuizSnapshot(user: CurrentUser, dto: CreateQuizSnapshotDto) {
-    this.assertTeacherOrAdmin(user);
+    assertTeacherOrAdmin(user);
     this.validateSnapshotPayload(dto);
 
     if (dto.moduleId) {
@@ -152,7 +136,7 @@ export class QuizService {
     user: CurrentUser,
     dto: UpdateQuizSnapshotDto,
   ) {
-    this.assertTeacherOrAdmin(user);
+    assertTeacherOrAdmin(user);
     this.validateSnapshotPayload(dto);
 
     const existing = await this.prisma.quiz.findUnique({
@@ -432,7 +416,7 @@ export class QuizService {
   }
 
   async getQuizForStudent(quizId: string, user: CurrentUser) {
-    this.assertStudent(user);
+    assertStudent(user);
 
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
@@ -629,7 +613,7 @@ export class QuizService {
   }
 
   async deleteQuiz(quizId: string, user: CurrentUser) {
-    this.assertTeacherOrAdmin(user);
+    assertTeacherOrAdmin(user);
 
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
@@ -652,7 +636,7 @@ export class QuizService {
   }
 
   async createAttempt(quizId: string, user: CurrentUser) {
-    this.assertStudent(user);
+    assertStudent(user);
 
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
@@ -878,7 +862,7 @@ export class QuizService {
     user: CurrentUser,
     dto: SubmitAttemptDto,
   ) {
-    this.assertStudent(user);
+    assertStudent(user);
 
     const attempt = await this.prisma.quizAttempt.findUnique({
       where: { id: attemptId },

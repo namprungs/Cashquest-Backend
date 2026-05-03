@@ -1,0 +1,23 @@
+info:
+  name: List Quest Submissions
+  type: http
+  seq: 14
+
+http:
+  method: GET
+  url: "{{baseUrl}}/quests/{{questId}}/submissions"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: questId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

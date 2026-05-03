@@ -1,0 +1,29 @@
+info:
+  name: Update School
+  type: http
+  seq: 16
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/academic/schools/{{id}}"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Updated School Name"
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: id
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

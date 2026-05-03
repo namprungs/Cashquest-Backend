@@ -1,0 +1,32 @@
+info:
+  name: Create Quest
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/quests"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  body:
+    type: json
+    data: |-
+      {
+        "termId": "",
+        "type": "SUBMISSION",
+        "title": "Test Quest",
+        "description": "Complete this quest",
+        "rewardCoins": 100,
+        "difficulty": "EASY",
+        "status": "DRAFT",
+        "classroomIds": [],
+        "isSystem": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,60 @@
+opencollection: 1.0.0
+
+info:
+  name: CashQuest API
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  variables:
+    - name: baseUrl
+      value: http://localhost:3000
+    - name: accessToken
+      value: ""
+    - name: badgeId
+      value: ""
+    - name: bankId
+      value: ""
+    - name: classroomId
+      value: ""
+    - name: id
+      value: ""
+    - name: moduleId
+      value: ""
+    - name: orderId
+      value: ""
+    - name: productId
+      value: ""
+    - name: questId
+      value: ""
+    - name: quizId
+      value: ""
+    - name: schoolId
+      value: ""
+    - name: studentId
+      value: ""
+    - name: submissionId
+      value: ""
+    - name: termId
+      value: ""
+    - name: walletId
+      value: ""
+
+docs:
+  content: CashQuest API Collection
+  type: text/markdown
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git

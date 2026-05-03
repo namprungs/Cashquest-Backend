@@ -1,0 +1,22 @@
+info:
+  name: Get Pending Expenses
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/expenses/pending"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  params:
+    - name: termId
+      value: ""
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

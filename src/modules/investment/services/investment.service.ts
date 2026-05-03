@@ -22,7 +22,7 @@ import { GenerateLiveTicksDto } from '../dto/generate-live-ticks.dto';
 import { FinalizeLiveWeekDto } from '../dto/finalize-live-week.dto';
 import { InvestmentWalletTransferDto } from '../dto/investment-wallet-transfer.dto';
 import { ListTermEventsQueryDto } from '../dto/list-term-events-query.dto';
-import { CurrentUser } from './investment/investment-core.service';
+import type { CurrentUser } from 'src/common/types/current-user.type';
 import { InvestmentEventsService } from './investment/investment-events.service';
 import { InvestmentManagementService } from './investment/investment-management.service';
 import { InvestmentMarketService } from './investment/investment-market.service';

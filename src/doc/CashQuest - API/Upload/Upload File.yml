@@ -15,7 +15,7 @@ http:
       - name: file
         type: file
         value:
-          - /Users/torrak.c/Downloads/cpi.png
+          - /Users/namprung/Downloads/3ed63302-6554-4ace-96e8-376d52e3c1be.jpeg
   auth: inherit
 
 settings:

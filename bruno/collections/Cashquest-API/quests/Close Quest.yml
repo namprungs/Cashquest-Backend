@@ -1,0 +1,23 @@
+info:
+  name: Close Quest
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/quests/{{questId}}/close"
+  headers:
+    - name: Authorization
+      value: Bearer {{accessToken}}
+  auth: inherit
+
+runtime:
+  variables:
+    - name: questId
+      value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

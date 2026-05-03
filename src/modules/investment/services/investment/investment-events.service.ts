@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma, TermEventStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ListTermEventsQueryDto } from '../../dto/list-term-events-query.dto';
@@ -6,6 +6,8 @@ import { InvestmentCoreService } from './investment-core.service';
 
 @Injectable()
 export class InvestmentEventsService {
+  private readonly logger = new Logger(InvestmentEventsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly core: InvestmentCoreService,
@@ -129,7 +131,7 @@ export class InvestmentEventsService {
       const key = item.toUpperCase();
       return aliases[key] ?? (key as TermEventStatus);
     });
-    console.log('this is status', statuses);
+    this.logger.log(`Resolved statuses: ${statuses.join(', ')}`);
     const invalid = statuses.filter((item) => !statusValues.has(item));
 
     if (invalid.length) {
