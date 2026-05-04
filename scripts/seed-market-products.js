@@ -115,6 +115,7 @@ async function seedMarketProducts(prisma, academicData) {
       metaJson: {
         tag: 'B1',
         maturityWeeks: 10,
+        couponIntervalDays: 2,
         weeklyPriceVolPct: 0.5,
         minPurchase: 10000,
       },

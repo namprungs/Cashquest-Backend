@@ -180,9 +180,7 @@ export class InvestmentPortfolioService {
         currentValue = bondValue;
       } else {
         const latest = latestPriceByProduct.get(holding.productId);
-        const latestLiveTick = latestLiveTickByProduct.get(
-          holding.productId,
-        );
+        const latestLiveTick = latestLiveTickByProduct.get(holding.productId);
         const lastPrice = this.core.toNumber(
           latestLiveTick?.price ?? latest?.close ?? 0,
         );
@@ -220,12 +218,12 @@ export class InvestmentPortfolioService {
         liveTickPrice:
           productType === 'BOND'
             ? null
-            : latestLiveTickByProduct.get(holding.productId)?.price ?? null,
+            : (latestLiveTickByProduct.get(holding.productId)?.price ?? null),
         liveTickAt:
           productType === 'BOND'
             ? null
-            : latestLiveTickByProduct.get(holding.productId)?.tickedAt ??
-              null,
+            : (latestLiveTickByProduct.get(holding.productId)?.tickedAt ??
+              null),
         effectivePrice,
         metrics: {
           costValue,
@@ -541,16 +539,14 @@ export class InvestmentPortfolioService {
               ? {
                   faceValue: this.core.toNumber(simulation.faceValue),
                   couponRate: this.core.toNumber(simulation.couponRate),
-                  couponIntervalWeeks: 4,
+                  couponIntervalDays:
+                    this.core.toNumber(productMeta.couponIntervalDays) || 2,
                   maturityWeeks: Math.max(
-                    0,
-                    Math.min(
-                      term.totalWeeks,
-                      Math.round(
-                        this.core.toNumber(productMeta.maturityWeeks) ||
-                          term.totalWeeks,
-                      ),
-                    ) - currentWeek,
+                    1,
+                    Math.round(
+                      this.core.toNumber(productMeta.maturityWeeks) ||
+                        term.totalWeeks,
+                    ),
                   ),
                 }
               : undefined,
@@ -805,7 +801,7 @@ export class InvestmentPortfolioService {
       bondConfig?: {
         faceValue: number;
         couponRate: number;
-        couponIntervalWeeks: number;
+        couponIntervalDays: number;
         maturityWeeks: number;
       };
     },
@@ -876,16 +872,13 @@ export class InvestmentPortfolioService {
         bondConfig = {
           faceValue: this.core.toNumber(sim.faceValue),
           couponRate: this.core.toNumber(sim.couponRate),
-          couponIntervalWeeks: 4,
+          couponIntervalDays:
+            this.core.toNumber(productMeta.couponIntervalDays) || 2,
           maturityWeeks: Math.max(
-            0,
-            Math.min(
-              term.totalWeeks,
-              Math.round(
-                this.core.toNumber(productMeta.maturityWeeks) ||
-                  term.totalWeeks,
-              ),
-            ) - params.currentWeek,
+            1,
+            Math.round(
+              this.core.toNumber(productMeta.maturityWeeks) || term.totalWeeks,
+            ),
           ),
         };
       }
@@ -959,6 +952,7 @@ export class InvestmentPortfolioService {
           bondConfig.faceValue > 0
             ? bondConfig.faceValue
             : params.executedPrice;
+        const bondTermWeeks = bondConfig.maturityWeeks;
         await tx.bondPosition.create({
           data: {
             termId: params.termId,
@@ -966,9 +960,12 @@ export class InvestmentPortfolioService {
             units: params.quantity,
             faceValue,
             couponRate: bondConfig.couponRate,
-            couponIntervalWeeks: bondConfig.couponIntervalWeeks,
+            couponIntervalDays: bondConfig.couponIntervalDays,
             startWeekNo: params.currentWeek,
             maturityWeekNo: params.currentWeek + bondConfig.maturityWeeks,
+            maturityDate: new Date(
+              Date.now() + bondTermWeeks * 7 * 24 * 60 * 60 * 1000,
+            ),
             purchasePrice: params.executedPrice,
             purchaseAmount: params.quantity * params.executedPrice,
           },
@@ -1402,8 +1399,7 @@ export class InvestmentPortfolioService {
         where: {
           termId,
           status: BondPositionStatus.ACTIVE,
-          startWeekNo: { lte: weekNo },
-          maturityWeekNo: { gte: weekNo },
+          maturityDate: { gte: new Date() },
         },
         include: {
           holding: {
@@ -1419,19 +1415,19 @@ export class InvestmentPortfolioService {
       });
 
       for (const bond of bonds) {
-        const elapsed = weekNo - bond.startWeekNo;
-        if (elapsed <= 0) {
+        const elapsedDays = Math.floor(
+          (Date.now() - bond.createdAt.getTime()) / (24 * 60 * 60 * 1000),
+        );
+        if (elapsedDays < bond.couponIntervalDays) {
           continue;
         }
 
-        if (elapsed % bond.couponIntervalWeeks !== 0) {
-          continue;
-        }
+        const intervalIndex = Math.floor(elapsedDays / bond.couponIntervalDays);
 
         const already = await tx.bondCouponPayout.findFirst({
           where: {
             bondPositionId: bond.id,
-            weekNo,
+            weekNo: intervalIndex,
           },
           select: { id: true },
         });
@@ -1443,13 +1439,13 @@ export class InvestmentPortfolioService {
         const couponAmount =
           this.core.toNumber(bond.faceValue) *
           this.core.toNumber(bond.couponRate) *
-          (bond.couponIntervalWeeks / 52) *
+          (bond.couponIntervalDays / 365) *
           this.core.toNumber(bond.units);
 
         await tx.bondCouponPayout.create({
           data: {
             bondPositionId: bond.id,
-            weekNo,
+            weekNo: intervalIndex,
             amount: couponAmount,
           },
         });
@@ -1469,7 +1465,7 @@ export class InvestmentPortfolioService {
             data: {
               investmentWalletId:
                 bond.holding.studentProfile.investmentWallet.id,
-              type: 'COUPON' as unknown as InvestmentTransactionType,
+              type: InvestmentTransactionType.COUPON,
               amount: couponAmount,
               balanceBefore: walletBalance,
               balanceAfter: walletBalance + couponAmount,
@@ -1478,9 +1474,9 @@ export class InvestmentPortfolioService {
                 source: 'BOND_COUPON_PAYOUT',
                 bondPositionId: bond.id,
                 termId,
-                weekNo,
+                intervalIndex,
                 units: this.core.toNumber(bond.units),
-                couponIntervalWeeks: bond.couponIntervalWeeks,
+                couponIntervalDays: bond.couponIntervalDays,
               },
             },
           });
@@ -1488,15 +1484,107 @@ export class InvestmentPortfolioService {
 
         couponCount += 1;
       }
+
+      // Mark bonds past maturity as MATURED
+      const maturedBonds = await tx.bondPosition.updateMany({
+        where: {
+          termId,
+          status: BondPositionStatus.ACTIVE,
+          maturityDate: { lt: new Date() },
+        },
+        data: {
+          status: BondPositionStatus.MATURED,
+        },
+      });
+
+      const maturedCount = maturedBonds.count;
+
+      return {
+        success: true,
+        data: {
+          weekNo,
+          dividendCount,
+          couponCount,
+          maturedCount,
+        },
+      };
+    });
+  }
+
+  async redeemBond(termId: string, bondPositionId: string, user: CurrentUser) {
+    this.core.assertStudent(user);
+
+    const profile = await this.core.getStudentProfileOrThrow(user.id, termId);
+
+    const bond = await this.prisma.bondPosition.findUnique({
+      where: { id: bondPositionId },
+      include: {
+        holding: {
+          include: {
+            studentProfile: {
+              include: { investmentWallet: true },
+            },
+          },
+        },
+      },
     });
 
-    return {
-      success: true,
-      data: {
-        weekNo,
-        dividendCount,
-        couponCount,
-      },
-    };
+    if (!bond) {
+      throw new NotFoundException('Bond position not found');
+    }
+
+    if (bond.holding.studentProfileId !== profile.id) {
+      throw new BadRequestException('Not your bond position');
+    }
+
+    if (bond.status !== BondPositionStatus.MATURED) {
+      throw new BadRequestException('Bond has not matured yet');
+    }
+
+    const wallet = bond.holding.studentProfile.investmentWallet;
+    if (!wallet) {
+      throw new BadRequestException('No investment wallet found');
+    }
+
+    const principalAmount = this.core.toNumber(bond.purchaseAmount);
+    const walletBalance = this.core.toNumber(wallet.balance);
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.bondPosition.update({
+        where: { id: bondPositionId },
+        data: { status: BondPositionStatus.CLOSED },
+      });
+
+      await tx.investmentWallet.update({
+        where: { id: wallet.id },
+        data: { balance: walletBalance + principalAmount },
+      });
+
+      await tx.investmentTransaction.create({
+        data: {
+          investmentWalletId: wallet.id,
+          type: InvestmentTransactionType.REDEEM,
+          amount: principalAmount,
+          balanceBefore: walletBalance,
+          balanceAfter: walletBalance + principalAmount,
+          description: 'Bond principal redeemed after maturity',
+          metadata: {
+            source: 'BOND_PRINCIPAL_REDEEM',
+            bondPositionId,
+            termId,
+            units: this.core.toNumber(bond.units),
+          },
+        },
+      });
+
+      return {
+        success: true,
+        data: {
+          bondPositionId,
+          principalAmount,
+          creditedToWallet: principalAmount,
+        },
+      };
+    });
   }
 }

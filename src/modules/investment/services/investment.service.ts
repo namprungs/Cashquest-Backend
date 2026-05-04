@@ -121,6 +121,10 @@ export class InvestmentService {
     return this.portfolioService.listMyBonds(termId, user);
   }
 
+  redeemBond(termId: string, bondPositionId: string, user: CurrentUser) {
+    return this.portfolioService.redeemBond(termId, bondPositionId, user);
+  }
+
   listActiveEvents(termId: string, weekNo?: string) {
     return this.eventsService.listActiveEvents(termId, weekNo);
   }

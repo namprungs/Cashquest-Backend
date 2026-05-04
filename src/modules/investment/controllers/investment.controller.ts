@@ -158,6 +158,16 @@ export class InvestmentController {
     return this.investmentService.listMyBonds(termId, user);
   }
 
+  @Post('terms/:termId/bonds/:bondPositionId/redeem')
+  @NeededPermissions([PERMISSIONS.INVESTMENT.ORDER_MANAGE_OWN])
+  redeemBond(
+    @Param('termId') termId: string,
+    @Param('bondPositionId') bondPositionId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.investmentService.redeemBond(termId, bondPositionId, user);
+  }
+
   @Get('terms/:termId/events/active')
   @NeededPermissions([PERMISSIONS.INVESTMENT.EVENT_VIEW])
   activeEvents(

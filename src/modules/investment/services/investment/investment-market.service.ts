@@ -164,11 +164,8 @@ export class InvestmentMarketService {
     const maturityWeek = term.termWeeks.find(
       (week) => week.weekNo === maturityWeekNo,
     );
-    const couponIntervalWeeks =
-      sim.product?.dividendPayoutIntervalWeeks &&
-      sim.product.dividendPayoutIntervalWeeks > 0
-        ? sim.product.dividendPayoutIntervalWeeks
-        : 4;
+    const couponIntervalDays =
+      this.core.toNumber(meta?.couponIntervalDays) || 2;
 
     return {
       durationYears,
@@ -176,8 +173,8 @@ export class InvestmentMarketService {
         this.core.toNumber(sim.couponRate) * 100 * durationYears,
       maturityWeekNo,
       maturityDate: maturityWeek?.endDate ?? term.endDate,
-      couponIntervalWeeks,
-      couponIntervalLabel: `ทุก ${couponIntervalWeeks} สัปดาห์`,
+      couponIntervalDays,
+      couponIntervalLabel: `ทุก ${couponIntervalDays} วัน`,
     };
   }
 
