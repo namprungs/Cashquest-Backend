@@ -179,6 +179,9 @@ async function seedBondPositions(prisma, academicData, products) {
   const closedMaturityDate = new Date(
     closedPurchasedAt.getTime() + maturityWeeks * 7 * 24 * 60 * 60 * 1000,
   );
+  const closedRedeemedAt = new Date(
+    closedMaturityDate.getTime() + 3 * 24 * 60 * 60 * 1000,
+  );
 
   const closedBond = await prisma.bondPosition.create({
     data: {
@@ -196,6 +199,7 @@ async function seedBondPositions(prisma, academicData, products) {
       couponAmountPerPayout,
       status: BondPositionStatus.CLOSED,
       createdAt: closedPurchasedAt,
+      updatedAt: closedRedeemedAt,
     },
   });
 
