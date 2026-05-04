@@ -19,6 +19,7 @@ model User {
   role            Role?   @relation(fields: [roleId], references: [id], onDelete: SetNull)
   isActive        Boolean @default(true)
   profileImageUrl String? @map("profile_image_url")
+  studentCode     String? @map("student_code")
 
   // Relations
   schoolId          String?            @db.Uuid

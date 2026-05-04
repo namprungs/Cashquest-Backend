@@ -59,6 +59,7 @@ async function seedMarketStudents(
     {
       email: 'student@school.com',
       username: 'student_demo',
+      studentCode: '65001',
       mainWalletBalance: 250000,
       investmentCash: 90000,
       holdings: [
@@ -69,6 +70,7 @@ async function seedMarketStudents(
     {
       email: 'student2@school.com',
       username: 'student_demo_2',
+      studentCode: '65002',
       mainWalletBalance: 200000,
       investmentCash: 120000,
       holdings: [
@@ -79,6 +81,7 @@ async function seedMarketStudents(
     {
       email: 'student3@school.com',
       username: 'student_demo_3',
+      studentCode: '65003',
       mainWalletBalance: 180000,
       investmentCash: 70000,
       holdings: [
@@ -94,6 +97,7 @@ async function seedMarketStudents(
       where: { email: studentSeed.email },
       update: {
         username: studentSeed.username,
+        studentCode: studentSeed.studentCode,
         roleId: studentRole.id,
         schoolId: term.schoolId,
         isActive: true,
@@ -101,6 +105,7 @@ async function seedMarketStudents(
       create: {
         email: studentSeed.email,
         username: studentSeed.username,
+        studentCode: studentSeed.studentCode,
         password: studentPassword,
         roleId: studentRole.id,
         schoolId: term.schoolId,

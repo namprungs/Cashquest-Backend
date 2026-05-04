@@ -49,6 +49,7 @@ async function seedUsers(prisma, roles) {
       username: 'student_demo',
       roleId: roles.studentRole.id,
       isActive: true,
+      studentCode: '65001',
     },
     create: {
       email: 'student@school.com',
@@ -56,6 +57,7 @@ async function seedUsers(prisma, roles) {
       password: studentPassword,
       roleId: roles.studentRole.id,
       isActive: true,
+      studentCode: '65001',
     },
   });
 
@@ -81,6 +83,7 @@ async function seedUsers(prisma, roles) {
       username: 'student_demo_2',
       roleId: roles.studentRole.id,
       isActive: true,
+      studentCode: '65002',
     },
     create: {
       email: 'student2@school.com',
@@ -88,6 +91,7 @@ async function seedUsers(prisma, roles) {
       password: studentPassword,
       roleId: roles.studentRole.id,
       isActive: true,
+      studentCode: '65002',
     },
   });
 
@@ -97,6 +101,7 @@ async function seedUsers(prisma, roles) {
       username: 'student_demo_3',
       roleId: roles.studentRole.id,
       isActive: true,
+      studentCode: '65003',
     },
     create: {
       email: 'student3@school.com',
@@ -104,6 +109,7 @@ async function seedUsers(prisma, roles) {
       password: studentPassword,
       roleId: roles.studentRole.id,
       isActive: true,
+      studentCode: '65003',
     },
   });
 

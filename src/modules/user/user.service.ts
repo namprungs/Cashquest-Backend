@@ -202,6 +202,7 @@ export class UserService {
         username: true,
         email: true,
         profileImageUrl: true,
+        studentCode: true,
       },
     });
 
@@ -336,7 +337,7 @@ export class UserService {
       data: {
         userId: user.id,
         displayName: user.username,
-        studentCode: user.username,
+        studentCode: user.studentCode ?? user.username,
         email: user.email,
         profileImageUrl: user.profileImageUrl,
         studentProfileId: profileId ?? null,
