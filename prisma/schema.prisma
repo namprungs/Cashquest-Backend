@@ -1270,8 +1270,9 @@ model BondPosition {
   maturityWeekNo     Int      @map("maturity_week_no")
   maturityDate       DateTime @map("maturity_date")
 
-  purchasePrice  Decimal @map("purchase_price") @db.Decimal(18, 6)
-  purchaseAmount Decimal @map("purchase_amount") @db.Decimal(18, 6)
+  purchasePrice        Decimal @map("purchase_price") @db.Decimal(18, 6)
+  purchaseAmount       Decimal @map("purchase_amount") @db.Decimal(18, 6)
+  couponAmountPerPayout Decimal @map("coupon_amount_per_payout") @db.Decimal(18, 6)
 
   status BondPositionStatus @default(ACTIVE)
 

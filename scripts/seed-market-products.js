@@ -116,6 +116,7 @@ async function seedMarketProducts(prisma, academicData) {
         tag: 'B1',
         maturityWeeks: 10,
         couponIntervalDays: 2,
+        totalReturnRate: 0.70,
         weeklyPriceVolPct: 0.5,
         minPurchase: 10000,
       },

@@ -548,6 +548,8 @@ export class InvestmentPortfolioService {
                         term.totalWeeks,
                     ),
                   ),
+                  totalReturnRate:
+                    this.core.toNumber(productMeta.totalReturnRate) || 0.70,
                 }
               : undefined,
         });
@@ -803,6 +805,7 @@ export class InvestmentPortfolioService {
         couponRate: number;
         couponIntervalDays: number;
         maturityWeeks: number;
+        totalReturnRate: number;
       };
     },
   ) {
@@ -880,6 +883,8 @@ export class InvestmentPortfolioService {
               this.core.toNumber(productMeta.maturityWeeks) || term.totalWeeks,
             ),
           ),
+          totalReturnRate:
+            this.core.toNumber(productMeta.totalReturnRate) || 0.70,
         };
       }
     }
@@ -953,6 +958,14 @@ export class InvestmentPortfolioService {
             ? bondConfig.faceValue
             : params.executedPrice;
         const bondTermWeeks = bondConfig.maturityWeeks;
+        const totalPayouts = Math.floor(
+          (bondTermWeeks * 7) / bondConfig.couponIntervalDays,
+        );
+        const totalInterest =
+          faceValue * bondConfig.totalReturnRate * params.quantity;
+        const couponAmountPerPayout =
+          totalPayouts > 0 ? totalInterest / totalPayouts : 0;
+
         await tx.bondPosition.create({
           data: {
             termId: params.termId,
@@ -968,6 +981,7 @@ export class InvestmentPortfolioService {
             ),
             purchasePrice: params.executedPrice,
             purchaseAmount: params.quantity * params.executedPrice,
+            couponAmountPerPayout,
           },
         });
       }
@@ -1436,11 +1450,7 @@ export class InvestmentPortfolioService {
           continue;
         }
 
-        const couponAmount =
-          this.core.toNumber(bond.faceValue) *
-          this.core.toNumber(bond.couponRate) *
-          (bond.couponIntervalDays / 365) *
-          this.core.toNumber(bond.units);
+        const couponAmount = this.core.toNumber(bond.couponAmountPerPayout);
 
         await tx.bondCouponPayout.create({
           data: {

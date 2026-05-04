@@ -167,10 +167,12 @@ export class InvestmentMarketService {
     const couponIntervalDays =
       this.core.toNumber(meta?.couponIntervalDays) || 2;
 
+    const totalReturnRate =
+      this.core.toNumber(meta?.totalReturnRate) || 0.70;
+
     return {
       durationYears,
-      totalCouponReturnPercent:
-        this.core.toNumber(sim.couponRate) * 100 * durationYears,
+      totalCouponReturnPercent: totalReturnRate * 100,
       maturityWeekNo,
       maturityDate: maturityWeek?.endDate ?? term.endDate,
       couponIntervalDays,
