@@ -25,6 +25,7 @@ const {
 } = require('./seed-product-prices');
 const { seedMarketStudents } = require('./seed-market-students');
 const { seedExpenseEvents } = require('./seed-expense-events');
+const { seedBondPositions } = require('./seed-bond-positions');
 
 // Setup Prisma with PostgreSQL adapter
 const connectionString = process.env.DATABASE_URL;
@@ -110,6 +111,10 @@ async function main() {
     // 15. Expense Events
     console.log('\n=== 1️⃣5️⃣  EXPENSE EVENTS ===');
     await seedExpenseEvents(prisma, academicData, academicData.lifeStages);
+
+    // 16. Bond Positions
+    console.log('\n=== 1️⃣6️⃣  BOND POSITIONS ===');
+    await seedBondPositions(prisma, academicData, products);
 
     console.log('\n✨ Seeding Completed!\n');
     console.log('📧 Admin Email: admin@school.com');

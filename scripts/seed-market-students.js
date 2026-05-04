@@ -264,9 +264,57 @@ async function seedMarketStudents(
     });
 
     console.log(`  ✅ Created market student: ${studentSeed.email}`);
+
+    // Seed dividend payouts for the first student only
+    if (studentSeed.email === 'student@school.com') {
+      await seedDividendPayouts(prisma, term.id, profile.id, products, currentMarketWeek);
+    }
   }
 
   console.log(`✅ Seeded ${marketStudentSeeds.length} market demo students`);
+}
+
+async function seedDividendPayouts(prisma, termId, studentProfileId, products, currentWeek) {
+  // Clean old dividend payouts
+  await prisma.dividendPayout.deleteMany({
+    where: { termId, studentProfileId },
+  });
+
+  // Get the student's stock holdings
+  const holdings = await prisma.holding.findMany({
+    where: { termId, studentProfileId },
+    include: { product: true },
+  });
+
+  const stockHoldings = holdings.filter(
+    (h) => (h.product?.type ?? '').toUpperCase() !== 'BOND',
+  );
+
+  const payouts = [];
+  for (const holding of stockHoldings) {
+    const units = Number(holding.units);
+    const avgCost = Number(holding.avgCost);
+    // Create 2 dividend payouts at different weeks
+    const dividendPerUnit = Math.round(avgCost * 0.005 * 100) / 100; // ~0.5% of cost
+    for (const weekNo of [currentWeek - 2, currentWeek - 1]) {
+      if (weekNo < 1) continue;
+      payouts.push({
+        termId,
+        productId: holding.productId,
+        studentProfileId,
+        weekNo,
+        units,
+        dividendPerUnit,
+        amount: Math.round(units * dividendPerUnit * 100) / 100,
+      });
+    }
+  }
+
+  if (payouts.length > 0) {
+    await prisma.dividendPayout.createMany({ data: payouts });
+  }
+
+  console.log(`  ✅ Seeded ${payouts.length} dividend payouts for ${stockHoldings.length} stock holdings`);
 }
 
 module.exports = { seedMarketStudents };
