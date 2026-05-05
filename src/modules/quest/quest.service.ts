@@ -34,6 +34,7 @@ import { RandomExpenseService } from '../random-expense/services/random-expense.
 type CurrentUser = User & { role?: { name?: string } | null };
 
 const TEACHER_QUIZ_DRAFT_CONTENT_TYPE = 'TEACHER_QUIZ_DRAFT_V1';
+const QUIZ_WRONG_ANSWER_PENALTY_COINS = 1000;
 
 import { AppCacheService } from '../cache/app-cache.service';
 
@@ -1508,8 +1509,14 @@ export class QuestService {
       rewardCoins: number;
     },
     extraMetadata?: Record<string, unknown>,
+    rewardCoinsOverride?: number,
   ) {
-    if (quest.rewardCoins <= 0) {
+    const rewardCoins = Math.max(
+      0,
+      Math.floor(rewardCoinsOverride ?? quest.rewardCoins),
+    );
+
+    if (rewardCoins <= 0) {
       return;
     }
 
@@ -1525,7 +1532,7 @@ export class QuestService {
     const updatedWallet = await tx.wallet.update({
       where: { id: wallet.id },
       data: {
-        balance: wallet.balance.plus(quest.rewardCoins),
+        balance: wallet.balance.plus(rewardCoins),
       },
     });
 
@@ -1533,7 +1540,7 @@ export class QuestService {
       data: {
         walletId: wallet.id,
         type: TransactionType.QUEST_REWARD,
-        amount: new Prisma.Decimal(quest.rewardCoins),
+        amount: new Prisma.Decimal(rewardCoins),
         balanceBefore: wallet.balance,
         balanceAfter: updatedWallet.balance,
         description: `Quest reward: ${quest.title}`,
@@ -1541,6 +1548,8 @@ export class QuestService {
           source: 'QUEST_REWARD',
           refId: submissionId,
           questId: quest.id,
+          baseRewardCoins: quest.rewardCoins,
+          finalRewardCoins: rewardCoins,
           ...(extraMetadata ?? {}),
         },
       },
@@ -1604,6 +1613,32 @@ export class QuestService {
     );
 
     return approvedSubmission;
+  }
+
+  private async getQuizRewardPenalty(
+    client: Prisma.TransactionClient | PrismaService,
+    quizId: string,
+    studentProfileId: string,
+    rewardCoins: number,
+  ) {
+    const wrongAnswerCount = await client.quizAttemptAnswer.count({
+      where: {
+        isCorrect: false,
+        attempt: {
+          quizId,
+          studentProfileId,
+          submittedAt: { not: null },
+        },
+      },
+    });
+
+    const penaltyCoins = wrongAnswerCount * QUIZ_WRONG_ANSWER_PENALTY_COINS;
+    return {
+      wrongAnswerCount,
+      penaltyCoins,
+      rewardCoinsAfterPenalty: Math.max(0, rewardCoins - penaltyCoins),
+      penaltyPerWrongAnswerCoins: QUIZ_WRONG_ANSWER_PENALTY_COINS,
+    };
   }
 
   private applySubmissionQuestionReviews(
@@ -2856,6 +2891,21 @@ export class QuestService {
     }
 
     return await this.prisma.$transaction(async (tx) => {
+      const quizRewardPenalty =
+        quest.type === QuestType.QUIZ && quest.isSystem && quest.quizId
+          ? await this.getQuizRewardPenalty(
+              tx,
+              quest.quizId,
+              studentProfile.id,
+              quest.rewardCoins,
+            )
+          : {
+              wrongAnswerCount: 0,
+              penaltyCoins: 0,
+              rewardCoinsAfterPenalty: quest.rewardCoins,
+              penaltyPerWrongAnswerCoins: QUIZ_WRONG_ANSWER_PENALTY_COINS,
+            };
+
       const existingSubmission = await tx.questSubmission.findUnique({
         where: {
           questId_studentProfileId: {
@@ -2898,9 +2948,22 @@ export class QuestService {
           submission.id,
           studentProfile.id,
           quest,
+          {
+            wrongAnswerCount: quizRewardPenalty.wrongAnswerCount,
+            penaltyCoins: quizRewardPenalty.penaltyCoins,
+            penaltyPerWrongAnswerCoins:
+              quizRewardPenalty.penaltyPerWrongAnswerCoins,
+          },
+          quizRewardPenalty.rewardCoinsAfterPenalty,
         );
 
-        return { success: true, data: submission };
+        return {
+          success: true,
+          data: {
+            ...submission,
+            reward: quizRewardPenalty,
+          },
+        };
       }
 
       // No submission exists yet (shouldn't happen for interactive, but handle for quiz)
@@ -2928,9 +2991,22 @@ export class QuestService {
         submission.id,
         studentProfile.id,
         quest,
+        {
+          wrongAnswerCount: quizRewardPenalty.wrongAnswerCount,
+          penaltyCoins: quizRewardPenalty.penaltyCoins,
+          penaltyPerWrongAnswerCoins:
+            quizRewardPenalty.penaltyPerWrongAnswerCoins,
+        },
+        quizRewardPenalty.rewardCoinsAfterPenalty,
       );
 
-      return { success: true, data: submission };
+      return {
+        success: true,
+        data: {
+          ...submission,
+          reward: quizRewardPenalty,
+        },
+      };
     });
   }
 }

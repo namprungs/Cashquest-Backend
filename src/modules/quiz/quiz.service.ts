@@ -22,6 +22,7 @@ type QuizQuestionWithChoices = Prisma.QuizQuestionGetPayload<{
 }>;
 
 type CurrentUser = User & { role?: { name?: string } | null };
+const QUIZ_WRONG_ANSWER_PENALTY_COINS = 1000;
 
 @Injectable()
 export class QuizService {
@@ -517,6 +518,7 @@ export class QuizService {
       select: {
         id: true,
         title: true,
+        isSystem: true,
         rewardCoins: true,
         submissions: {
           where: { studentProfileId: studentProfile.id },
@@ -599,6 +601,19 @@ export class QuizService {
       }
     }
 
+    const rewardPenalty = assignedQuest.isSystem
+      ? await this.getRewardPenaltySnapshot(
+          quiz.id,
+          studentProfile.id,
+          assignedQuest.rewardCoins,
+        )
+      : {
+          wrongAnswerCount: 0,
+          penaltyCoins: 0,
+          rewardCoinsAfterPenalty: assignedQuest.rewardCoins,
+          penaltyPerWrongAnswerCoins: QUIZ_WRONG_ANSWER_PENALTY_COINS,
+        };
+
     return {
       success: true,
       data: {
@@ -612,6 +627,7 @@ export class QuizService {
         },
         attempts,
         latestAttemptAnswers,
+        rewardPenalty,
         questions: quiz.questions.map((question) => ({
           id: question.id,
           questionText: question.questionText,
@@ -873,6 +889,31 @@ export class QuizService {
     }
   }
 
+  private async getRewardPenaltySnapshot(
+    quizId: string,
+    studentProfileId: string,
+    rewardCoins: number,
+  ) {
+    const wrongAnswerCount = await this.prisma.quizAttemptAnswer.count({
+      where: {
+        isCorrect: false,
+        attempt: {
+          quizId,
+          studentProfileId,
+          submittedAt: { not: null },
+        },
+      },
+    });
+    const penaltyCoins = wrongAnswerCount * QUIZ_WRONG_ANSWER_PENALTY_COINS;
+
+    return {
+      wrongAnswerCount,
+      penaltyCoins,
+      rewardCoinsAfterPenalty: Math.max(0, rewardCoins - penaltyCoins),
+      penaltyPerWrongAnswerCoins: QUIZ_WRONG_ANSWER_PENALTY_COINS,
+    };
+  }
+
   async submitAttempt(
     attemptId: string,
     user: CurrentUser,
@@ -955,6 +996,9 @@ export class QuizService {
         score += result.awardedPoints;
       }
     }
+    const wrongAnswerCountThisAttempt = [...gradingResults.values()].filter(
+      (result) => result.isCorrect === false,
+    ).length;
 
     // passAllRequired=true => must get all AUTO gradable points.
     // otherwise fallback is score >= 60% of total AUTO gradable points.
@@ -1057,6 +1101,23 @@ export class QuizService {
       }
     });
 
+    const linkedQuestReward = await this.prisma.quest.findFirst({
+      where: { quizId: attempt.quizId },
+      select: { isSystem: true, rewardCoins: true },
+    });
+    const rewardPenalty = linkedQuestReward?.isSystem
+      ? await this.getRewardPenaltySnapshot(
+          attempt.quizId,
+          attempt.studentProfile.id,
+          linkedQuestReward.rewardCoins,
+        )
+      : {
+          wrongAnswerCount: 0,
+          penaltyCoins: 0,
+          rewardCoinsAfterPenalty: linkedQuestReward?.rewardCoins ?? 0,
+          penaltyPerWrongAnswerCoins: QUIZ_WRONG_ANSWER_PENALTY_COINS,
+        };
+
     return {
       success: true,
       data: {
@@ -1064,6 +1125,8 @@ export class QuizService {
         score,
         isPassed,
         submittedAt,
+        wrongAnswerCount: wrongAnswerCountThisAttempt,
+        rewardPenalty,
         perQuestion: [...gradingResults.entries()].map(
           ([questionId, result]) => ({
             questionId,
