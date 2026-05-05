@@ -3,7 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { QuestStatus, QuestSubmissionStatus } from '@prisma/client';
+import {
+  QuestStatus,
+  QuestSubmissionStatus,
+  TransactionType,
+} from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PlayerService } from 'src/modules/player/services/studentProfile.service';
 import { QuestService } from '../quest/quest.service';
@@ -643,6 +647,7 @@ export class ClassroomService {
             status: { not: 'CLOSED' },
           },
           include: {
+            holding: { include: { product: true } },
             couponPayouts: { orderBy: { weekNo: 'desc' } },
           },
         })
@@ -669,11 +674,6 @@ export class ClassroomService {
       productIds,
     );
 
-    // Build a map of bond positions by holdingId for enrichment
-    const bondByHoldingId = new Map(
-      bondPositions.map((bp) => [bp.holdingId, bp]),
-    );
-
     const assets = {
       stocks: [] as Array<Record<string, unknown>>,
       funds: [] as Array<Record<string, unknown>>,
@@ -695,6 +695,9 @@ export class ClassroomService {
       investedValue += costValue;
 
       const bucket = this.splitAssetType(holding.product.type);
+      if (bucket === 'bonds') {
+        continue;
+      }
 
       const item: Record<string, unknown> = {
         productId: holding.productId,
@@ -710,27 +713,33 @@ export class ClassroomService {
         changeCoin: this.round2(changeCoin),
       };
 
-      // Enrich bond items with bond position data
-      if (bucket === 'bonds') {
-        const bp = bondByHoldingId.get(holding.id);
-        if (bp) {
-          const receivedInterest = bp.couponPayouts.reduce(
-            (sum, cp) => sum + this.toNumber(cp.amount),
-            0,
-          );
-          item['interestRate'] = this.round2(
-            this.toNumber(bp.couponRate) * 100,
-          );
-          item['receivedInterest'] = this.round2(receivedInterest);
-          item['couponIntervalDays'] = bp.couponIntervalDays;
-          item['maturityDate'] = bp.maturityDate;
-          item['maturityWeekNo'] = bp.maturityWeekNo;
-          item['status'] = bp.status;
-          item['purchaseAmount'] = this.toNumber(bp.purchaseAmount);
-        }
-      }
-
       assets[bucket].push(item);
+    }
+
+    for (const bond of bondPositions) {
+      const receivedInterest = bond.couponPayouts.reduce(
+        (sum, coupon) => sum + this.toNumber(coupon.amount),
+        0,
+      );
+      const purchaseAmount = this.toNumber(bond.purchaseAmount);
+      assets.bonds.push({
+        bondPositionId: bond.id,
+        holdingId: bond.holdingId,
+        symbol: bond.holding.product.symbol,
+        name: bond.holding.product.name,
+        units: this.toNumber(bond.units),
+        unitsLabel: `จำนวนหน่วย: ${this.round2(this.toNumber(bond.units))}`,
+        valueCoin: this.round2(purchaseAmount + receivedInterest),
+        changePercent: 0,
+        changeCoin: this.round2(receivedInterest),
+        interestRate: this.round2(this.toNumber(bond.couponRate) * 100),
+        receivedInterest: this.round2(receivedInterest),
+        couponIntervalDays: bond.couponIntervalDays,
+        maturityDate: bond.maturityDate,
+        maturityWeekNo: bond.maturityWeekNo,
+        status: bond.status,
+        purchaseAmount,
+      });
     }
 
     const wallet = this.toNumber(profile?.mainWallet?.balance);
@@ -761,6 +770,7 @@ export class ClassroomService {
         title: true,
         description: true,
         isSystem: true,
+        quizId: true,
         rewardCoins: true,
         difficulty: true,
         deadlineAt: true,
@@ -774,6 +784,68 @@ export class ClassroomService {
       },
       orderBy: [{ parentId: 'asc' }, { orderNo: 'asc' }, { createdAt: 'desc' }],
     });
+
+    const quizIds = questRows
+      .map((quest) => quest.quizId)
+      .filter((id): id is string => Boolean(id));
+    const passedQuizAttempts =
+      profileId && quizIds.length
+        ? await this.prisma.quizAttempt.findMany({
+            where: {
+              studentProfileId: profileId,
+              quizId: { in: quizIds },
+              isPassed: true,
+            },
+            select: { quizId: true },
+          })
+        : [];
+    const passedQuizIds = new Set(
+      passedQuizAttempts.map((attempt) => attempt.quizId),
+    );
+
+    const submissionIds = questRows
+      .map((quest) => quest.submissions?.[0]?.id)
+      .filter((id): id is string => Boolean(id));
+    const claimedSubmissionIds = new Set<string>();
+    const claimedQuestIds = new Set<string>();
+
+    if (profileId && submissionIds.length) {
+      const rewardTransactions = await this.prisma.walletTransaction.findMany({
+        where: {
+          wallet: {
+            studentProfileId: profileId,
+          },
+          type: TransactionType.QUEST_REWARD,
+        },
+        select: {
+          metadata: true,
+        },
+      });
+
+      const submissionIdSet = new Set(submissionIds);
+      for (const transaction of rewardTransactions) {
+        const metadata = transaction.metadata;
+        if (
+          metadata &&
+          typeof metadata === 'object' &&
+          !Array.isArray(metadata) &&
+          'refId' in metadata &&
+          typeof metadata.refId === 'string' &&
+          submissionIdSet.has(metadata.refId)
+        ) {
+          claimedSubmissionIds.add(metadata.refId);
+        }
+        if (
+          metadata &&
+          typeof metadata === 'object' &&
+          !Array.isArray(metadata) &&
+          'questId' in metadata &&
+          typeof metadata.questId === 'string'
+        ) {
+          claimedQuestIds.add(metadata.questId);
+        }
+      }
+    }
 
     const badgeRows = profileId
       ? await this.prisma.badge.findMany({
@@ -844,6 +916,12 @@ export class ClassroomService {
         }),
         quests: questRows.map((quest) => {
           const submission = quest.submissions?.[0];
+          const isCompleted =
+            submission?.status === QuestSubmissionStatus.APPROVED ||
+            (quest.quizId ? passedQuizIds.has(quest.quizId) : false);
+          const isClaimed =
+            claimedQuestIds.has(quest.id) ||
+            (submission ? claimedSubmissionIds.has(submission.id) : false);
           return {
             id: quest.id,
             title: quest.title,
@@ -852,7 +930,10 @@ export class ClassroomService {
             rewardCoins: quest.rewardCoins,
             difficulty: quest.difficulty,
             deadlineAt: quest.deadlineAt,
-            status: submission?.status ?? 'NOT_SUBMITTED',
+            status: isCompleted
+              ? QuestSubmissionStatus.APPROVED
+              : (submission?.status ?? 'NOT_SUBMITTED'),
+            isClaimed,
             submissionId: submission?.id ?? null,
             submittedAt: submission?.updatedAt ?? null,
           };
