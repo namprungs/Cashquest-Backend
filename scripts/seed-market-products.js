@@ -29,6 +29,7 @@ async function seedMarketProducts(prisma, academicData) {
       isDividendEnabled: true,
       dividendYieldAnnual: 0.03,
       dividendPayoutIntervalWeeks: 4,
+      metaJson: { marketCap: 'ขนาดเล็ก' },
       simulation: { initialPrice: 85, mu: 0.035, sigma: 0.09, dt: 1 / 52 },
     },
     {
@@ -43,6 +44,7 @@ async function seedMarketProducts(prisma, academicData) {
       isDividendEnabled: true,
       dividendYieldAnnual: 0.025,
       dividendPayoutIntervalWeeks: 4,
+      metaJson: { marketCap: 'ขนาดใหญ่' },
       simulation: { initialPrice: 95, mu: 0.04, sigma: 0.1, dt: 1 / 52 },
     },
 
@@ -59,6 +61,7 @@ async function seedMarketProducts(prisma, academicData) {
       isDividendEnabled: true,
       dividendYieldAnnual: 0.04,
       dividendPayoutIntervalWeeks: 4,
+      metaJson: { marketCap: 'ขนาดใหญ่' },
       simulation: { initialPrice: 110, mu: 0.07, sigma: 0.18, dt: 1 / 52 },
     },
     {
@@ -72,6 +75,7 @@ async function seedMarketProducts(prisma, academicData) {
       isActive: true,
       isDividendEnabled: false,
       dividendPayoutIntervalWeeks: 4,
+      metaJson: { marketCap: 'ขนาดกลาง' },
       simulation: { initialPrice: 75, mu: 0.075, sigma: 0.22, dt: 1 / 52 },
     },
 
@@ -86,6 +90,7 @@ async function seedMarketProducts(prisma, academicData) {
       isActive: true,
       isDividendEnabled: false,
       dividendPayoutIntervalWeeks: 4,
+      metaJson: { marketCap: 'ขนาดกลาง' },
       simulation: { initialPrice: 130, mu: 0.12, sigma: 0.3, dt: 1 / 52 },
     },
     {
@@ -99,6 +104,7 @@ async function seedMarketProducts(prisma, academicData) {
       isActive: true,
       isDividendEnabled: false,
       dividendPayoutIntervalWeeks: 4,
+      metaJson: { marketCap: 'ขนาดเล็ก' },
       simulation: { initialPrice: 60, mu: 0.14, sigma: 0.38, dt: 1 / 52 },
     },
     {
