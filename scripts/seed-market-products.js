@@ -106,7 +106,7 @@ async function seedMarketProducts(prisma, academicData) {
       symbol: 'TGBOND',
       name: 'ThaiGovBond',
       description:
-        'พันธบัตรรัฐบาลไทย อัตราดอกเบี้ย 2.8% ต่อปี อายุ 10 สัปดาห์ จ่ายดอกทุก 2 วัน ผลตอบแทนรวม +70%',
+        'พันธบัตรรัฐบาลไทย อัตราดอกเบี้ย 2.8% ต่อปี อายุ 10 สัปดาห์ จ่ายดอกทุก 2 วัน ผลตอบแทนรวม +98%',
       riskLevel: RiskLevel.LOW,
       sector: 'GOVERNMENT_BOND',
       isActive: true,
@@ -116,7 +116,7 @@ async function seedMarketProducts(prisma, academicData) {
         tag: 'B1',
         maturityWeeks: 10,
         couponIntervalDays: 2,
-        totalReturnRate: 0.70,
+        totalReturnRate: 0.98,
         weeklyPriceVolPct: 0.5,
         minPurchase: 10000,
       },
