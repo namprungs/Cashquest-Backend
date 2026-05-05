@@ -632,6 +632,22 @@ export class ClassroomService {
       },
     });
 
+    const profileId = profile?.id;
+
+    // Fetch bond positions for this student
+    const bondPositions = profileId
+      ? await this.prisma.bondPosition.findMany({
+          where: {
+            termId: classroom.termId,
+            holding: { studentProfileId: profileId },
+            status: { not: 'CLOSED' },
+          },
+          include: {
+            couponPayouts: { orderBy: { weekNo: 'desc' } },
+          },
+        })
+      : [];
+
     const currentWeekNo = await this.getCurrentWeekNo(classroom.termId);
     const lifeStageRule =
       currentWeekNo == null
@@ -645,13 +661,17 @@ export class ClassroomService {
             include: { lifeStage: true },
           });
 
-    const profileId = profile?.id;
     const productIds = (profile?.holdings ?? []).map(
       (holding) => holding.productId,
     );
     const latestPriceByProduct = await this.getLatestPriceByProduct(
       classroom.termId,
       productIds,
+    );
+
+    // Build a map of bond positions by holdingId for enrichment
+    const bondByHoldingId = new Map(
+      bondPositions.map((bp) => [bp.holdingId, bp]),
     );
 
     const assets = {
@@ -675,7 +695,8 @@ export class ClassroomService {
       investedValue += costValue;
 
       const bucket = this.splitAssetType(holding.product.type);
-      assets[bucket].push({
+
+      const item: Record<string, unknown> = {
         productId: holding.productId,
         symbol: holding.product.symbol,
         name: holding.product.name,
@@ -687,7 +708,29 @@ export class ClassroomService {
         valueCoin: this.round2(valueCoin),
         changePercent: this.round2(changePercent),
         changeCoin: this.round2(changeCoin),
-      });
+      };
+
+      // Enrich bond items with bond position data
+      if (bucket === 'bonds') {
+        const bp = bondByHoldingId.get(holding.id);
+        if (bp) {
+          const receivedInterest = bp.couponPayouts.reduce(
+            (sum, cp) => sum + this.toNumber(cp.amount),
+            0,
+          );
+          item['interestRate'] = this.round2(
+            this.toNumber(bp.couponRate) * 100,
+          );
+          item['receivedInterest'] = this.round2(receivedInterest);
+          item['couponIntervalDays'] = bp.couponIntervalDays;
+          item['maturityDate'] = bp.maturityDate;
+          item['maturityWeekNo'] = bp.maturityWeekNo;
+          item['status'] = bp.status;
+          item['purchaseAmount'] = this.toNumber(bp.purchaseAmount);
+        }
+      }
+
+      assets[bucket].push(item);
     }
 
     const wallet = this.toNumber(profile?.mainWallet?.balance);
