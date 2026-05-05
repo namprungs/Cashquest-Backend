@@ -980,7 +980,7 @@ export class InvestmentPortfolioService {
               Date.now() + bondTermWeeks * 7 * 24 * 60 * 60 * 1000,
             ),
             purchasePrice: params.executedPrice,
-            purchaseAmount: params.quantity * params.executedPrice,
+            purchaseAmount: amount,
             couponAmountPerPayout,
           },
         });
