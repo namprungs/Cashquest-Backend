@@ -548,7 +548,7 @@ export class UserService {
 
     const studentUserIds = classroomStudents.map((cs) => cs.studentId);
 
-    // 3. Get student profiles with wallet balances for those users in this term
+    // 3. Get student profiles with the same asset view used by teacher pages
     const profiles = await this.prisma.studentProfile.findMany({
       where: {
         userId: { in: studentUserIds },
@@ -557,15 +557,66 @@ export class UserService {
       select: {
         user: { select: { username: true } },
         mainWallet: { select: { balance: true } },
+        savingsAccounts: { select: { balance: true } },
+        fixedDeposits: { select: { principal: true } },
+        investmentWallet: { select: { balance: true } },
+        holdings: {
+          where: { termId, units: { gt: 0 } },
+          select: {
+            productId: true,
+            units: true,
+            avgCost: true,
+            product: {
+              select: {
+                prices: {
+                  where: { termId },
+                  orderBy: { weekNo: 'desc' },
+                  take: 1,
+                  select: { close: true },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
-    // 4. Sort by wallet balance descending and compute rank
+    // 4. Sort by total assets descending and compute rank
     const ranked = profiles
-      .map((p) => ({
-        name: p.user.username,
-        totalCoin: Number(p.mainWallet?.balance ?? 0),
-      }))
+      .map((p) => {
+        const wallet = Number(p.mainWallet?.balance ?? 0);
+        const savings = p.savingsAccounts.reduce(
+          (sum, account) => sum + Number(account.balance ?? 0),
+          0,
+        );
+        const fixedDeposit = p.fixedDeposits.reduce(
+          (sum, deposit) => sum + Number(deposit.principal ?? 0),
+          0,
+        );
+        const investmentCash = Number(p.investmentWallet?.balance ?? 0);
+        let marketValue = 0;
+        let investedValue = 0;
+        for (const holding of p.holdings) {
+          const units = Number(holding.units ?? 0);
+          const avgCost = Number(holding.avgCost ?? 0);
+          const latestPrice = Number(
+            holding.product.prices[0]?.close ?? avgCost,
+          );
+          investedValue += units * avgCost;
+          marketValue += units * latestPrice;
+        }
+        const totalCoin =
+          wallet + savings + fixedDeposit + investmentCash + marketValue;
+        const changePct =
+          investedValue > 0
+            ? ((marketValue - investedValue) / investedValue) * 100
+            : 0;
+        return {
+          name: p.user.username,
+          totalCoin: Math.round(totalCoin * 100) / 100,
+          changePct: Math.round(changePct * 100) / 100,
+        };
+      })
       .sort((a, b) => b.totalCoin - a.totalCoin);
 
     let rank = 1;
@@ -579,7 +630,7 @@ export class UserService {
         rank,
         name: item.name,
         totalCoin: item.totalCoin,
-        changePct: 0,
+        changePct: item.changePct,
       };
     });
 

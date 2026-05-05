@@ -847,7 +847,7 @@ export class ClassroomService {
       }
     }
 
-    const badgeRows = profileId
+    const badgeRowsRaw = profileId
       ? await this.prisma.badge.findMany({
           where: { termId: classroom.termId },
           orderBy: { code: 'asc' },
@@ -860,6 +860,12 @@ export class ClassroomService {
           },
         })
       : [];
+    const badgeRows = [...badgeRowsRaw].sort((a, b) => {
+      const aEarned = a.studentBadges.length > 0;
+      const bEarned = b.studentBadges.length > 0;
+      if (aEarned !== bEarned) return aEarned ? -1 : 1;
+      return a.code.localeCompare(b.code);
+    });
 
     const retirementGoal = profile?.retirementGoals[0];
 
@@ -997,7 +1003,7 @@ export class ClassroomService {
       await this.questService.getPendingSubmissionsForClassroom(classroomId, 2);
 
     // leaderboard
-    const leaderboardData = await this.prisma.studentProfile.findMany({
+    const leaderboardProfiles = await this.prisma.studentProfile.findMany({
       where: {
         userId: { in: studentIds },
         termId: classroom.termId,
@@ -1005,27 +1011,79 @@ export class ClassroomService {
       select: {
         user: { select: { username: true } },
         mainWallet: { select: { balance: true } },
+        savingsAccounts: { select: { balance: true } },
+        fixedDeposits: { select: { principal: true } },
+        investmentWallet: { select: { balance: true } },
+        holdings: {
+          where: { termId: classroom.termId, units: { gt: 0 } },
+          select: {
+            productId: true,
+            units: true,
+            avgCost: true,
+          },
+        },
       },
-      orderBy: { mainWallet: { balance: 'desc' } },
-      take: 10,
     });
+    const leaderboardProductIds = [
+      ...new Set(
+        leaderboardProfiles.flatMap((profile) =>
+          profile.holdings.map((holding) => holding.productId),
+        ),
+      ),
+    ];
+    const leaderboardLatestPriceByProduct = await this.getLatestPriceByProduct(
+      classroom.termId,
+      leaderboardProductIds,
+    );
+    const leaderboardData = leaderboardProfiles
+      .map((profile) => {
+        const wallet = this.toNumber(profile.mainWallet?.balance);
+        const savings = profile.savingsAccounts.reduce(
+          (sum, account) => sum + this.toNumber(account.balance),
+          0,
+        );
+        const fixedDeposit = profile.fixedDeposits.reduce(
+          (sum, deposit) => sum + this.toNumber(deposit.principal),
+          0,
+        );
+        const investmentCash = this.toNumber(profile.investmentWallet?.balance);
+        let marketValue = 0;
+        let investedValue = 0;
+        for (const holding of profile.holdings) {
+          const units = this.toNumber(holding.units);
+          const avgCost = this.toNumber(holding.avgCost);
+          const price =
+            leaderboardLatestPriceByProduct.get(holding.productId) ?? avgCost;
+          investedValue += units * avgCost;
+          marketValue += units * price;
+        }
+        const totalCoin =
+          wallet + savings + fixedDeposit + investmentCash + marketValue;
+        const growth =
+          investedValue > 0
+            ? ((marketValue - investedValue) / investedValue) * 100
+            : 0;
+        return {
+          name: profile.user.username,
+          totalCoin: this.round2(totalCoin),
+          changePercent: this.round2(growth),
+        };
+      })
+      .sort((a, b) => b.totalCoin - a.totalCoin)
+      .slice(0, 10);
 
     let rank = 1;
     const leaderboard = leaderboardData.map((p, index) => {
-      if (
-        index > 0 &&
-        Number(p.mainWallet?.balance) ===
-          Number(leaderboardData[index - 1].mainWallet?.balance)
-      ) {
+      if (index > 0 && p.totalCoin === leaderboardData[index - 1].totalCoin) {
         // same balance, same rank
       } else {
         rank = index + 1;
       }
       return {
         rank,
-        name: p.user.username,
-        total_coin: Number(p.mainWallet?.balance || 0),
-        change_pct: 0, // placeholder
+        name: p.name,
+        total_coin: p.totalCoin,
+        change_pct: p.changePercent,
       };
     });
 
