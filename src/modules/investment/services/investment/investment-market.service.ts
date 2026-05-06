@@ -167,8 +167,7 @@ export class InvestmentMarketService {
     const couponIntervalDays =
       this.core.toNumber(meta?.couponIntervalDays) || 2;
 
-    const totalReturnRate =
-      this.core.toNumber(meta?.totalReturnRate) || 0.70;
+    const totalReturnRate = this.core.toNumber(meta?.totalReturnRate) || 0.7;
 
     return {
       durationYears,

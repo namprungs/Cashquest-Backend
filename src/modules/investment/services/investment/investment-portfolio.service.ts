@@ -549,7 +549,7 @@ export class InvestmentPortfolioService {
                     ),
                   ),
                   totalReturnRate:
-                    this.core.toNumber(productMeta.totalReturnRate) || 0.70,
+                    this.core.toNumber(productMeta.totalReturnRate) || 0.7,
                 }
               : undefined,
         });
@@ -884,7 +884,7 @@ export class InvestmentPortfolioService {
             ),
           ),
           totalReturnRate:
-            this.core.toNumber(productMeta.totalReturnRate) || 0.70,
+            this.core.toNumber(productMeta.totalReturnRate) || 0.7,
         };
       }
     }

@@ -46,8 +46,29 @@ export class QuestService {
     private readonly cache: AppCacheService,
   ) {}
 
+  private stringifyValue(value: unknown) {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      typeof value === 'bigint'
+    ) {
+      return String(value);
+    }
+
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+
+    return '';
+  }
+
   private normalizeActionType(value: unknown) {
-    return String(value ?? '')
+    return this.stringifyValue(value)
       .trim()
       .replace(/[_\s-]+/g, '')
       .toUpperCase();
@@ -1395,9 +1416,7 @@ export class QuestService {
     const questsWithCompletion = quests.map((quest) => {
       const subCreatedAt = submissionCreatedAtByQuestId.get(quest.id);
       const isLate =
-        !!quest.deadlineAt &&
-        !!subCreatedAt &&
-        subCreatedAt > quest.deadlineAt;
+        !!quest.deadlineAt && !!subCreatedAt && subCreatedAt > quest.deadlineAt;
       return {
         ...quest,
         isCompleted: isQuestCompleted(quest),
@@ -1405,8 +1424,7 @@ export class QuestService {
         submissionStatus: submissionStatusByQuestId.get(quest.id) ?? null,
         isLate,
         children: (quest.children ?? []).map((child) => {
-          const childSubCreatedAt =
-            submissionCreatedAtByQuestId.get(child.id);
+          const childSubCreatedAt = submissionCreatedAtByQuestId.get(child.id);
           const childIsLate =
             !!child.deadlineAt &&
             !!childSubCreatedAt &&
@@ -1677,7 +1695,7 @@ export class QuestService {
       }
 
       const answer = rawAnswer as Record<string, unknown>;
-      const questionId = String(answer.questionId ?? '');
+      const questionId = this.stringifyValue(answer.questionId);
       const review = reviewByQuestionId.get(questionId);
 
       if (!review) {
@@ -2027,21 +2045,21 @@ export class QuestService {
           }
 
           const answer = rawAnswer as Record<string, unknown>;
-          const questionId = String(answer.questionId ?? '');
+          const questionId = this.stringifyValue(answer.questionId);
           if (!questionId) {
             continue;
           }
 
           const selectedChoiceIds = Array.isArray(answer.selectedChoiceIds)
             ? answer.selectedChoiceIds
-                .map((choiceId) => String(choiceId))
+                .map((choiceId) => this.stringifyValue(choiceId))
                 .filter((choiceId) => choiceId.length > 0)
             : [];
           choiceIdsByQuestion.set(questionId, selectedChoiceIds);
           answerByQuestionId.set(questionId, {
             answerText:
               answer.answerText !== undefined && answer.answerText !== null
-                ? String(answer.answerText)
+                ? this.stringifyValue(answer.answerText)
                 : null,
             answerNumber:
               typeof answer.answerNumber === 'number'
@@ -2050,7 +2068,7 @@ export class QuestService {
             attachmentUrl:
               answer.attachmentUrl !== undefined &&
               answer.attachmentUrl !== null
-                ? String(answer.attachmentUrl)
+                ? this.stringifyValue(answer.attachmentUrl)
                 : null,
             isCorrect:
               typeof answer.isCorrect === 'boolean' ? answer.isCorrect : null,
@@ -2348,18 +2366,14 @@ export class QuestService {
               orderBy: { versionNo: 'desc' },
               take: 1,
             },
-            ...(true
-              ? {
-                  quest: {
-                    select: {
-                      id: true,
-                      title: true,
-                      type: true,
-                      description: true,
-                    },
-                  },
-                }
-              : {}),
+            quest: {
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                description: true,
+              },
+            },
           },
         });
 

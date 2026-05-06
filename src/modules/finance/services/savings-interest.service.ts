@@ -1,7 +1,32 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+
+type SavingsAccountWithInterestBank = Prisma.SavingsAccountGetPayload<{
+  include: {
+    savingsAccountBank: {
+      select: {
+        id: true;
+        interestRate: true;
+      };
+    };
+    studentProfile: {
+      select: {
+        termId: true;
+      };
+    };
+  };
+}>;
+
+type TermWeekRange = {
+  startDate: Date | string;
+  weekNo: number;
+};
+
+type TermWithWeeks = {
+  termWeeks: TermWeekRange[];
+};
 
 // @Injectable()
 export class SavingsInterestService {
@@ -109,7 +134,7 @@ export class SavingsInterestService {
    * Apply interest to a single savings account
    */
   private async applyInterest(
-    account: any,
+    account: SavingsAccountWithInterestBank,
     weekNo: number,
     periodDays: number,
     rateDivisor: number,
@@ -336,7 +361,6 @@ export class SavingsInterestService {
     if (day === 16) {
       const year = date.getFullYear();
       const month = date.getMonth();
-      const monthDays = new Date(year, month + 1, 0).getDate();
 
       return {
         periodStart: new Date(year, month, 1),
@@ -371,7 +395,10 @@ export class SavingsInterestService {
     return null;
   }
 
-  private calculateWeekFromTerm(term: any, date: Date): number | null {
+  private calculateWeekFromTerm(
+    term: TermWithWeeks,
+    date: Date,
+  ): number | null {
     if (!term.termWeeks || term.termWeeks.length === 0) return null;
 
     const termStart = new Date(term.termWeeks[0].startDate);

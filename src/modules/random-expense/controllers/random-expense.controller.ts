@@ -7,9 +7,9 @@ import {
   Param,
   ParseUUIDPipe,
   UseGuards,
-  Request,
   NotFoundException,
 } from '@nestjs/common';
+import { type User } from '@prisma/client';
 import { RandomExpenseService } from '../services/random-expense.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
@@ -21,6 +21,7 @@ import {
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { NeededPermissions } from 'src/modules/auth/decorators/needed-permissions.decorator';
 import { PERMISSIONS } from 'src/common/constants/permissions.constant';
+import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 
 @Controller('expenses')
 @UseGuards(JwtAuthGuard)
@@ -38,11 +39,11 @@ export class RandomExpenseController {
   @Get('pending')
   @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getPendingExpenses(
-    @Request() req: any,
+    @CurrentUser() user: User,
     @Query() query: GetPendingExpensesDto,
   ) {
     const studentProfileId = await this.resolveStudentProfileId(
-      req.user.id,
+      user.id,
       query.termId,
     );
     return this.randomExpenseService.getPendingExpenses(
@@ -59,11 +60,11 @@ export class RandomExpenseController {
   @Get('history')
   @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getExpenseHistory(
-    @Request() req: any,
+    @CurrentUser() user: User,
     @Query() query: GetExpenseHistoryDto,
   ) {
     const studentProfileId = await this.resolveStudentProfileId(
-      req.user.id,
+      user.id,
       query.termId,
     );
     return this.randomExpenseService.getExpenseHistory(studentProfileId, query);
@@ -77,13 +78,13 @@ export class RandomExpenseController {
   @Get('all')
   @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getAllExpenses(
-    @Request() req: any,
+    @CurrentUser() user: User,
     @Query('termId', new ParseUUIDPipe()) termId: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
     const studentProfileId = await this.resolveStudentProfileId(
-      req.user.id,
+      user.id,
       termId,
     );
     return this.randomExpenseService.getAllExpenses(
@@ -102,11 +103,11 @@ export class RandomExpenseController {
   @Get('summary')
   @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getExpenseSummary(
-    @Request() req: any,
+    @CurrentUser() user: User,
     @Query('termId', new ParseUUIDPipe()) termId: string,
   ) {
     const studentProfileId = await this.resolveStudentProfileId(
-      req.user.id,
+      user.id,
       termId,
     );
     return this.randomExpenseService.getExpenseSummary(
@@ -122,7 +123,7 @@ export class RandomExpenseController {
    */
   @Post('pay')
   @NeededPermissions([PERMISSIONS.EXPENSE.PAY_OWN])
-  async payExpense(@Request() req: any, @Body() body: PayExpenseDto) {
+  async payExpense(@CurrentUser() user: User, @Body() body: PayExpenseDto) {
     // Look up the expense to get termId for profile resolution
     const expense = await this.prisma.studentExpense.findUnique({
       where: { id: body.studentExpenseId },
@@ -132,7 +133,7 @@ export class RandomExpenseController {
       throw new NotFoundException('Expense not found');
     }
     const studentProfileId = await this.resolveStudentProfileId(
-      req.user.id,
+      user.id,
       expense.termId,
     );
     return this.randomExpenseService.payExpense(studentProfileId, body);
@@ -157,11 +158,11 @@ export class RandomExpenseController {
   @Get('current-week')
   @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getCurrentWeekExpenses(
-    @Request() req: any,
+    @CurrentUser() user: User,
     @Query('termId', new ParseUUIDPipe()) termId: string,
   ) {
     const studentProfileId = await this.resolveStudentProfileId(
-      req.user.id,
+      user.id,
       termId,
     );
     return this.randomExpenseService.getCurrentWeekExpenses(
@@ -178,11 +179,11 @@ export class RandomExpenseController {
   @Get('unacknowledged')
   @NeededPermissions([PERMISSIONS.EXPENSE.VIEW_OWN])
   async getUnacknowledgedExpenses(
-    @Request() req: any,
+    @CurrentUser() user: User,
     @Query('termId', new ParseUUIDPipe()) termId: string,
   ) {
     const studentProfileId = await this.resolveStudentProfileId(
-      req.user.id,
+      user.id,
       termId,
     );
     return this.randomExpenseService.getUnacknowledgedExpenses(
@@ -198,12 +199,12 @@ export class RandomExpenseController {
   @Post(':id/acknowledge')
   @NeededPermissions([PERMISSIONS.EXPENSE.ACKNOWLEDGE_OWN])
   async acknowledgeExpense(
-    @Request() req: any,
+    @CurrentUser() user: User,
     @Param('id', new ParseUUIDPipe()) id: string,
     @Query('termId', new ParseUUIDPipe()) termId: string,
   ) {
     const studentProfileId = await this.resolveStudentProfileId(
-      req.user.id,
+      user.id,
       termId,
     );
     return this.randomExpenseService.acknowledgeExpense(studentProfileId, id);
@@ -217,11 +218,11 @@ export class RandomExpenseController {
   @Post('acknowledge-all')
   @NeededPermissions([PERMISSIONS.EXPENSE.ACKNOWLEDGE_OWN])
   async acknowledgeAllExpenses(
-    @Request() req: any,
+    @CurrentUser() user: User,
     @Body() body: { termId: string },
   ) {
     const studentProfileId = await this.resolveStudentProfileId(
-      req.user.id,
+      user.id,
       body.termId,
     );
     return this.randomExpenseService.acknowledgeAllExpenses(
@@ -238,11 +239,11 @@ export class RandomExpenseController {
   @Get('wallet-balance')
   @NeededPermissions([PERMISSIONS.FINANCE.WALLET_VIEW_OWN])
   async getWalletBalance(
-    @Request() req: any,
+    @CurrentUser() user: User,
     @Query('termId', new ParseUUIDPipe()) termId: string,
   ) {
     const studentProfileId = await this.resolveStudentProfileId(
-      req.user.id,
+      user.id,
       termId,
     );
     const balance =
