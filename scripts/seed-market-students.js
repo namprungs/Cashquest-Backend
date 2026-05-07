@@ -59,7 +59,7 @@ async function seedMarketStudents(
     {
       email: 'student@school.com',
       username: 'student_demo',
-      studentCode: '65001',
+      studentCode: '6633000021',
       mainWalletBalance: 250000,
       investmentCash: 90000,
       holdings: [
@@ -70,7 +70,7 @@ async function seedMarketStudents(
     {
       email: 'student2@school.com',
       username: 'student_demo_2',
-      studentCode: '65002',
+      studentCode: '6633000022',
       mainWalletBalance: 200000,
       investmentCash: 120000,
       holdings: [

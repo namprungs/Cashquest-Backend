@@ -49,7 +49,7 @@ async function seedUsers(prisma, roles) {
       username: 'student_demo',
       roleId: roles.studentRole.id,
       isActive: true,
-      studentCode: '65001',
+      studentCode: '6633000021',
     },
     create: {
       email: 'student@school.com',
@@ -57,7 +57,7 @@ async function seedUsers(prisma, roles) {
       password: studentPassword,
       roleId: roles.studentRole.id,
       isActive: true,
-      studentCode: '65001',
+      studentCode: '6633000021',
     },
   });
 
