@@ -36,8 +36,8 @@ async function seedEconomicEvents(prisma, academicData) {
     {
       title: 'กนง. ขึ้นดอกเบี้ย',
       description: `• กนง. ขึ้นดอกเบี้ยนโยบาย ทุนไหลออกจากตลาดเกิดใหม่
-•ดอกเบี้ยออมทรัพย์ขึ้น
-•ดอกเบี้ยฝากประจำที่ฝากอยู่แล้ว — เท่าเดิม  |  offer ใหม่ — ขึ้น
+• ดอกเบี้ยออมทรัพย์ขึ้น
+• ดอกเบี้ยฝากประจำที่ฝากอยู่แล้ว — เท่าเดิม  |  offer ใหม่ — ขึ้น
 • ตราสารหนี้ที่ถืออยู่แล้ว — ดอกเบี้ยเท่าเดิม  |  offer ใหม่ — ขึ้น
 • หุ้นลง มูลค่า port ลง  |  DCA ได้หน่วยเพิ่มขึ้น
 `,
@@ -59,7 +59,7 @@ async function seedEconomicEvents(prisma, academicData) {
 
     {
       title: 'หุ้น Tech กำไรเกินคาด',
-      description: `• TechWave (H1) ประกาศกำไรสุทธิไตรมาสล่าสุดสูงกว่าคาดถึง 40%
+      description: `• TechWave ประกาศกำไรสุทธิไตรมาสล่าสุดสูงกว่าคาดถึง 40%
 • นักลงทุนต่างชาติไหลเข้าหุ้น tech ไทย sector rotation เข้า growth stocks
 • ดัชนีหุ้น tech ปรับตัวขึ้นแรง GameHub ได้ sentiment บวกไปด้วย
 • หุ้น defensive ไม่ได้รับ sentiment บวกมากนัก
@@ -122,7 +122,7 @@ async function seedEconomicEvents(prisma, academicData) {
       title: 'ราคาน้ำมันพุ่ง',
       description: `• ราคาน้ำมันดิบโลกพุ่ง 25% จากการลดกำลังการผลิตของ OPEC+
 • ต้นทุนโลจิสติกส์และพลังงานพุ่งสูง ทุกธุรกิจได้รับผลกระทบ
-• GreenPower (M1) ซึ่งเน้นพลังงานทดแทนกลายเป็นหุ้นที่น่าสนใจมากขึ้น
+• GreenPower ซึ่งเน้นพลังงานทดแทนกลายเป็นหุ้นที่น่าสนใจมากขึ้น
 • ผู้บริโภคมีภาระค่าน้ำมันสูงขึ้น กระทบ disposable income
 `,
       imageUrl:
@@ -160,7 +160,7 @@ async function seedEconomicEvents(prisma, academicData) {
       description: `• กนง. มีมติลดดอกเบี้ยนโยบาย เพื่อกระตุ้นเศรษฐกิจที่ชะลอตัว
 • ดอกเบี้ยเงินฝากออมทรัพย์ลดลงทันที ฝากประจำที่ฝากอยู่เท่าเดิมจนครบกำหนด
 • ตลาดหุ้นตอบรับบวก cost of capital ลด การลงทุนง่ายขึ้น
-• ตราสารหนี้ที่ถืออยู่ราคาขึ้น (yield ลด)  offer ใหม่ผลตอบแทนลดลง
+• ตราสารหนี้ที่ถืออยู่ราคาขึ้น offer ใหม่ผลตอบแทนลดลง
 • DCA ได้หน่วยน้อยลง (ราคาหุ้นขึ้น)
 `,
       imageUrl: 'https://cashquestbucket.sgp1.cdn.digitaloceanspaces.com/uploads/1777576341408-a-a-a.jpg',
@@ -195,9 +195,9 @@ async function seedEconomicEvents(prisma, academicData) {
 
     {
       title: 'GameHub รายงานขาดทุน',
-      description: `• GameHub (H2) รายงานผลประกอบการ: ขาดทุนสุทธิ 450 ล้านบาท แย่กว่าคาดมาก
+      description: `• GameHub รายงานผลประกอบการ: ขาดทุนสุทธิ 450 ล้านบาท แย่กว่าคาดมาก
 • ยอดผู้ใช้งานลด ต้นทุนพัฒนาเกมใหม่สูงเกินแผน
-• หุ้น H2 ร่วงแรงทันที ลาก sentiment หุ้น tech/growth อื่นลงด้วย
+• หุ้น GameHub ร่วงแรงทันที ลาก sentiment หุ้น tech/growth อื่นลงด้วย
 • นักลงทุนตั้งคำถามว่าหุ้น high-risk "คุ้มค่า" หรือไม่
 `,
       imageUrl: 'https://cashquestbucket.sgp1.cdn.digitaloceanspaces.com/uploads/1777576371202-game.jpg',
@@ -212,9 +212,9 @@ async function seedEconomicEvents(prisma, academicData) {
 
     {
       title: 'HealthPlus อนุมัติ Telehealth',
-      description: `• HealthPlus (L2) ได้รับอนุมัติจาก สปสช. ให้บริการ Telehealth แบบครบวงจรทั่วประเทศ
+      description: `• HealthPlus ได้รับอนุมัติจาก สปสช. ให้บริการ Telehealth แบบครบวงจรทั่วประเทศ
 • เปิดตลาดใหม่โดยไม่ต้องขยายสาขา margin ดีขึ้นมาก
-• ราคาหุ้น L2 ตอบรับบวกแรง เป็น catalyst เฉพาะตัว
+• ราคาหุ้น HealthPlus ตอบรับบวกแรง เป็น catalyst เฉพาะตัว
 • หุ้นตัวอื่นไม่ได้รับผลกระทบโดยตรง
 `,
       imageUrl: 'https://cashquestbucket.sgp1.cdn.digitaloceanspaces.com/uploads/1777576418237-health.jpg',
@@ -228,9 +228,9 @@ async function seedEconomicEvents(prisma, academicData) {
 
     {
       title: 'GreenPower ชนะประมูลโซลาร์',
-      description: `• GreenPower (M1) ชนะประมูลโครงการผลิตไฟฟ้าโซลาร์ภาครัฐ มูลค่า 8,000 ล้านบาท
+      description: `• GreenPower ชนะประมูลโครงการผลิตไฟฟ้าโซลาร์ภาครัฐ มูลค่า 8,000 ล้านบาท
 • สัญญา 20 ปี รายได้มั่นคง ลด risk ของบริษัทในระยะยาว
-• ตลาดตอบรับดี M1 ขึ้น sector sentiment พลังงานสีเขียวดีขึ้น
+• ตลาดตอบรับดี GreenPower ขึ้น sector sentiment พลังงานสีเขียวดีขึ้น
 • หุ้น sector อื่นไม่ได้รับผลกระทบโดยตรง
 `,
       imageUrl: 'https://cashquestbucket.sgp1.cdn.digitaloceanspaces.com/uploads/1777576444294-solar.jpg',

@@ -23,7 +23,7 @@ async function seedQuests(prisma, academicData, users) {
   // Open Account Quest
   const openAccountQuestTitle = 'เปิดบัญชีครั้งแรก';
   const openAccountQuestDescription =
-    'ทำภารกิจเปิดบัญชีออมทรัพย์ครั้งแรกให้สำเร็จ (actionType: opensavingaccount)';
+    'ทำภารกิจเปิดบัญชีออมทรัพย์ครั้งแรกให้สำเร็จ';
 
   const existingOpenAccountQuest = await prisma.quest.findFirst({
     where: {
