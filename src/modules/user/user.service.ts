@@ -125,6 +125,23 @@ export class UserService {
 
     return user;
   }
+
+  async getUserForLogin(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        password: true,
+        isActive: true,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException();
+    }
+
+    return user;
+  }
+
   async getUserById(where: Prisma.UserWhereUniqueInput): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where,

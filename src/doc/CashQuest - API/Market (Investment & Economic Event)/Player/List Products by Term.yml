@@ -5,11 +5,16 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/market/terms/{{marketTermId}}/products"
+  url: "{{devurl}}/market/terms/{{marketTermId}}/products"
   headers:
     - name: Authorization
       value: Bearer {{accessToken}}
   auth: inherit
+
+runtime:
+  variables:
+    - name: devurl
+      value: https://cashquest-backend.politeriver-a75760f4.centralindia.azurecontainerapps.io
 
 settings:
   encodeUrl: true
