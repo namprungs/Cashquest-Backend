@@ -9,8 +9,13 @@ import {
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { Request, Response } from 'express';
-import type { User } from '@prisma/client';
 import { AuthService } from './services/auth.service';
+
+type LoginUser = {
+  id: string;
+  password: string;
+  isActive: boolean;
+};
 
 @Controller('auth')
 export class AuthController {
@@ -28,7 +33,7 @@ export class AuthController {
   @Post('login')
   @UseGuards(LocalAuthGuard)
   async login(
-    @CurrentUser() user: User,
+    @CurrentUser() user: LoginUser,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {

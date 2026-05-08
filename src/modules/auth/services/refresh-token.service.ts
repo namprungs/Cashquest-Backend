@@ -6,18 +6,20 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 
 export type TokenMeta = Partial<{ ip: string; ua: string; deviceId: string }>;
 
 @Injectable()
 export class RefreshTokenService {
+  private readonly refreshTtlMs: number;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly jwt: JwtService, // ใช้ทำ Access Token ต่อไปได้ตามปกติ
-  ) {}
+  ) {
+    this.refreshTtlMs = this.resolveRefreshTtlMs();
+  }
 
   /**
    * สุ่ม refresh token แบบปลอดภัย (plaintext) แล้วแฮชด้วย SHA256
@@ -31,7 +33,7 @@ export class RefreshTokenService {
     return crypto.createHash('sha256').update(plain).digest('hex');
   }
 
-  private getRefreshTtlMs(): number {
+  private resolveRefreshTtlMs(): number {
     const ms = Number(this.config.get('JWT_REFRESH_TOKEN_EXPIRATION_MS'));
     if (!Number.isFinite(ms) || ms <= 0) {
       // สำรอง 14 วัน
@@ -41,7 +43,7 @@ export class RefreshTokenService {
   }
 
   private computeRefreshExpiry(): Date {
-    return new Date(Date.now() + this.getRefreshTtlMs());
+    return new Date(Date.now() + this.refreshTtlMs);
   }
 
   /**
@@ -61,6 +63,11 @@ export class RefreshTokenService {
           createdByIp: meta?.ip,
           userAgent: meta?.ua,
           deviceId: meta?.deviceId,
+        },
+        select: {
+          id: true,
+          userId: true,
+          expiresAt: true,
         },
       });
 

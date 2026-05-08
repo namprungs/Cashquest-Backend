@@ -5,47 +5,61 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import * as bcrypt from 'bcrypt'; // ✅ เปลี่ยนเป็น namespace import
+import * as bcrypt from 'bcrypt';
 import { UserService } from 'src/modules/user/user.service';
-import { User } from '@prisma/client';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { RefreshTokenService, TokenMeta } from './refresh-token.service';
 import { TokenPayload } from '../interfaces/token.interface';
 
+type LoginUser = {
+  id: string;
+  password: string;
+  isActive: boolean;
+};
+
 @Injectable()
 export class AuthService {
+  private readonly accessTokenSecret: string;
+  private readonly accessTokenExpirationMs: number;
+  private readonly accessTokenExpiration: string;
+
   constructor(
     private readonly userService: UserService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     private readonly refreshTokenService: RefreshTokenService,
-  ) {}
+  ) {
+    this.accessTokenSecret =
+      this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET') ?? '';
+    this.accessTokenExpirationMs = Number(
+      this.configService.get('JWT_ACCESS_TOKEN_EXPIRATION_MS') ?? 0,
+    );
+    this.accessTokenExpiration = `${this.accessTokenExpirationMs}ms`;
+  }
 
-  private async signAccessToken(userId: string) {
-    const expiresAccessToken = new Date();
-    expiresAccessToken.setMilliseconds(
-      expiresAccessToken.getTime() +
-        Number(this.configService.get('JWT_ACCESS_TOKEN_EXPIRATION_MS')),
+  private signAccessToken(userId: string) {
+    const expiresAccessToken = new Date(
+      Date.now() + this.accessTokenExpirationMs,
     );
 
     const tokenPayload: TokenPayload = {
-      userId: userId,
+      userId,
     };
 
-    const accessToken = await this.jwtService.signAsync(tokenPayload, {
-      secret: this.configService.get('JWT_ACCESS_TOKEN_SECRET'),
-      expiresIn: `${this.configService.get('JWT_ACCESS_TOKEN_EXPIRATION_MS')}ms`,
+    const accessToken = this.jwtService.sign(tokenPayload, {
+      secret: this.accessTokenSecret,
+      expiresIn: this.accessTokenExpiration as JwtSignOptions['expiresIn'],
     });
     return { accessToken, expiresAccessToken };
   }
 
   async verifyUser(email: string, password: string) {
     try {
-      const user: User = await this.userService.getUser({ email });
-      const authenticated = await bcrypt.compare(password, user.password); // ✅
-      if (!authenticated) {
+      const user = await this.userService.getUserForLogin(email);
+      const authenticated = await bcrypt.compare(password, user.password);
+      if (!authenticated || !user.isActive) {
         throw new UnauthorizedException('Invalid credentials');
       }
       return user;
@@ -57,11 +71,9 @@ export class AuthService {
     }
   }
 
-  async login(user: User, response: Response, meta: TokenMeta) {
+  async login(user: LoginUser, response: Response, meta: TokenMeta) {
     try {
-      const { accessToken, expiresAccessToken } = await this.signAccessToken(
-        user.id,
-      );
+      const { accessToken, expiresAccessToken } = this.signAccessToken(user.id);
       const refreshToken = await this.refreshTokenService.issue(user.id, meta);
       response.cookie('Authentication', accessToken, {
         httpOnly: true,
@@ -86,7 +98,7 @@ export class AuthService {
       oldrefreshToken,
       meta,
     );
-    const { accessToken } = await this.signAccessToken(record.userId);
+    const { accessToken } = this.signAccessToken(record.userId);
     return { refreshToken, accessToken };
   }
 }

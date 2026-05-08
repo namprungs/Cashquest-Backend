@@ -21,6 +21,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV UV_THREADPOOL_SIZE=32
+ENV DATABASE_POOL_MAX=20
 
 RUN apk add --no-cache openssl
 
