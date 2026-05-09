@@ -26,6 +26,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import * as bcrypt from 'bcrypt';
 import { PERMISSIONS } from 'src/common/constants/permissions.constant';
+import { createPostgresPoolOptions } from '../src/prisma/database-config';
 // ตรวจสอบ Path นี้ให้ถูกต้องตามโครงสร้างโปรเจกต์ของคุณ
 
 // 2. สร้าง Connection Pool และ Adapter
@@ -36,7 +37,7 @@ if (!connectionString || connectionString === 'undefined') {
   throw new Error('❌ DATABASE_URL is missing. Please check your .env file.');
 }
 
-const pool = new pg.Pool({ connectionString });
+const pool = new pg.Pool(createPostgresPoolOptions(connectionString));
 const adapter = new PrismaPg(pool);
 
 // 3. ส่ง adapter เข้าไปใน PrismaClient

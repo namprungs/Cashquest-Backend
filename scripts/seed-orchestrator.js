@@ -8,6 +8,7 @@ require('dotenv/config');
 const pg = require('pg');
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
+const { createPostgresPoolOptions } = require('./database-config');
 const { seedPermissionsAndRoles } = require('./seed-permissions-roles');
 const { seedUsers } = require('./seed-users');
 const { seedAcademic } = require('./seed-academic');
@@ -33,7 +34,7 @@ if (!connectionString || connectionString === 'undefined') {
   throw new Error('❌ DATABASE_URL is missing. Please check your .env file.');
 }
 
-const pool = new pg.Pool({ connectionString });
+const pool = new pg.Pool(createPostgresPoolOptions(connectionString));
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 

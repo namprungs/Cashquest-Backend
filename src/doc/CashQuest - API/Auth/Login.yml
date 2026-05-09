@@ -21,7 +21,7 @@ http:
 runtime:
   variables:
     - name: devurl
-      value: https://cashquest-backend.politeriver-a75760f4.centralindia.azurecontainerapps.io
+      value: https://cashquest-backend-6z9b8.ondigitalocean.app
 
 settings:
   encodeUrl: true
