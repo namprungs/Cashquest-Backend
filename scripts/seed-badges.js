@@ -6,6 +6,8 @@ async function seedBadges(prisma, academicData) {
   console.log('🏅 กำลังสร้างข้อมูล badges สำหรับเทอมหลัก...');
 
   const { term, demoStudentProfile } = academicData;
+  const demoStudentProfiles =
+    academicData.demoStudentProfiles ?? [demoStudentProfile].filter(Boolean);
 
   const badgeSeeds = [
     {
@@ -102,24 +104,26 @@ async function seedBadges(prisma, academicData) {
       },
     });
 
-    // Award badge to demo student if specified
+    // Award badge to every demo student if specified
     if (badgeSeed.earnedByDemoStudent) {
-      await prisma.studentBadge.upsert({
-        where: {
-          studentProfileId_badgeId: {
-            studentProfileId: demoStudentProfile.id,
-            badgeId: badge.id,
+      for (const profile of demoStudentProfiles) {
+        await prisma.studentBadge.upsert({
+          where: {
+            studentProfileId_badgeId: {
+              studentProfileId: profile.id,
+              badgeId: badge.id,
+            },
           },
-        },
-        update: {
-          earnedAt: new Date(),
-        },
-        create: {
-          studentProfileId: demoStudentProfile.id,
-          badgeId: badge.id,
-          earnedAt: new Date(),
-        },
-      });
+          update: {
+            earnedAt: new Date(),
+          },
+          create: {
+            studentProfileId: profile.id,
+            badgeId: badge.id,
+            earnedAt: new Date(),
+          },
+        });
+      }
     }
   }
 

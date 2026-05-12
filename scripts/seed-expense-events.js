@@ -3,7 +3,7 @@
  * Creates expense events for college, working, and retired life stages
  * Events trigger random expenses during simulations
  *
- * Also assigns 8 random expense events to the demo student
+ * Also assigns random expense events to the demo students
  * spread across the current life-stage weeks.
  */
 const { Prisma } = require('@prisma/client');
@@ -252,13 +252,15 @@ async function seedExpenseEvents(prisma, academicData, lifeStages) {
 
   console.log(`✅ Seeded ${events.length} events`);
 
-  // ── Assign 8 random expenses to the demo student ──
-  console.log('🎰 กำลังจัด 8 ค่าใช้จ่ายสุ่มให้นักเรียนทดสอบ...');
+  // ── Assign random expenses to the demo students ──
+  console.log('🎰 กำลังจัดค่าใช้จ่ายสุ่มให้นักเรียนทดสอบ...');
 
-  const demoStudentProfile = academicData.demoStudentProfile;
-  if (!demoStudentProfile) {
+  const demoStudentProfiles =
+    academicData.demoStudentProfiles ??
+    [academicData.demoStudentProfile].filter(Boolean);
+  if (demoStudentProfiles.length === 0) {
     console.log(
-      '⚠️  No demo student profile found, skipping expense assignment',
+      '⚠️  No demo student profiles found, skipping expense assignment',
     );
     return;
   }
@@ -300,74 +302,72 @@ async function seedExpenseEvents(prisma, academicData, lifeStages) {
     return;
   }
 
-  // Pick 5 random events (or fewer if not enough available)
-  const shuffled = [...availableEvents].sort(() => Math.random() - 0.5);
-  const picked = shuffled.slice(0, Math.min(5, shuffled.length));
+  let totalAssigned = 0;
+  for (const demoStudentProfile of demoStudentProfiles) {
+    const shuffled = [...availableEvents].sort(() => Math.random() - 0.5);
+    const picked = shuffled.slice(0, Math.min(5, shuffled.length));
 
-  // Remove any existing expenses for this student in this term to avoid duplicates
-  await prisma.studentExpense.deleteMany({
-    where: {
-      studentProfileId: demoStudentProfile.id,
-      termId: term.id,
-    },
-  });
-
-  // Get the demo student's wallet
-  const wallet = await prisma.wallet.findFirst({
-    where: { studentProfileId: demoStudentProfile.id },
-    select: { id: true, balance: true },
-  });
-
-  // Create StudentExpense + ExpensePayment + WalletTransaction records (no wallet deduction)
-  // Assign dayOfWeek 1-5 in order (Mon-Fri), all in currentWeek
-  let assigned = 0;
-  for (let i = 0; i < picked.length; i++) {
-    const ev = picked[i];
-    const dayOfWeek = i + 1; // 1=Mon, 2=Tue, ..., 5=Fri
-
-    const expense = await prisma.studentExpense.create({
-      data: {
+    await prisma.studentExpense.deleteMany({
+      where: {
         studentProfileId: demoStudentProfile.id,
         termId: term.id,
-        expenseEventId: ev.id,
-        weekNo: currentWeek,
-        dayOfWeek,
-        amount: ev.baseAmount,
-        remainingAmount: 0,
-        status: 'PAID',
       },
     });
 
-    // Create payment history record
-    await prisma.expensePayment.create({
-      data: {
-        studentExpenseId: expense.id,
-        sourceType: 'WALLET',
-        amount: ev.baseAmount,
-        ...(wallet ? { sourceRef: wallet.id } : {}),
-      },
+    const wallet = await prisma.wallet.findFirst({
+      where: { studentProfileId: demoStudentProfile.id },
+      select: { id: true, balance: true },
     });
 
-    // Create wallet transaction so it shows in transaction history
-    if (wallet) {
-      await prisma.walletTransaction.create({
+    let assigned = 0;
+    for (let i = 0; i < picked.length; i++) {
+      const ev = picked[i];
+      const dayOfWeek = i + 1; // 1=Mon, 2=Tue, ..., 5=Fri
+
+      const expense = await prisma.studentExpense.create({
         data: {
-          walletId: wallet.id,
-          type: 'FINE_PAYMENT',
-          amount: new Prisma.Decimal(ev.baseAmount).neg(),
-          balanceBefore: wallet.balance,
-          balanceAfter: wallet.balance,
-          metadata: {
-            source: 'RANDOM_EXPENSE_SEED',
-            studentExpenseId: expense.id,
-            expenseEventId: ev.id,
-            weekNo: currentWeek,
-          },
-          description: `ชำระค่าใช้จ่าย: ${ev.title}`,
+          studentProfileId: demoStudentProfile.id,
+          termId: term.id,
+          expenseEventId: ev.id,
+          weekNo: currentWeek,
+          dayOfWeek,
+          amount: ev.baseAmount,
+          remainingAmount: 0,
+          status: 'PAID',
         },
       });
+
+      await prisma.expensePayment.create({
+        data: {
+          studentExpenseId: expense.id,
+          sourceType: 'WALLET',
+          amount: ev.baseAmount,
+          ...(wallet ? { sourceRef: wallet.id } : {}),
+        },
+      });
+
+      if (wallet) {
+        await prisma.walletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'FINE_PAYMENT',
+            amount: new Prisma.Decimal(ev.baseAmount).neg(),
+            balanceBefore: wallet.balance,
+            balanceAfter: wallet.balance,
+            metadata: {
+              source: 'RANDOM_EXPENSE_SEED',
+              studentExpenseId: expense.id,
+              expenseEventId: ev.id,
+              weekNo: currentWeek,
+            },
+            description: `ชำระค่าใช้จ่าย: ${ev.title}`,
+          },
+        });
+      }
+      assigned++;
     }
-    assigned++;
+
+    totalAssigned += assigned;
   }
 
   const stageName =
@@ -377,7 +377,7 @@ async function seedExpenseEvents(prisma, academicData, lifeStages) {
       })
     )?.name ?? '';
   console.log(
-    `✅ จัด ${assigned} ค่าใช้จ่ายสุ่มให้นักเรียน (สัปดาห์ ${stageRule.startWeek}-${stageRule.endWeek}, stage: ${stageName})`,
+    `✅ จัด ${totalAssigned} ค่าใช้จ่ายสุ่มให้ ${demoStudentProfiles.length} นักเรียน (สัปดาห์ ${stageRule.startWeek}-${stageRule.endWeek}, stage: ${stageName})`,
   );
 }
 

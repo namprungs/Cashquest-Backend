@@ -11,9 +11,7 @@ const calculateTotalWeeks = (startDate, endDate) => {
 };
 
 async function seedAcademic(prisma, users) {
-  console.log(
-    '🏫 กำลังสร้างข้อมูล Dev: school/term/life-stage/classroom...',
-  );
+  console.log('🏫 กำลังสร้างข้อมูล Dev: school/term/life-stage/classroom...');
 
   const demoSchoolName = 'CashQuest Demo School';
   const demoSchoolPlan = 'PREMIUM';
@@ -38,10 +36,18 @@ async function seedAcademic(prisma, users) {
     data: { schoolId: school.id },
   });
 
-  await prisma.user.update({
-    where: { id: users.studentUser.id },
-    data: { schoolId: school.id },
-  });
+  const demoStudentUsers = [
+    users.studentUser,
+    users.student2User,
+    users.student3User,
+  ].filter(Boolean);
+
+  for (const studentUser of demoStudentUsers) {
+    await prisma.user.update({
+      where: { id: studentUser.id },
+      data: { schoolId: school.id },
+    });
+  }
 
   await prisma.user.update({
     where: { id: users.staffUser.id },
@@ -49,8 +55,8 @@ async function seedAcademic(prisma, users) {
   });
 
   const termName = 'Demo Term 1/2026';
-  const termStartDate = new Date('2026-03-09T00:00:00.000Z');
-  const termEndDate = new Date('2026-06-28T00:00:00.000Z');
+  const termStartDate = new Date('2026-04-06T00:00:00.000Z');
+  const termEndDate = new Date('2026-07-31T00:00:00.000Z');
   const totalWeeks = calculateTotalWeeks(termStartDate, termEndDate);
 
   const existingTerm = await prisma.term.findFirst({
@@ -147,10 +153,18 @@ async function seedAcademic(prisma, users) {
         where: { id: existing.id },
         data: stage,
       });
-      lifeStages.push({ id: updated.id, name: updated.name, orderNo: updated.orderNo });
+      lifeStages.push({
+        id: updated.id,
+        name: updated.name,
+        orderNo: updated.orderNo,
+      });
     } else {
       const created = await prisma.lifeStage.create({ data: stage });
-      lifeStages.push({ id: created.id, name: created.name, orderNo: created.orderNo });
+      lifeStages.push({
+        id: created.id,
+        name: created.name,
+        orderNo: created.orderNo,
+      });
     }
   }
 
@@ -203,49 +217,62 @@ async function seedAcademic(prisma, users) {
     },
   });
 
-  // Add student to classroom
-  await prisma.classroomStudent.upsert({
-    where: {
-      classroomId_studentId: {
-        classroomId: classroom.id,
-        studentId: users.studentUser.id,
-      },
-    },
-    update: {},
-    create: {
-      classroomId: classroom.id,
-      studentId: users.studentUser.id,
-    },
-  });
+  const demoStudentProfiles = [];
 
-  // Create student profile
-  const demoStudentProfile = await prisma.studentProfile.upsert({
-    where: {
-      userId_termId: {
-        userId: users.studentUser.id,
+  for (const studentUser of demoStudentUsers) {
+    await prisma.classroomStudent.upsert({
+      where: {
+        classroomId_studentId: {
+          classroomId: classroom.id,
+          studentId: studentUser.id,
+        },
+      },
+      update: {},
+      create: {
+        classroomId: classroom.id,
+        studentId: studentUser.id,
+      },
+    });
+
+    const profile = await prisma.studentProfile.upsert({
+      where: {
+        userId_termId: {
+          userId: studentUser.id,
+          termId: term.id,
+        },
+      },
+      update: {},
+      create: {
+        userId: studentUser.id,
         termId: term.id,
       },
-    },
-    update: {},
-    create: {
-      userId: users.studentUser.id,
-      termId: term.id,
-    },
-  });
+    });
 
-  // Create wallet
-  await prisma.wallet.upsert({
-    where: {
-      studentProfileId: demoStudentProfile.id,
-    },
-    update: {},
-    create: {
-      studentProfileId: demoStudentProfile.id,
-      balance: 50000,
-    },
-  });
+    await prisma.wallet.upsert({
+      where: {
+        studentProfileId: profile.id,
+      },
+      update: {},
+      create: {
+        studentProfileId: profile.id,
+        balance: 50000,
+      },
+    });
 
-  return { school, term, classroom, demoStudentProfile, lifeStages, totalWeeks };
+    demoStudentProfiles.push(profile);
+  }
+
+  const demoStudentProfile = demoStudentProfiles[0];
+
+  return {
+    school,
+    term,
+    classroom,
+    demoStudentProfile,
+    demoStudentProfiles,
+    lifeStages,
+    totalWeeks,
+  };
 }
 
 module.exports = { seedAcademic, calculateTotalWeeks };

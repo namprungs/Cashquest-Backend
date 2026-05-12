@@ -1,7 +1,10 @@
-const { BondPositionStatus, InvestmentTransactionType } = require('@prisma/client');
+const {
+  BondPositionStatus,
+  InvestmentTransactionType,
+} = require('@prisma/client');
 
 /**
- * Seed 3 bond positions for the first student:
+ * Seed 3 bond positions for each demo student:
  * 1. ACTIVE — just purchased today
  * 2. MATURED — past maturity, all coupons paid, waiting for principal
  * 3. CLOSED — already redeemed (principal + interest received)
@@ -10,6 +13,11 @@ async function seedBondPositions(prisma, academicData, products) {
   console.log('📋 กำลัง seed ตำแหน่งพันธบัตร...');
 
   const { term } = academicData;
+  const demoStudentEmails = [
+    'student@school.com',
+    'student2@school.com',
+    'student3@school.com',
+  ];
 
   const bondProduct = products.find((p) => p.symbol === 'TGBOND');
   if (!bondProduct) {
@@ -17,25 +25,45 @@ async function seedBondPositions(prisma, academicData, products) {
     return;
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: 'student@school.com' },
-  });
-  if (!user) {
-    console.log('  ⚠️ student@school.com not found, skipping bond seed');
-    return;
-  }
+  for (const email of demoStudentEmails) {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+    if (!user) {
+      console.log(`  ⚠️ ${email} not found, skipping bond seed`);
+      continue;
+    }
 
-  const profile = await prisma.studentProfile.findUnique({
-    where: { userId_termId: { userId: user.id, termId: term.id } },
-    include: { investmentWallet: true },
-  });
-  if (!profile || !profile.investmentWallet) {
-    console.log(
-      '  ⚠️ Student profile or investment wallet not found, skipping',
+    const profile = await prisma.studentProfile.findUnique({
+      where: { userId_termId: { userId: user.id, termId: term.id } },
+      include: { investmentWallet: true },
+    });
+    if (!profile || !profile.investmentWallet) {
+      console.log(
+        `  ⚠️ Student profile or investment wallet not found for ${email}, skipping`,
+      );
+      continue;
+    }
+
+    await seedBondPositionsForProfile(
+      prisma,
+      term,
+      bondProduct,
+      profile,
+      email,
     );
-    return;
   }
 
+  console.log('✅ Seed ตำแหน่งพันธบัตรเสร็จสมบูรณ์');
+}
+
+async function seedBondPositionsForProfile(
+  prisma,
+  term,
+  bondProduct,
+  profile,
+  email,
+) {
   // Clean old bond data for this student
   const oldHoldings = await prisma.holding.findMany({
     where: {
@@ -66,13 +94,13 @@ async function seedBondPositions(prisma, academicData, products) {
   });
 
   const walletId = profile.investmentWallet.id;
-  let walletBalance = Number(profile.investmentWallet.balance);
+  const initialWalletBalance = Number(profile.investmentWallet.balance);
 
   const faceValue = 10000;
   const couponRate = 0.028;
   const couponIntervalDays = 2;
   const maturityWeeks = 10;
-  const totalReturnRate = 0.70;
+  const totalReturnRate = 0.7;
   const totalPayouts = Math.floor((maturityWeeks * 7) / couponIntervalDays);
   const couponAmountPerPayout = (faceValue * totalReturnRate) / totalPayouts;
   const now = new Date();
@@ -163,9 +191,6 @@ async function seedBondPositions(prisma, academicData, products) {
   const maturedTotalInterest =
     Math.round(totalPayouts * couponAmountPerPayout * 100) / 100;
 
-  // Credit coupon interest to wallet
-  walletBalance += maturedTotalInterest;
-
   console.log(
     `  ✅ MATURED bond: ซื้อ ${maturedPurchasedAt.toISOString().slice(0, 10)}, ครบกำหนด ${maturedMaturityDate.toISOString().slice(0, 10)}, ดอกเบี้ย ${maturedCoupons.length} ครั้ง = ${maturedTotalInterest.toFixed(2)} coin, รอรับเงินต้น`,
   );
@@ -226,12 +251,13 @@ async function seedBondPositions(prisma, academicData, products) {
   // ============================================================
   // Update wallet + create transactions
   // ============================================================
-  const totalCredit = maturedTotalInterest + closedTotalInterest + faceValue;
-  const balanceBefore = walletBalance - totalCredit; // what it was before all credits
+  const afterMaturedCoupon = initialWalletBalance + maturedTotalInterest;
+  const afterClosedCoupon = afterMaturedCoupon + closedTotalInterest;
+  const finalWalletBalance = afterClosedCoupon + faceValue;
 
   await prisma.investmentWallet.update({
     where: { id: walletId },
-    data: { balance: walletBalance + faceValue },
+    data: { balance: finalWalletBalance },
   });
 
   // Coupon interest transaction for matured bond
@@ -240,8 +266,8 @@ async function seedBondPositions(prisma, academicData, products) {
       investmentWalletId: walletId,
       type: InvestmentTransactionType.COUPON,
       amount: maturedTotalInterest,
-      balanceBefore: balanceBefore,
-      balanceAfter: balanceBefore + maturedTotalInterest,
+      balanceBefore: initialWalletBalance,
+      balanceAfter: afterMaturedCoupon,
       description: 'Seed: coupon interest for matured bond',
       metadata: {
         source: 'SEED_BOND_COUPON',
@@ -256,8 +282,8 @@ async function seedBondPositions(prisma, academicData, products) {
       investmentWalletId: walletId,
       type: InvestmentTransactionType.COUPON,
       amount: closedTotalInterest,
-      balanceBefore: balanceBefore + maturedTotalInterest,
-      balanceAfter: balanceBefore + maturedTotalInterest + closedTotalInterest,
+      balanceBefore: afterMaturedCoupon,
+      balanceAfter: afterClosedCoupon,
       description: 'Seed: coupon interest for redeemed bond',
       metadata: {
         source: 'SEED_BOND_COUPON',
@@ -272,8 +298,8 @@ async function seedBondPositions(prisma, academicData, products) {
       investmentWalletId: walletId,
       type: InvestmentTransactionType.REDEEM,
       amount: faceValue,
-      balanceBefore: walletBalance,
-      balanceAfter: walletBalance + faceValue,
+      balanceBefore: afterClosedCoupon,
+      balanceAfter: finalWalletBalance,
       description: 'Seed: bond principal redeemed',
       metadata: {
         source: 'SEED_BOND_PRINCIPAL_REDEEM',
@@ -282,7 +308,7 @@ async function seedBondPositions(prisma, academicData, products) {
     },
   });
 
-  console.log('✅ Seed ตำแหน่งพันธบัตรเสร็จสมบูรณ์');
+  console.log(`  ✅ Seeded bond positions for ${email}`);
 }
 
 module.exports = { seedBondPositions };

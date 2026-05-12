@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { Prisma, TermStatus, User } from '@prisma/client';
+import { BondPositionStatus, Prisma, TermStatus, User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
@@ -526,7 +526,7 @@ export class UserService {
 
   async getClassroomLeaderboard(userId: string, termId: string, take: number) {
     return this.cache.getOrSetCache(
-      `leaderboard:user:${userId}:term:${termId}:take:${take}`,
+      `leaderboard:v2:user:${userId}:term:${termId}:take:${take}`,
       90,
       () => this.fetchClassroomLeaderboard(userId, termId, take),
     );
@@ -585,18 +585,62 @@ export class UserService {
             avgCost: true,
             product: {
               select: {
+                type: true,
                 prices: {
                   where: { termId },
-                  orderBy: { weekNo: 'desc' },
+                  orderBy: [{ weekNo: 'desc' }, { createdAt: 'desc' }],
                   take: 1,
                   select: { close: true },
                 },
+              },
+            },
+            bondPositions: {
+              where: {
+                termId,
+                status: BondPositionStatus.ACTIVE,
+              },
+              select: {
+                units: true,
+                purchasePrice: true,
               },
             },
           },
         },
       },
     });
+
+    const leaderboardProductIds = [
+      ...new Set(
+        profiles.flatMap((profile) =>
+          profile.holdings.map((holding) => holding.productId),
+        ),
+      ),
+    ];
+    const termSimulation = await this.prisma.termSimulation.findUnique({
+      where: { termId },
+      select: { currentWeek: true },
+    });
+    const currentWeek = termSimulation?.currentWeek ?? 1;
+    const liveTicks = leaderboardProductIds.length
+      ? await this.prisma.productLivePriceTick.findMany({
+          where: {
+            termId,
+            productId: { in: leaderboardProductIds },
+            simulatedWeekNo: currentWeek,
+          },
+          orderBy: [{ tickedAt: 'desc' }],
+          select: {
+            productId: true,
+            price: true,
+          },
+        })
+      : [];
+    const liveTickPriceByProductId = new Map<string, number>();
+    for (const tick of liveTicks) {
+      if (!liveTickPriceByProductId.has(tick.productId)) {
+        liveTickPriceByProductId.set(tick.productId, Number(tick.price ?? 0));
+      }
+    }
 
     // 4. Sort by total assets descending and compute rank
     const ranked = profiles
@@ -616,8 +660,25 @@ export class UserService {
         for (const holding of p.holdings) {
           const units = Number(holding.units ?? 0);
           const avgCost = Number(holding.avgCost ?? 0);
+          const productType = (holding.product?.type ?? '').toUpperCase();
+
+          if (productType === 'BOND') {
+            const activeBondValue = holding.bondPositions.reduce(
+              (sum, position) =>
+                sum +
+                Number(position.units ?? 0) *
+                  Number(position.purchasePrice ?? 0),
+              0,
+            );
+            investedValue += activeBondValue;
+            marketValue += activeBondValue;
+            continue;
+          }
+
           const latestPrice = Number(
-            holding.product.prices[0]?.close ?? avgCost,
+            liveTickPriceByProductId.get(holding.productId) ??
+              holding.product.prices[0]?.close ??
+              avgCost,
           );
           investedValue += units * avgCost;
           marketValue += units * latestPrice;

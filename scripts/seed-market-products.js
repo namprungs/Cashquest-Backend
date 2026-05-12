@@ -8,12 +8,16 @@ async function seedMarketProducts(prisma, academicData) {
   console.log('📈 กำลังสร้างข้อมูล market สำหรับเทอมหลักเดียวกัน...');
 
   const { term, demoStudentProfile } = academicData;
+  const demoStudentProfiles =
+    academicData.demoStudentProfiles ?? [demoStudentProfile].filter(Boolean);
 
-  // Update wallet balance
-  await prisma.wallet.update({
-    where: { studentProfileId: demoStudentProfile.id },
-    data: { balance: 250000 },
-  });
+  // Give every demo student the same main-wallet starting capital.
+  for (const profile of demoStudentProfiles) {
+    await prisma.wallet.update({
+      where: { studentProfileId: profile.id },
+      data: { balance: 250000 },
+    });
+  }
 
   const productSeeds = [
     // === LOW RISK ===

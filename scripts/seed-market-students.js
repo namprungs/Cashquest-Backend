@@ -61,7 +61,6 @@ async function seedMarketStudents(
       username: 'student_demo',
       studentCode: '6633000021',
       mainWalletBalance: 250000,
-      investmentCash: 90000,
       holdings: [
         { symbol: 'SCHMART', units: 200, avgCost: 84 },
         { symbol: 'GRNPWR', units: 150, avgCost: 108 },
@@ -71,8 +70,7 @@ async function seedMarketStudents(
       email: 'student2@school.com',
       username: 'student_demo_2',
       studentCode: '6633000022',
-      mainWalletBalance: 200000,
-      investmentCash: 120000,
+      mainWalletBalance: 250000,
       holdings: [
         { symbol: 'TWAV', units: 100, avgCost: 128 },
         { symbol: 'HLTHPLS', units: 300, avgCost: 94 },
@@ -82,16 +80,22 @@ async function seedMarketStudents(
       email: 'student3@school.com',
       username: 'student_demo_3',
       studentCode: '65003',
-      mainWalletBalance: 180000,
-      investmentCash: 70000,
+      mainWalletBalance: 250000,
       holdings: [
         { symbol: 'FSTFIN', units: 350, avgCost: 74 },
         { symbol: 'GHUB', units: 280, avgCost: 59 },
       ],
     },
   ];
+  const investmentStartingCapital = 120000;
 
   for (const studentSeed of marketStudentSeeds) {
+    const investedCost = studentSeed.holdings.reduce(
+      (sum, item) => sum + item.units * item.avgCost,
+      0,
+    );
+    const investmentCash = investmentStartingCapital - investedCost;
+
     // Upsert user
     const user = await prisma.user.upsert({
       where: { email: studentSeed.email },
@@ -158,12 +162,12 @@ async function seedMarketStudents(
       where: { studentProfileId: profile.id },
       update: {
         termId: term.id,
-        balance: studentSeed.investmentCash,
+        balance: investmentCash,
       },
       create: {
         studentProfileId: profile.id,
         termId: term.id,
-        balance: studentSeed.investmentCash,
+        balance: investmentCash,
       },
       select: { id: true },
     });
@@ -242,19 +246,13 @@ async function seedMarketStudents(
     }
 
     // Record investment transaction
-    const investedCost = studentSeed.holdings.reduce(
-      (sum, item) => sum + item.units * item.avgCost,
-      0,
-    );
-    const transferInAmount = investedCost + studentSeed.investmentCash;
-
     await prisma.investmentTransaction.create({
       data: {
         investmentWalletId: investmentWallet.id,
         type: InvestmentTransactionType.TRANSFER_IN,
-        amount: transferInAmount,
+        amount: investmentStartingCapital,
         balanceBefore: 0,
-        balanceAfter: studentSeed.investmentCash,
+        balanceAfter: investmentCash,
         metadata: {
           source: 'MAIN_WALLET',
           note: 'seed-market-bootstrap',
@@ -265,16 +263,25 @@ async function seedMarketStudents(
 
     console.log(`  ✅ Created market student: ${studentSeed.email}`);
 
-    // Seed dividend payouts for the first student only
-    if (studentSeed.email === 'student@school.com') {
-      await seedDividendPayouts(prisma, term.id, profile.id, products, currentMarketWeek);
-    }
+    await seedDividendPayouts(
+      prisma,
+      term.id,
+      profile.id,
+      products,
+      currentMarketWeek,
+    );
   }
 
   console.log(`✅ Seeded ${marketStudentSeeds.length} market demo students`);
 }
 
-async function seedDividendPayouts(prisma, termId, studentProfileId, products, currentWeek) {
+async function seedDividendPayouts(
+  prisma,
+  termId,
+  studentProfileId,
+  products,
+  currentWeek,
+) {
   // Clean old dividend payouts
   await prisma.dividendPayout.deleteMany({
     where: { termId, studentProfileId },
@@ -314,7 +321,9 @@ async function seedDividendPayouts(prisma, termId, studentProfileId, products, c
     await prisma.dividendPayout.createMany({ data: payouts });
   }
 
-  console.log(`  ✅ Seeded ${payouts.length} dividend payouts for ${stockHoldings.length} stock holdings`);
+  console.log(
+    `  ✅ Seeded ${payouts.length} dividend payouts for ${stockHoldings.length} stock holdings`,
+  );
 }
 
 module.exports = { seedMarketStudents };

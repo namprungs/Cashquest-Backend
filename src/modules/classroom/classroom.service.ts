@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  BondPositionStatus,
   QuestStatus,
   QuestSubmissionStatus,
   TransactionType,
@@ -82,6 +83,41 @@ export class ClassroomService {
     for (const price of latestPrices) {
       if (!priceByProduct.has(price.productId)) {
         priceByProduct.set(price.productId, this.toNumber(price.close));
+      }
+    }
+
+    return priceByProduct;
+  }
+
+  private async getLiveTickPriceByProduct(
+    termId: string,
+    productIds: string[],
+  ) {
+    if (!productIds.length) return new Map<string, number>();
+
+    const termSimulation = await this.prisma.termSimulation.findUnique({
+      where: { termId },
+      select: { currentWeek: true },
+    });
+    const currentWeek = termSimulation?.currentWeek ?? 1;
+
+    const liveTicks = await this.prisma.productLivePriceTick.findMany({
+      where: {
+        termId,
+        productId: { in: productIds },
+        simulatedWeekNo: currentWeek,
+      },
+      orderBy: [{ tickedAt: 'desc' }],
+      select: {
+        productId: true,
+        price: true,
+      },
+    });
+
+    const priceByProduct = new Map<string, number>();
+    for (const tick of liveTicks) {
+      if (!priceByProduct.has(tick.productId)) {
+        priceByProduct.set(tick.productId, this.toNumber(tick.price));
       }
     }
 
@@ -441,6 +477,21 @@ export class ClassroomService {
                 productId: true,
                 units: true,
                 avgCost: true,
+                product: {
+                  select: {
+                    type: true,
+                  },
+                },
+                bondPositions: {
+                  where: {
+                    termId: classroom.termId,
+                    status: BondPositionStatus.ACTIVE,
+                  },
+                  select: {
+                    units: true,
+                    purchasePrice: true,
+                  },
+                },
               },
             },
           },
@@ -455,6 +506,10 @@ export class ClassroomService {
       ),
     );
     const latestPriceByProduct = await this.getLatestPriceByProduct(
+      classroom.termId,
+      productIds,
+    );
+    const liveTickPriceByProduct = await this.getLiveTickPriceByProduct(
       classroom.termId,
       productIds,
     );
@@ -510,7 +565,25 @@ export class ClassroomService {
       for (const holding of profile?.holdings ?? []) {
         const units = this.toNumber(holding.units);
         const avgCost = this.toNumber(holding.avgCost);
-        const price = latestPriceByProduct.get(holding.productId) ?? avgCost;
+        const productType = (holding.product?.type ?? '').toUpperCase();
+
+        if (productType === 'BOND') {
+          const activeBondValue = holding.bondPositions.reduce(
+            (sum, position) =>
+              sum +
+              this.toNumber(position.units) *
+                this.toNumber(position.purchasePrice),
+            0,
+          );
+          investedValue += activeBondValue;
+          marketValue += activeBondValue;
+          continue;
+        }
+
+        const price =
+          liveTickPriceByProduct.get(holding.productId) ??
+          latestPriceByProduct.get(holding.productId) ??
+          avgCost;
         investedValue += units * avgCost;
         marketValue += units * price;
       }
@@ -673,6 +746,24 @@ export class ClassroomService {
       classroom.termId,
       productIds,
     );
+    const liveTickPriceByProduct = await this.getLiveTickPriceByProduct(
+      classroom.termId,
+      productIds,
+    );
+
+    const activeBondValueByHolding = new Map<string, number>();
+    for (const bond of bondPositions) {
+      if (bond.status !== BondPositionStatus.ACTIVE) {
+        continue;
+      }
+
+      const value =
+        this.toNumber(bond.units) * this.toNumber(bond.purchasePrice);
+      activeBondValueByHolding.set(
+        bond.holdingId,
+        (activeBondValueByHolding.get(bond.holdingId) ?? 0) + value,
+      );
+    }
 
     const assets = {
       stocks: [] as Array<Record<string, unknown>>,
@@ -685,7 +776,18 @@ export class ClassroomService {
     for (const holding of profile?.holdings ?? []) {
       const units = this.toNumber(holding.units);
       const avgCost = this.toNumber(holding.avgCost);
-      const price = latestPriceByProduct.get(holding.productId) ?? avgCost;
+      const bucket = this.splitAssetType(holding.product.type);
+      if (bucket === 'bonds') {
+        const activeBondValue = activeBondValueByHolding.get(holding.id) ?? 0;
+        marketValue += activeBondValue;
+        investedValue += activeBondValue;
+        continue;
+      }
+
+      const price =
+        liveTickPriceByProduct.get(holding.productId) ??
+        latestPriceByProduct.get(holding.productId) ??
+        avgCost;
       const valueCoin = units * price;
       const costValue = units * avgCost;
       const changeCoin = valueCoin - costValue;
@@ -693,11 +795,6 @@ export class ClassroomService {
 
       marketValue += valueCoin;
       investedValue += costValue;
-
-      const bucket = this.splitAssetType(holding.product.type);
-      if (bucket === 'bonds') {
-        continue;
-      }
 
       const item: Record<string, unknown> = {
         productId: holding.productId,
@@ -1020,6 +1117,21 @@ export class ClassroomService {
             productId: true,
             units: true,
             avgCost: true,
+            product: {
+              select: {
+                type: true,
+              },
+            },
+            bondPositions: {
+              where: {
+                termId: classroom.termId,
+                status: BondPositionStatus.ACTIVE,
+              },
+              select: {
+                units: true,
+                purchasePrice: true,
+              },
+            },
           },
         },
       },
@@ -1035,6 +1147,11 @@ export class ClassroomService {
       classroom.termId,
       leaderboardProductIds,
     );
+    const leaderboardLiveTickPriceByProduct =
+      await this.getLiveTickPriceByProduct(
+        classroom.termId,
+        leaderboardProductIds,
+      );
     const leaderboardData = leaderboardProfiles
       .map((profile) => {
         const wallet = this.toNumber(profile.mainWallet?.balance);
@@ -1052,8 +1169,25 @@ export class ClassroomService {
         for (const holding of profile.holdings) {
           const units = this.toNumber(holding.units);
           const avgCost = this.toNumber(holding.avgCost);
+          const productType = (holding.product?.type ?? '').toUpperCase();
+
+          if (productType === 'BOND') {
+            const activeBondValue = holding.bondPositions.reduce(
+              (sum, position) =>
+                sum +
+                this.toNumber(position.units) *
+                  this.toNumber(position.purchasePrice),
+              0,
+            );
+            investedValue += activeBondValue;
+            marketValue += activeBondValue;
+            continue;
+          }
+
           const price =
-            leaderboardLatestPriceByProduct.get(holding.productId) ?? avgCost;
+            leaderboardLiveTickPriceByProduct.get(holding.productId) ??
+            leaderboardLatestPriceByProduct.get(holding.productId) ??
+            avgCost;
           investedValue += units * avgCost;
           marketValue += units * price;
         }
